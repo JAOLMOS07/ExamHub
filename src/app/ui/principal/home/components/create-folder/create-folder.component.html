@@ -1,0 +1,31 @@
+<h2 mat-dialog-title class="text-xl font-bold mb-4">Crear Carpeta</h2>
+<mat-dialog-content class="mat-typography">
+  <div class="form-control w-full max-w-xs">
+    <label class="label">
+      <span class="label-text">Nombre de la Carpeta</span>
+    </label>
+    <input
+      type="text"
+      placeholder="Nombre de la carpeta"
+      class="input input-bordered w-full max-w-xs"
+      [(ngModel)]="data.folderName"
+    />
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions class="mt-4 flex space-x-2">
+  <button
+    class="btn btn-sm btn-outline btn-error flex items-center"
+    mat-button
+    (click)="onNoClick()"
+  >
+    <app-icon [icon]="'cancel'" />
+  </button>
+  <button
+    class="btn btn-sm btn-primary flex items-center"
+    mat-button
+    [mat-dialog-close]="data.folderName"
+    cdkFocusInitial
+  >
+    <app-icon [icon]="'create'" /> Crear
+  </button>
+</mat-dialog-actions>

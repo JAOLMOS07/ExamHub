@@ -1,0 +1,48 @@
+<div class="space-y-4">
+  @if (questionsSelected.length === 0) {
+  <div class="text-center p-4 rounded-md bg-gray-100 shadow-inner">
+    <p class="text-gray-600">
+      No hay preguntas disponibles. Por favor, agregue una pregunta para
+      comenzar.
+    </p>
+  </div>
+  } @for (question of questionsSelected; track $index) {
+  <div class="collapse collapse-arrow bg-base-200 rounded-md">
+    <input type="checkbox" name="accordion-question" />
+    <div
+      class="collapse-title text-lg font-medium whitespace-normal break-words"
+    >
+      <div class="flex justify-between items-center">
+        <span>{{ question.name }}</span>
+      </div>
+    </div>
+    <div class="collapse-content">
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        @for (option of question.options; track $index) {
+        <li class="text-gray-700">
+          {{ option.content }} -
+          <strong
+            class="text-sm {{
+              option.correct ? 'text-green-600' : 'text-red-600'
+            }}"
+          >
+            {{ option.correct ? "Correcta" : "Incorrecta" }}
+          </strong>
+        </li>
+        }
+      </ul>
+      <div class="flex space-x-2 mt-2 w-full justify-end">
+        <div class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <app-icon [icon]="'edit'" />
+        </div>
+        <div
+          (click)="removeQuestion(question)"
+          class="text-red-500 hover:text-red-600 cursor-pointer"
+        >
+          <app-icon [icon]="'delete_outline'" />
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div>

@@ -1,0 +1,24 @@
+<div class="max-w-7xl mx-auto p-4 flex flex-wrap gap-8">
+  <div class="m-2 p-4 flex-1 min-w-0">
+    <app-create-question (onPushNewQuestion)="addQuestion($event)" />
+  </div>
+
+  <div class="bg-white shadow-md rounded-xl m-2 p-4 flex-1 min-w-0">
+    <div class="flex justify-between">
+      <h2 class="text-xl font-bold">Preguntas</h2>
+
+      <button
+        class="btn btn-sm btn-outline btn-info"
+        [disabled]="questions.length === 0"
+        (click)="showModalGenerateExam()"
+      >
+        <app-icon [icon]="'library_books'" />
+        Generar examen
+      </button>
+    </div>
+    <app-questions-list-selected
+      [questions]="questions"
+      (onDeleteQuestion)="removeQuestion($event)"
+    />
+  </div>
+</div>

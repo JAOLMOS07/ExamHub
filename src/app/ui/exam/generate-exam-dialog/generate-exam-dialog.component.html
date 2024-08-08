@@ -1,0 +1,139 @@
+<h2 mat-dialog-title class="text-xl font-bold mb-4">Configuración de examen</h2>
+<mat-dialog-content class="mat-typography">
+  <div class="">
+    <form [formGroup]="examConfigForm" class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col col-span-2">
+        <label for="headerType" class="text-sm font-medium"
+          >Tipo de encabezado</label
+        >
+        <mat-radio-group formControlName="headerType" class="mt-1">
+          <mat-radio-button value="text">Texto</mat-radio-button>
+          <mat-radio-button value="image">Imagen</mat-radio-button>
+        </mat-radio-group>
+      </div>
+
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
+        <label for="institution" class="text-sm font-medium">Institución</label>
+        <input
+          id="institution"
+          formControlName="institution"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
+        <label for="title" class="text-sm font-medium">Título</label>
+        <input
+          id="title"
+          formControlName="title"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
+        <label for="place" class="text-sm font-medium">Lugar</label>
+        <input
+          id="place"
+          formControlName="place"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
+        <label for="subtitle" class="text-sm font-medium">Subtítulo</label>
+        <input
+          id="subtitle"
+          formControlName="subtitle"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+
+      <div class="flex flex-col w-full">
+        <label for="date" class="text-sm font-medium">Fecha</label>
+        <div class="flex flex-row items-center mt-1 w-full">
+          <input
+            id="date"
+            [matDatepicker]="picker"
+            formControlName="date"
+            class="p-2 border rounded-md flex-grow"
+          />
+          <mat-datepicker-toggle
+            matIconSuffix
+            [for]="picker"
+            class="ml-2"
+          ></mat-datepicker-toggle>
+        </div>
+        <mat-datepicker #picker></mat-datepicker>
+      </div>
+
+      <div class="flex flex-col">
+        <label for="grade" class="text-sm font-medium">Grado</label>
+        <input
+          id="grade"
+          formControlName="grade"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+
+      <div class="flex flex-col col-span-2">
+        <label for="logo" class="text-sm font-medium"
+          >Logo de la Institución</label
+        >
+        <input
+          type="file"
+          id="logo"
+          (change)="onFileChange($event)"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+    </form>
+  </div>
+  <div class="mt-4 flex justify-between space-x-2">
+    <div class="flex items-center space-x-2">
+      <label for="amount" class="text-sm font-medium"
+        >Examenes diferentes:</label
+      >
+      <input
+        id="amount"
+        [(ngModel)]="amount"
+        type="number"
+        min="1"
+        class="mt-1 p-2 w-[50px] input-sm input input-bordered"
+      />
+    </div>
+    <div class="space-x-2">
+      <button
+        mat-button
+        (click)="cancel()"
+        class="btn btn-sm btn-outline btn-error"
+      >
+        Cancelar
+      </button>
+      <button
+        mat-button
+        (click)="preview()"
+        class="btn btn-sm btn-primary"
+        cdkFocusInitial
+      >
+        Vista previa
+      </button>
+      <button
+        mat-button
+        (click)="generate()"
+        class="btn btn-sm btn-accent"
+        cdkFocusInitial
+      >
+        Generar
+      </button>
+    </div>
+  </div>
+</mat-dialog-content>
