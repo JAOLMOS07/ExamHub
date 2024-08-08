@@ -67,6 +67,23 @@
           />
         </svg>
         Nuevo
+        <svg
+          class="w-6 h-6 opacity-60 hover:opacity-100 transition"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="m19 9-7 7-7-7"
+          />
+        </svg>
       </div>
       <ul
         tabindex="0"
@@ -88,7 +105,13 @@
   </div>
 
   <div class="flex">
-    <div class="w-[70%] px-1">
+    <div
+      [ngClass]="{
+        'w-[70%]': showCurrentExam,
+        'w-[100%]': !showCurrentExam
+      }"
+      class="px-1"
+    >
       <div
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
       >
@@ -165,7 +188,63 @@
         } }
       </div>
     </div>
-    <div class="w-[30%]">
+    <div class="divider divider-horizontal divider-start">
+      <button
+        (click)="showCurrentExam = !showCurrentExam"
+        class="btn btn-ghost btn-sm text-gray-500"
+      >
+        @if(!showCurrentExam){
+        <svg
+          class="w-6 h-6"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1"
+            d="M16 16.881V7.119a1 1 0 0 0-1.636-.772l-5.927 4.881a1 1 0 0 0 0 1.544l5.927 4.88a1 1 0 0 0 1.636-.77Z"
+          />
+        </svg>
+        <p style="text-orientation: mixed; writing-mode: vertical-rl">
+          Examen en curso
+        </p>
+        }@else {
+        <svg
+          class="w-6 h-6"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1"
+            d="M8 16.881V7.119a1 1 0 0 1 1.636-.772l5.927 4.881a1 1 0 0 1 0 1.544l-5.927 4.88A1 1 0 0 1 8 16.882Z"
+          />
+        </svg>
+
+        }
+      </button>
+    </div>
+
+    <div
+      class="transition-all"
+      [ngClass]="{
+        hidden: !showCurrentExam,
+        'w-[30%]': showCurrentExam,
+        'w-[0%]': !showCurrentExam
+      }"
+    >
       <div class="flex text-center justify-between text-gray-600 mt-2">
         <div class="flex text-center">
           <div class="indicator">
@@ -175,7 +254,7 @@
               >{{ questionsSelected.length }}</span
             >
             <app-icon class="mt-1" [icon]="'list'" />
-            <h2>Preguntas Seleccionadas</h2>
+            <h2>Examen en curso</h2>
           </div>
         </div>
         <button

@@ -20,6 +20,7 @@ import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/gen
 })
 export class HomeComponent {
   objectType = objectType;
+  showCurrentExam: boolean = true;
   questionsSelected: Document[] = [];
   documents: Document[] = [
     {
@@ -30,33 +31,33 @@ export class HomeComponent {
         {
           id: "2",
           type: objectType.folder,
-          name: "Matemáticas",
+          name: "Matemáticas Avanzadas",
           content: [
             {
               id: "3",
               type: objectType.folder,
-              name: "Álgebra",
+              name: "Cálculo Diferencial",
               content: [
                 {
                   id: "5",
                   type: objectType.question,
-                  name: "¿Cuál es la solución de la ecuación 2x + 3 = 7?",
+                  name: "¿Cuál es la derivada de la función f(x) = x^3 - 3x^2 + 5x - 2?",
                   options: [
-                    new Option("o1", "x = 2", false),
-                    new Option("o2", "x = 1", true),
-                    new Option("o3", "x = 0", false),
-                    new Option("o4", "x = 3", false),
+                    new Option("o1", "f'(x) = 3x^2 - 6x + 5", true),
+                    new Option("o2", "f'(x) = 3x^2 + 3x + 5", false),
+                    new Option("o3", "f'(x) = x^3 - 6x + 5", false),
+                    new Option("o4", "f'(x) = 3x^2 - 3x + 2", false),
                   ],
                 },
                 {
                   id: "6",
                   type: objectType.question,
-                  name: "¿Cuál es la forma general de una ecuación cuadrática?",
+                  name: "¿Qué teorema permite relacionar la derivada de una función continua en un intervalo cerrado con los extremos de dicho intervalo?",
                   options: [
-                    new Option("o1", "ax^2 + bx + c = 0", true),
-                    new Option("o2", "ax + b = c", false),
-                    new Option("o3", "ax^2 = bx - c", false),
-                    new Option("o4", "ax^2 + bx = c", false),
+                    new Option("o1", "Teorema de Rolle", true),
+                    new Option("o2", "Teorema del Valor Medio", false),
+                    new Option("o3", "Teorema de Lagrange", false),
+                    new Option("o4", "Teorema Fundamental del Cálculo", false),
                   ],
                 },
               ],
@@ -64,28 +65,94 @@ export class HomeComponent {
             {
               id: "4",
               type: objectType.folder,
-              name: "Geometría",
+              name: "Álgebra Lineal",
               content: [
                 {
                   id: "7",
                   type: objectType.question,
-                  name: "¿Cuál es el área de un triángulo de base 4 cm y altura 5 cm?",
+                  name: "¿Cuál es la matriz inversa de A si A = [[2, 1], [5, 3]]?",
                   options: [
-                    new Option("o1", "10 cm²", true),
-                    new Option("o2", "20 cm²", false),
-                    new Option("o3", "15 cm²", false),
-                    new Option("o4", "25 cm²", false),
+                    new Option("o1", "A^(-1) = [[3, -1], [-5, 2]]", false),
+                    new Option(
+                      "o2",
+                      "A^(-1) = [[3, -1], [-5, 2]] * (1/1)",
+                      false
+                    ),
+                    new Option(
+                      "o3",
+                      "A^(-1) = [[3, -1], [-5, 2]] * (1/1)",
+                      false
+                    ),
+                    new Option(
+                      "o4",
+                      "A^(-1) = [[3, -1], [-5, 2]] * (1/7)",
+                      true
+                    ),
                   ],
                 },
                 {
                   id: "8",
                   type: objectType.question,
-                  name: "¿Cuál es la suma de los ángulos internos de un triángulo?",
+                  name: "¿Qué propiedad debe cumplir un conjunto de vectores para ser considerado una base de un espacio vectorial?",
                   options: [
-                    new Option("o1", "180°", true),
-                    new Option("o2", "360°", false),
-                    new Option("o3", "90°", false),
-                    new Option("o4", "270°", false),
+                    new Option("o1", "Ser ortogonales", false),
+                    new Option("o2", "Ser linealmente dependientes", false),
+                    new Option(
+                      "o3",
+                      "Generar el espacio vectorial y ser linealmente independientes",
+                      true
+                    ),
+                    new Option("o4", "Tener la misma magnitud", false),
+                  ],
+                },
+                {
+                  id: "17",
+                  type: objectType.question,
+                  name: "¿Cuál es el rango de una matriz?",
+                  options: [
+                    new Option(
+                      "o1",
+                      "El número máximo de filas linealmente independientes",
+                      false
+                    ),
+                    new Option(
+                      "o2",
+                      "El número máximo de columnas linealmente independientes",
+                      true
+                    ),
+                    new Option("o3", "El número de ceros en la matriz", false),
+                    new Option(
+                      "o4",
+                      "La cantidad de pivotes en su forma escalonada",
+                      true
+                    ),
+                  ],
+                },
+                {
+                  id: "18",
+                  type: objectType.question,
+                  name: "¿Cómo se determina si un sistema de ecuaciones lineales tiene solución única?",
+                  options: [
+                    new Option(
+                      "o1",
+                      "Si el determinante de la matriz de coeficientes es cero",
+                      false
+                    ),
+                    new Option(
+                      "o2",
+                      "Si el determinante de la matriz de coeficientes no es cero",
+                      true
+                    ),
+                    new Option(
+                      "o3",
+                      "Si el rango de la matriz de coeficientes es menor que el número de incógnitas",
+                      false
+                    ),
+                    new Option(
+                      "o4",
+                      "Si las ecuaciones son linealmente dependientes",
+                      false
+                    ),
                   ],
                 },
               ],
@@ -95,33 +162,87 @@ export class HomeComponent {
         {
           id: "9",
           type: objectType.folder,
-          name: "Idiomas",
+          name: "Ciencias de la Computación",
           content: [
             {
               id: "10",
               type: objectType.folder,
-              name: "Inglés",
+              name: "Algoritmos y Estructuras de Datos",
               content: [
                 {
                   id: "11",
                   type: objectType.question,
-                  name: "¿Cuál es el sinónimo de 'happy'?",
+                  name: "¿Cuál es la complejidad temporal en el peor caso del algoritmo de búsqueda binaria?",
                   options: [
-                    new Option("o1", "Sad", false),
-                    new Option("o2", "Joyful", true),
-                    new Option("o3", "Angry", false),
-                    new Option("o4", "Tired", false),
+                    new Option("o1", "O(n)", false),
+                    new Option("o2", "O(log n)", true),
+                    new Option("o3", "O(n log n)", false),
+                    new Option("o4", "O(1)", false),
                   ],
                 },
                 {
                   id: "12",
                   type: objectType.question,
-                  name: "¿Cómo se dice 'perro' en inglés?",
+                  name: "¿Qué estructura de datos es ideal para implementar una cola con prioridad?",
                   options: [
-                    new Option("o1", "Cat", false),
-                    new Option("o2", "Bird", false),
-                    new Option("o3", "Dog", true),
-                    new Option("o4", "Fish", false),
+                    new Option("o1", "Lista enlazada", false),
+                    new Option("o2", "Árbol binario de búsqueda", false),
+                    new Option("o3", "Montículo (Heap)", true),
+                    new Option("o4", "Pila (Stack)", false),
+                  ],
+                },
+                {
+                  id: "19",
+                  type: objectType.question,
+                  name: "¿Cuál es la diferencia principal entre un árbol B y un árbol B+?",
+                  options: [
+                    new Option(
+                      "o1",
+                      "Los nodos hoja en un árbol B+ están conectados entre sí",
+                      true
+                    ),
+                    new Option(
+                      "o2",
+                      "Un árbol B tiene mayor orden que un árbol B+",
+                      false
+                    ),
+                    new Option(
+                      "o3",
+                      "En un árbol B+, todas las claves están en las hojas",
+                      true
+                    ),
+                    new Option(
+                      "o4",
+                      "En un árbol B, las claves están distribuidas uniformemente en todos los niveles",
+                      false
+                    ),
+                  ],
+                },
+                {
+                  id: "20",
+                  type: objectType.question,
+                  name: "¿Qué es la recursividad en un algoritmo?",
+                  options: [
+                    new Option(
+                      "o1",
+                      "Es un proceso en el cual una función se llama a sí misma",
+                      true
+                    ),
+                    new Option(
+                      "o2",
+                      "Es un proceso donde una función llama a una función diferente",
+                      false
+                    ),
+                    new Option(
+                      "o3",
+                      "Es un proceso en el que una función se ejecuta en paralelo",
+                      false
+                    ),
+                    new Option(
+                      "o4",
+                      "Es un proceso en el cual se elimina la redundancia de una función",
+                      false
+                    ),
                   ],
                 },
               ],
@@ -129,28 +250,98 @@ export class HomeComponent {
             {
               id: "13",
               type: objectType.folder,
-              name: "Español",
+              name: "Sistemas Operativos",
               content: [
                 {
                   id: "14",
                   type: objectType.question,
-                  name: "¿Cuál es un sinónimo de 'rápido'?",
+                  name: "¿Qué es un deadlock (interbloqueo) en un sistema operativo?",
                   options: [
-                    new Option("o1", "Lento", false),
-                    new Option("o2", "Veloz", true),
-                    new Option("o3", "Torpe", false),
-                    new Option("o4", "Pesado", false),
+                    new Option(
+                      "o1",
+                      "Una situación donde dos o más procesos están bloqueados, esperando indefinidamente por recursos que nunca se liberan",
+                      true
+                    ),
+                    new Option(
+                      "o2",
+                      "Un fallo en el sistema de archivos que impide el acceso a los datos",
+                      false
+                    ),
+                    new Option(
+                      "o3",
+                      "Una interrupción causada por un error en el hardware",
+                      false
+                    ),
+                    new Option(
+                      "o4",
+                      "Un proceso que se ejecuta indefinidamente sin liberar la CPU",
+                      false
+                    ),
                   ],
                 },
                 {
                   id: "15",
                   type: objectType.question,
-                  name: "¿Cuál es el antónimo de 'feliz'?",
+                  name: "¿Cuál es la principal función de un planificador de procesos (scheduler) en un sistema operativo?",
                   options: [
-                    new Option("o1", "Triste", true),
-                    new Option("o2", "Contento", false),
-                    new Option("o3", "Alegre", false),
-                    new Option("o4", "Satisfecho", false),
+                    new Option(
+                      "o1",
+                      "Administrar el almacenamiento en disco",
+                      false
+                    ),
+                    new Option(
+                      "o2",
+                      "Asignar recursos de hardware a los procesos",
+                      true
+                    ),
+                    new Option("o3", "Gestionar la memoria virtual", false),
+                    new Option(
+                      "o4",
+                      "Realizar copias de seguridad de los datos",
+                      false
+                    ),
+                  ],
+                },
+                {
+                  id: "21",
+                  type: objectType.question,
+                  name: "¿Qué técnica se utiliza para evitar el interbloqueo en un sistema operativo?",
+                  options: [
+                    new Option("o1", "Asignación fija de recursos", false),
+                    new Option("o2", "Control de concurrencia", false),
+                    new Option(
+                      "o3",
+                      "Evitar las condiciones necesarias para el interbloqueo",
+                      true
+                    ),
+                    new Option("o4", "Asignación dinámica de memoria", false),
+                  ],
+                },
+                {
+                  id: "22",
+                  type: objectType.question,
+                  name: "¿Qué es la paginación en la gestión de memoria?",
+                  options: [
+                    new Option(
+                      "o1",
+                      "Una técnica para dividir la memoria física en bloques de tamaño fijo",
+                      true
+                    ),
+                    new Option(
+                      "o2",
+                      "Una técnica para dividir la memoria en bloques de tamaño variable",
+                      false
+                    ),
+                    new Option(
+                      "o3",
+                      "Un método para asignar direcciones lógicas a direcciones físicas",
+                      false
+                    ),
+                    new Option(
+                      "o4",
+                      "Un algoritmo para optimizar el uso del caché",
+                      false
+                    ),
                   ],
                 },
               ],
@@ -160,12 +351,74 @@ export class HomeComponent {
         {
           id: "16",
           type: objectType.question,
-          name: "¿Cuál es el río más largo del mundo?",
+          name: "¿Cuál es la importancia de la investigación en el ámbito universitario?",
           options: [
-            new Option("o1", "Amazonas", true),
-            new Option("o2", "Nilo", false),
-            new Option("o3", "Yangtsé", false),
-            new Option("o4", "Misisipi", false),
+            new Option(
+              "o1",
+              "Permite la generación de nuevo conocimiento y la resolución de problemas complejos",
+              true
+            ),
+            new Option(
+              "o2",
+              "Es solo un requisito académico sin mayor relevancia",
+              false
+            ),
+            new Option(
+              "o3",
+              "Sirve únicamente para obtener financiamiento",
+              false
+            ),
+            new Option(
+              "o4",
+              "No tiene un impacto significativo en la sociedad",
+              false
+            ),
+          ],
+        },
+        {
+          id: "23",
+          type: objectType.question,
+          name: "¿Cómo influye la ética en la práctica profesional?",
+          options: [
+            new Option(
+              "o1",
+              "Guía las acciones de los profesionales hacia decisiones correctas y justas",
+              true
+            ),
+            new Option(
+              "o2",
+              "Es irrelevante en la toma de decisiones profesionales",
+              false
+            ),
+            new Option("o3", "Limita la creatividad y la innovación", false),
+            new Option(
+              "o4",
+              "Es solo un concepto teórico sin aplicación práctica",
+              false
+            ),
+          ],
+        },
+        {
+          id: "24",
+          type: objectType.question,
+          name: "¿Cuál es el papel de la economía en la toma de decisiones empresariales?",
+          options: [
+            new Option(
+              "o1",
+              "Proporciona herramientas para analizar y prever el comportamiento del mercado",
+              true
+            ),
+            new Option(
+              "o2",
+              "No tiene impacto directo en la toma de decisiones",
+              false
+            ),
+            new Option(
+              "o3",
+              "Se limita al estudio de las finanzas públicas",
+              false
+            ),
+            new Option("o4", "Solo se aplica a grandes corporaciones", false),
           ],
         },
       ],
