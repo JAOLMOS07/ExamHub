@@ -35,6 +35,7 @@ export class PDFService {
         console.error("Failed to load pdf maker lib");
       }
     }
+
     this.pdfMake.createPdf(def).download(name);
   }
 }

@@ -1,0 +1,4 @@
+
+.icon-circle-empty:before { content: '\f10c'; } /* '' */
+.icon-circle:before { content: '\f111'; } /* '' */
+.icon-circle-thin:before { content: '\f1db'; } /* '' */

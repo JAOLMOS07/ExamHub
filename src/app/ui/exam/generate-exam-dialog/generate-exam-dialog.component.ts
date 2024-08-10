@@ -16,6 +16,7 @@ export class GenerateExamDialogComponent implements OnInit {
   logoBase64: string | ArrayBuffer | null = null;
   exam: Document[] = [];
   amount: number = 1;
+  greaterAmount: number = 0;
   constructor(
     private formBuilder: FormBuilder,
     private dialogRef: MatDialogRef<GenerateExamDialogComponent>,
@@ -97,7 +98,67 @@ export class GenerateExamDialogComponent implements OnInit {
 
   async generatePDF(config: any, amount: number) {
     let header;
-
+    const answerSheet = [
+      {
+        text: "Hoja de respuestas",
+        style: "header",
+      },
+      {
+        // Creating space between the header and the circles
+        text: "",
+        margin: [0, 20, 0, 20],
+      },
+      {
+        stack: [
+          {
+            columns: [
+              { text: "1.", width: "auto" },
+              {
+                width: "auto",
+                stack: [
+                  {
+                    columns: [
+                      {
+                        image: await this.getBase64ImageFromURL(
+                          "assets/circle.png"
+                        ),
+                        width: 15,
+                      },
+                    ],
+                    margin: [10, 0, 0, 0],
+                  },
+                ],
+              },
+            ],
+            margin: [0, 10, 0, 10],
+          },
+          {
+            columns: [
+              { text: "2.", width: "auto" },
+              {
+                width: "auto",
+                stack: [
+                  {
+                    columns: [
+                      {
+                        image: await this.getBase64ImageFromURL(
+                          "assets/circle.png"
+                        ),
+                        width: 15,
+                      },
+                    ],
+                    margin: [10, 0, 0, 0],
+                  },
+                ],
+              },
+            ],
+            margin: [0, 10, 0, 10],
+          },
+          // Add more questions here as needed
+        ],
+        alignment: "center", // Centering the stack of questions
+      },
+    ];
     if (config.headerType === "image") {
       header = {
         image: await this.getBase64ImageFromURL(this.logoBase64),
@@ -164,6 +225,9 @@ export class GenerateExamDialogComponent implements OnInit {
           {
             ol: examToGenerate.map((question) => {
               var options: Option[] = shuffleArray(question.options);
+              if (options.length > this.greaterAmount) {
+                this.greaterAmount = options.length;
+              }
               return [
                 {
                   text: question.name,
@@ -180,6 +244,13 @@ export class GenerateExamDialogComponent implements OnInit {
                 },
               ];
             }),
+          },
+          { text: "", pageBreak: "before" },
+          {
+            text: `Hoja de respuestas`,
+            style: "subtitle",
+            alignment: "center",
+            margin: [0, 0, 0, 10],
           },
         ],
 
