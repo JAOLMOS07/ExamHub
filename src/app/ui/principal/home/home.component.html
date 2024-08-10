@@ -66,9 +66,9 @@
             d="M5 12h14m-7 7V5"
           />
         </svg>
-        Nuevo
+        <span class="hidden md:flex">Nuevo</span>
         <svg
-          class="w-6 h-6 opacity-60 hover:opacity-100 transition"
+          class="w-6 h-6 opacity-60 hover:opacity-100 transition hidden md:flex"
           aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
           width="24"
@@ -107,7 +107,8 @@
   <div class="flex">
     <div
       [ngClass]="{
-        'w-[70%]': showCurrentExam,
+        'hidden lg:block': showCurrentExam,
+        'w-[0%] lg:w-[70%]': showCurrentExam,
         'w-[100%]': !showCurrentExam
       }"
       class="px-1"
@@ -124,21 +125,31 @@
 
         <div
           class="card bg-slate-200 shadow-xl cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
+          (click)="navigateToFolder(folder)"
         >
-          <div (click)="navigateToFolder(folder)" class="card-body">
+          <div class="card-body">
             <div class="my-2">
               <h2 class="break-words card-title">
                 {{ folder.name }}
               </h2>
-              <app-icon
-                class="text-slate-400 hover:text-slate-600"
-                [icon]="'create'"
-              />
-
-              <app-icon
-                class="text-slate-400 hover:text-slate-600"
-                [icon]="'delete_outline'"
-              />
+              <button
+                class="btn btn-circle btn-ghost"
+                (click)="$event.stopPropagation()"
+              >
+                <app-icon
+                  class="text-slate-400 hover:text-slate-600"
+                  [icon]="'create'"
+                />
+              </button>
+              <button
+                class="btn btn-circle btn-ghost"
+                (click)="$event.stopPropagation()"
+              >
+                <app-icon
+                  class="text-slate-400 hover:text-slate-600"
+                  [icon]="'delete_outline'"
+                />
+              </button>
             </div>
           </div>
         </div>
@@ -249,7 +260,7 @@
       class="transition-all"
       [ngClass]="{
         hidden: !showCurrentExam,
-        'w-[30%]': showCurrentExam,
+        'w-[100%] lg:w-[30%]': showCurrentExam,
         'w-[0%]': !showCurrentExam
       }"
     >
@@ -262,7 +273,7 @@
               >{{ questionsSelected.length }}</span
             >
             <app-icon class="mt-1" [icon]="'list'" />
-            <h2 class="hidden md:inline">Examen en curso</h2>
+            <h2 class="">Examen en curso</h2>
           </div>
         </div>
         <button

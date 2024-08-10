@@ -9,13 +9,15 @@ import { FormsModule } from "@angular/forms";
 import { PDFService } from "../../core/services/pdfService.service";
 import { CreateFolderComponent } from "./home/components/create-folder/create-folder.component";
 import { CreateQuestionDialogComponent } from "../exam/create-question-dialog/create-question.component";
-import { QuestionListComponent } from "./home/components/create-folder/question-list/question-list.component";
+import { QuestionListComponent } from "./home/components/question-list/question-list.component";
+import { ItemListSelectedComponent } from "./home/components/item-list-selected/item-list-selected.component";
 @NgModule({
   declarations: [
     PrincipalComponent,
     CreateFolderComponent,
     CreateQuestionDialogComponent,
     QuestionListComponent,
+    ItemListSelectedComponent,
   ],
   imports: [
     CommonModule,

@@ -20,7 +20,7 @@ import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/gen
 })
 export class HomeComponent {
   objectType = objectType;
-  showCurrentExam: boolean = true;
+  showCurrentExam: boolean = false;
   questionsSelected: Document[] = [];
   documents: Document[] = [
     {

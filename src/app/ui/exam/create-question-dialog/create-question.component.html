@@ -35,13 +35,13 @@
             [(ngModel)]="option.content"
             name="optionContent{{ $index }}"
             required
-            class="flex-1 rounded-full border-gray-300 shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-base py-2 px-3"
+            class="input input-bordered w-full max-w-xs border-gray-300 shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-base py-2 px-2"
           />
           <input
             type="checkbox"
             [(ngModel)]="option.correct"
             name="optionCorrect{{ $index }}"
-            class="toggle toggle-success text-gray-600 border-gray-300"
+            class="toggle toggle-sm md:toggle-md toggle-success text-gray-600 border-gray-300"
           />
 
           @if (options.length == $index + 1) {

@@ -1,0 +1,16 @@
+<div class="space-y-4">
+  @if (questionsSelected.length === 0) {
+  <div class="text-center p-4 rounded-md bg-gray-100 shadow-inner">
+    <p class="text-gray-600">
+      No hay preguntas disponibles. Por favor, agregue una pregunta para
+      comenzar.
+    </p>
+  </div>
+  } @for (question of questionsSelected; track $index) {
+  <app-item-list-selected
+    [question]="question"
+    (deleteEvent)="removeQuestion($event)"
+  />
+
+  }
+</div>

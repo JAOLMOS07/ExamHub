@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { QuestionService } from "../../../../../../core/services/questionService.service";
-import { Document } from "../../../../../../core/models/folder.model";
+import { QuestionService } from "../../../../../core/services/questionService.service";
+import { Document } from "../../../../../core/models/folder.model";
 
 @Component({
   selector: "question-list",
