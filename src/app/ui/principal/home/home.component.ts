@@ -381,6 +381,8 @@ export class HomeComponent {
     }
     return folders;
   }
+
+  deleteQuestion(question: Document[]): void {}
   questionSelected(question: Document): boolean {
     return this.questionsSelected.some((q) => q.id === question.id);
   }

@@ -1,8 +1,11 @@
 <h2 mat-dialog-title class="text-xl font-bold mb-4">Configuración de examen</h2>
 <mat-dialog-content class="mat-typography">
-  <div class="">
-    <form [formGroup]="examConfigForm" class="grid grid-cols-2 gap-4">
-      <div class="flex flex-col col-span-2">
+  <div>
+    <form
+      [formGroup]="examConfigForm"
+      class="grid grid-cols-1 md:grid-cols-2 gap-4"
+    >
+      <div class="flex flex-col col-span-1 md:col-span-2">
         <label for="headerType" class="text-sm font-medium"
           >Tipo de encabezado</label
         >
@@ -57,7 +60,7 @@
         />
       </div>
 
-      <div class="flex flex-col w-full">
+      <div class="flex flex-col">
         <label for="date" class="text-sm font-medium">Fecha</label>
         <div class="flex flex-row items-center mt-1 w-full">
           <input
@@ -84,20 +87,25 @@
         />
       </div>
 
-      <div class="flex flex-col col-span-2">
-        <label for="logo" class="text-sm font-medium"
-          >Logo de la Institución</label
-        >
+      <div class="flex flex-col col-span-1 md:col-span-2">
+        <label for="logo" class="text-sm font-medium">{{
+          examConfigForm.value.headerType === "text"
+            ? "Logo del documento"
+            : "Encabezado del documento"
+        }}</label>
         <input
           type="file"
           id="logo"
           (change)="onFileChange($event)"
+          accept="image/png, image/webp, image/jpeg, image/jpg"
           class="mt-1 p-2 border rounded-md"
         />
       </div>
     </form>
   </div>
-  <div class="mt-4 flex justify-between space-x-2">
+  <div
+    class="mt-4 flex flex-col md:flex-row justify-between space-y-2 md:space-y-0 md:space-x-2"
+  >
     <div class="flex items-center space-x-2">
       <label for="amount" class="text-sm font-medium"
         >Examenes diferentes:</label
@@ -110,7 +118,7 @@
         class="mt-1 p-2 w-[50px] input-sm input input-bordered"
       />
     </div>
-    <div class="space-x-2">
+    <div class="space-y-2 md:space-y-0 md:space-x-2">
       <button
         mat-button
         (click)="cancel()"

@@ -5,6 +5,8 @@ import { Question } from "../../../core/models/question.model";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { QuestionService } from "../../../core/services/questionService.service";
 import { Document, Option } from "../../../core/models/folder.model";
+import { text } from "stream/consumers";
+import { objectType } from "../../../core/models/objectType.enum";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -98,67 +100,6 @@ export class GenerateExamDialogComponent implements OnInit {
 
   async generatePDF(config: any, amount: number) {
     let header;
-    const answerSheet = [
-      {
-        text: "Hoja de respuestas",
-        style: "header",
-      },
-      {
-        // Creating space between the header and the circles
-        text: "",
-        margin: [0, 20, 0, 20],
-      },
-      {
-        stack: [
-          {
-            columns: [
-              { text: "1.", width: "auto" },
-              {
-                width: "auto",
-                stack: [
-                  {
-                    columns: [
-                      {
-                        image: await this.getBase64ImageFromURL(
-                          "assets/circle.png"
-                        ),
-                        width: 15,
-                      },
-                    ],
-                    margin: [10, 0, 0, 0],
-                  },
-                ],
-              },
-            ],
-            margin: [0, 10, 0, 10],
-          },
-          {
-            columns: [
-              { text: "2.", width: "auto" },
-              {
-                width: "auto",
-                stack: [
-                  {
-                    columns: [
-                      {
-                        image: await this.getBase64ImageFromURL(
-                          "assets/circle.png"
-                        ),
-                        width: 15,
-                      },
-                    ],
-                    margin: [10, 0, 0, 0],
-                  },
-                ],
-              },
-            ],
-            margin: [0, 10, 0, 10],
-          },
-          // Add more questions here as needed
-        ],
-        alignment: "center", // Centering the stack of questions
-      },
-    ];
     if (config.headerType === "image") {
       header = {
         image: await this.getBase64ImageFromURL(this.logoBase64),
@@ -207,26 +148,25 @@ export class GenerateExamDialogComponent implements OnInit {
     }
 
     for (let index = 0; index < amount; index++) {
-      var examToGenerate: Document[] = shuffleArray(this.exam);
+      var examToGenerate: Document[] = this.shuffleExam(this.exam);
+
       let docDefinition: any = {
         margin: 10,
         pageMargins: [40, 130, 40, 60],
         header: header,
-
         content: [
           {
             text: `Nombre: __________________________________________    Fecha: ${config.date.toLocaleDateString()}   Grado:${
               config.grade
-            }`,
+            }   Examen: ${this.getAlphabetLetter(index + 1)}`,
             style: "subtitle",
             alignment: "center",
             margin: [0, 0, 0, 10],
           },
           {
             ol: examToGenerate.map((question) => {
-              var options: Option[] = shuffleArray(question.options);
-              if (options.length > this.greaterAmount) {
-                this.greaterAmount = options.length;
+              if (question.options!.length > this.greaterAmount) {
+                this.greaterAmount = question.options!.length;
               }
               return [
                 {
@@ -236,7 +176,7 @@ export class GenerateExamDialogComponent implements OnInit {
                 },
                 {
                   type: "upper-alpha",
-                  ol: options?.map((option, i) => {
+                  ol: question.options!.map((option, i) => {
                     return {
                       text: ` - ${option.content}`,
                     };
@@ -247,10 +187,129 @@ export class GenerateExamDialogComponent implements OnInit {
           },
           { text: "", pageBreak: "before" },
           {
-            text: `Hoja de respuestas`,
-            style: "subtitle",
+            text: `Hoja de respuestas examen: ${this.getAlphabetLetter(
+              index + 1
+            )}`,
             alignment: "center",
             margin: [0, 0, 0, 10],
+          },
+          {
+            stack: await Promise.all(
+              examToGenerate.map(async (question, $index): Promise<any> => {
+                return [
+                  {
+                    columns: [
+                      {
+                        text:
+                          examToGenerate.length > 9
+                            ? $index > 8
+                              ? `${$index + 1}.`
+                              : `0${$index + 1}.`
+                            : `${$index + 1}.`,
+                        width: "auto",
+                        margin: [10, 5, 10, 5],
+                      },
+                      {
+                        width: "auto",
+                        stack: [
+                          {
+                            columns: await Promise.all(
+                              Array(this.greaterAmount)
+                                .fill(null)
+                                .map(async (item, $index): Promise<any> => {
+                                  return [
+                                    {
+                                      image: await this.getBase64ImageFromURL(
+                                        `assets/op${this.getAlphabetLetter(
+                                          $index + 1
+                                        )}.png`
+                                      ),
+                                      width: 15,
+                                      margin: [10, 0, 10, 0],
+                                    },
+                                  ];
+                                })
+                            ),
+                            margin: [10, 5, 10, 5],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ];
+              })
+            ),
+            margin: [10, 0, 0, 0],
+            alignment: "center",
+          },
+          { text: "", pageBreak: "before" },
+          {
+            text: `Hoja de respuestas del maestro examen: ${this.getAlphabetLetter(
+              index + 1
+            )}`,
+            alignment: "center",
+            margin: [0, 0, 0, 10],
+          },
+          {
+            stack: await Promise.all(
+              examToGenerate.map(async (question, $index): Promise<any> => {
+                return [
+                  {
+                    columns: [
+                      {
+                        text:
+                          examToGenerate.length > 9
+                            ? $index > 9
+                              ? `${$index + 1}.`
+                              : `0${$index + 1}.`
+                            : `${$index + 1}.`,
+                        width: "auto",
+                        margin: [10, 5, 10, 5],
+                      },
+                      {
+                        width: "auto",
+                        stack: [
+                          {
+                            columns: await Promise.all(
+                              question.options!.map(
+                                async (item, $index): Promise<any> => {
+                                  if (item.correct) {
+                                    return [
+                                      {
+                                        image: await this.getBase64ImageFromURL(
+                                          "assets/relleno.png"
+                                        ),
+                                        width: 15,
+                                        margin: [10, 0, 10, 0],
+                                      },
+                                    ];
+                                  } else {
+                                    return [
+                                      {
+                                        image: await this.getBase64ImageFromURL(
+                                          `assets/op${this.getAlphabetLetter(
+                                            $index + 1
+                                          )}.png`
+                                        ),
+                                        width: 15,
+                                        margin: [10, 0, 10, 0],
+                                      },
+                                    ];
+                                  }
+                                }
+                              )
+                            ),
+                            margin: [10, 5, 10, 5],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ];
+              })
+            ),
+            margin: [10, 0, 0, 0],
+            alignment: "center",
           },
         ],
 
@@ -271,15 +330,36 @@ export class GenerateExamDialogComponent implements OnInit {
         );
         this.exam = examToGenerate;
       } else {
+        console.log(docDefinition);
+
         this.pdfService.open(docDefinition);
       }
     }
   }
-}
 
-function shuffleArray<T>(array?: T[]): T[] {
-  if (!array) return [];
-  return array
-    .slice() // Crear una copia del array original
-    .sort(() => Math.random() - 0.5); // Ordenar aleatoriamente
+  shuffleExam(exam: Document[]): Document[] {
+    return exam
+      .map((question) => {
+        if (question.type === objectType.question) {
+          // Shuffle the options of the question
+          question.options = this.shuffleArray(question.options!);
+        }
+        return question;
+      })
+      .sort(() => Math.random() - 0.5); // Shuffle the questions
+  }
+
+  shuffleArray<T>(array: T[]): T[] {
+    return array
+      .slice() // Create a copy of the original array
+      .sort(() => Math.random() - 0.5); // Randomly sort the array
+  }
+
+  getAlphabetLetter(number: number): string {
+    if (number < 1 || number > 26) {
+      throw new Error("El número debe estar entre 1 y 26.");
+    }
+
+    return String.fromCharCode(65 + number - 1); // 65 es el código ASCII de 'A'
+  }
 }
