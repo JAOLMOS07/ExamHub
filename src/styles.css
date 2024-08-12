@@ -7,11 +7,13 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--secondary) var(--primary);
+  user-select: none;
 }
 
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
   width: 15px;
+
 }
 
 *::-webkit-scrollbar-track {
