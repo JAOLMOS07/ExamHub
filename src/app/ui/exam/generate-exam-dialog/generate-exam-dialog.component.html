@@ -41,6 +41,32 @@
         class="flex flex-col"
         *ngIf="examConfigForm.value.headerType === 'text'"
       >
+        <label for="institution" class="text-sm font-medium"
+          >Cantidad de examenes</label
+        >
+        <input
+          id="institution"
+          formControlName="institution"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
+        <label for="title" class="text-sm font-medium"
+          >Preguntas por examen</label
+        >
+        <input
+          id="title"
+          formControlName="title"
+          class="mt-1 p-2 border rounded-md"
+        />
+      </div>
+      <div
+        class="flex flex-col"
+        *ngIf="examConfigForm.value.headerType === 'text'"
+      >
         <label for="place" class="text-sm font-medium">Lugar</label>
         <input
           id="place"
@@ -104,43 +130,49 @@
     </form>
   </div>
   <div
-    class="mt-4 flex flex-col md:flex-row justify-between space-y-2 md:space-y-0 md:space-x-2"
+    class="mt-4 flex flex-col lg:flex-row justify-between space-y-2 lg:space-y-0 lg:space-x-2"
   >
-    <div class="flex items-center space-x-2">
-      <label for="amount" class="text-sm font-medium"
-        >Examenes diferentes:</label
-      >
-      <input
-        id="amount"
-        [(ngModel)]="amount"
-        type="number"
-        min="1"
-        class="mt-1 p-2 w-[50px] input-sm input input-bordered"
-      />
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center">
+      <div class="join">
+        <button
+          class="btn no-animation btn-sm text-gray-500 hover:text-gray-700 join-item"
+        >
+          Pregunta por examen:
+        </button>
+        <input
+          id="amountQuestions"
+          [(ngModel)]="amountQuestions"
+          type="number"
+          min="1"
+          max="{{ exam.length }}"
+          class="join-item w-[100px] input-sm input input-bordered"
+        />
+      </div>
+      <div class="join">
+        <button
+          class="btn no-animation btn-sm text-gray-500 hover:text-gray-700 join-item"
+        >
+          Examenes diferentes:
+        </button>
+        <input
+          id="amount"
+          [(ngModel)]="amount"
+          type="number"
+          min="1"
+          class="join-item w-[100px] input-sm input input-bordered"
+        />
+      </div>
     </div>
-    <div class="space-y-2 md:space-y-0 md:space-x-2">
-      <button
-        mat-button
-        (click)="cancel()"
-        class="btn btn-sm btn-outline btn-error"
-      >
-        Cancelar
-      </button>
-      <button
-        mat-button
-        (click)="preview()"
-        class="btn btn-sm btn-primary"
-        cdkFocusInitial
-      >
+    <div class="flex items-center space-x-2"></div>
+    <div class="join">
+      <button class="btn btn-sm join-item btn-primary" (click)="preview()">
         Vista previa
       </button>
-      <button
-        mat-button
-        (click)="generate()"
-        class="btn btn-sm btn-accent"
-        cdkFocusInitial
-      >
+      <button class="btn btn-sm join-item btn-secondary" (click)="generate()">
         Generar
+      </button>
+      <button class="btn btn-sm join-item btn-error" (click)="cancel()">
+        Cancelar
       </button>
     </div>
   </div>
