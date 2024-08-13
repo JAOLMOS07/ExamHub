@@ -31,7 +31,6 @@ export class QuestionService {
     }
 
     this.questions.push(question);
-    console.log(this.questions);
     this.questionsSubject.next(this.questions);
   }
   removeQuestion(questionId: string): void {
@@ -42,7 +41,6 @@ export class QuestionService {
     }
 
     this.questions.splice(questionIndex, 1);
-    console.log(this.questions);
     this.questionsSubject.next(this.questions);
   }
 }

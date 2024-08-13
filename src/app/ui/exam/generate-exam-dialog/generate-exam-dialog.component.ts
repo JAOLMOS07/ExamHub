@@ -18,6 +18,7 @@ export class GenerateExamDialogComponent implements OnInit {
   logoBase64: string | ArrayBuffer | null = null;
   exam: Document[] = [];
   amount: number = 1;
+  amountQuestions: number = 1;
   greaterAmount: number = 0;
   constructor(
     private formBuilder: FormBuilder,
@@ -42,6 +43,8 @@ export class GenerateExamDialogComponent implements OnInit {
       grade: ["10A", Validators.required],
       amount: [4, Validators.required],
     });
+
+    this.amountQuestions = this.exam.length;
   }
 
   cancel(): void {
@@ -328,31 +331,32 @@ export class GenerateExamDialogComponent implements OnInit {
           docDefinition,
           config.date.toLocaleDateString() + config.grade
         );
-        this.exam = examToGenerate;
       } else {
-        console.log(docDefinition);
-
         this.pdfService.open(docDefinition);
       }
     }
   }
 
   shuffleExam(exam: Document[]): Document[] {
-    return exam
+    let shuffledExam = exam
       .map((question) => {
         if (question.type === objectType.question) {
-          // Shuffle the options of the question
           question.options = this.shuffleArray(question.options!);
         }
         return question;
       })
-      .sort(() => Math.random() - 0.5); // Shuffle the questions
+      .sort(() => Math.random() - 0.5);
+    this.exam = shuffledExam;
+
+    if (shuffledExam.length > this.amountQuestions) {
+      shuffledExam = shuffledExam.slice(0, this.amountQuestions);
+    }
+
+    return shuffledExam;
   }
 
   shuffleArray<T>(array: T[]): T[] {
-    return array
-      .slice() // Create a copy of the original array
-      .sort(() => Math.random() - 0.5); // Randomly sort the array
+    return array.slice().sort(() => Math.random() - 0.5);
   }
 
   getAlphabetLetter(number: number): string {
@@ -360,6 +364,6 @@ export class GenerateExamDialogComponent implements OnInit {
       throw new Error("El número debe estar entre 1 y 26.");
     }
 
-    return String.fromCharCode(65 + number - 1); // 65 es el código ASCII de 'A'
+    return String.fromCharCode(65 + number - 1);
   }
 }

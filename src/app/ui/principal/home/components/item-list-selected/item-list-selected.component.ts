@@ -13,10 +13,7 @@ import { Document } from "../../../../../core/models/folder.model";
   templateUrl: "./item-list-selected.component.html",
   styleUrl: "./item-list-selected.component.css",
 })
-export class ItemListSelectedComponent implements OnChanges {
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log("cambio");
-  }
+export class ItemListSelectedComponent {
   showAnswer: boolean = false;
   @Input() question!: Document;
   @Output() deleteEvent = new EventEmitter<Document>();

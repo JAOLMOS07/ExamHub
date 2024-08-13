@@ -395,8 +395,6 @@ export class HomeComponent {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.addFolder(result);
-      } else {
-        console.log("Diálogo cancelado o cerrado sin resultado");
       }
     });
   }
@@ -410,8 +408,6 @@ export class HomeComponent {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.addFolderToPath(result);
-      } else {
-        console.log("Diálogo cancelado o cerrado sin resultado");
       }
     });
   }
@@ -431,7 +427,6 @@ export class HomeComponent {
     };
 
     this.addFolderToPath(newFolder);
-    console.log(`Nueva carpeta creada:`, this.documents);
   }
 
   addFolderToPath(folder: Document): void {
