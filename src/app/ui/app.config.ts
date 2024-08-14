@@ -24,6 +24,6 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()), provideFirebaseApp(() => initializeApp({"projectId":"examhub-5679c","appId":"1:667352988613:web:b8011df03751a2354be9ac","storageBucket":"examhub-5679c.appspot.com","apiKey":"AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI","authDomain":"examhub-5679c.firebaseapp.com","messagingSenderId":"667352988613","measurementId":"G-4EWWXQ9T4N"})), provideAuth(() => getAuth()), provideFirestore(() => getFirestore()),
+    provideFirestore(() => getFirestore()), provideFirebaseApp(() => initializeApp({"projectId":"examhub-5679c","appId":"1:667352988613:web:b8011df03751a2354be9ac","storageBucket":"examhub-5679c.appspot.com","apiKey":"AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI","authDomain":"examhub-5679c.firebaseapp.com","messagingSenderId":"667352988613","measurementId":"G-4EWWXQ9T4N"})), provideAuth(() => getAuth()), provideFirestore(() => getFirestore()), provideFirebaseApp(() => initializeApp({"projectId":"examhub-5679c","appId":"1:667352988613:web:b8011df03751a2354be9ac","storageBucket":"examhub-5679c.appspot.com","apiKey":"AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI","authDomain":"examhub-5679c.firebaseapp.com","messagingSenderId":"667352988613","measurementId":"G-4EWWXQ9T4N"})), provideAuth(() => getAuth()),
   ],
 };

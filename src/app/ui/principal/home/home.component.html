@@ -1,3 +1,4 @@
+<app-navbar />
 <div class="mx-auto p-4">
   <div class="flex items-center justify-between mb-4">
     <button
@@ -113,6 +114,7 @@
       }"
       class="px-1"
     >
+      @if(!isLoading){
       <div
         class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
         [ngClass]="{
@@ -120,8 +122,8 @@
           'xl:grid-cols-3': showCurrentExam
         }"
       >
-        @for ( folder of currentFolders; track $index) { @if (folder.type
-        ===objectType.folder ) {
+        @for ( folder of documents; track $index) { @if (folder.type
+        ===objectType.FOLDER ) {
 
         <div
           class="card bg-slate-200 shadow-xl cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
@@ -143,7 +145,7 @@
               </button>
               <button
                 class="btn btn-circle btn-ghost"
-                (click)="$event.stopPropagation()"
+                (click)="$event.stopPropagation(); deleteDocument(folder)"
               >
                 <app-icon
                   class="text-slate-400 hover:text-slate-600"
@@ -164,8 +166,8 @@
           'xl:grid-cols-3': showCurrentExam
         }"
       >
-        @for ( folder of currentFolders; track $index) { @if (folder.type
-        ===objectType.question ) {
+        @for ( folder of documents; track $index) { @if (folder.type
+        ===objectType.QUESTION ) {
 
         <div
           class="card bg-slate-200 shadow-xl cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
@@ -198,7 +200,10 @@
                 />
                 }
               </button>
-              <button class="btn btn-sm btn-circle btn-ghost">
+              <button
+                (click)="deleteDocument(folder)"
+                class="btn btn-sm btn-circle btn-ghost"
+              >
                 <app-icon
                   class="text-slate-400 hover:text-white"
                   [icon]="'delete_outline'"
@@ -210,6 +215,11 @@
 
         } }
       </div>
+      }@else {
+      <div class="flex items-center justify-center w-100">
+        <span class="loading loading-ring loading-lg"></span>
+      </div>
+      }
     </div>
     <div class="divider divider-horizontal divider-start">
       <button

@@ -340,7 +340,7 @@ export class GenerateExamDialogComponent implements OnInit {
   shuffleExam(exam: Document[]): Document[] {
     let shuffledExam = exam
       .map((question) => {
-        if (question.type === objectType.question) {
+        if (question.type === objectType.QUESTION) {
           question.options = this.shuffleArray(question.options!);
         }
         return question;

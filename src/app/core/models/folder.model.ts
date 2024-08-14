@@ -6,6 +6,7 @@ export class Document {
   type: objectType;
   content?: Document[];
   options?: Option[];
+
   constructor(
     id: string,
     name: string,
@@ -19,7 +20,41 @@ export class Document {
     this.content = content;
     this.options = options;
   }
+
+  // Método para convertir a objeto plano y omitir campos undefined
+  static toPlainObject(doc: Document): any {
+    const plainObject: any = {
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+    };
+
+    if (doc.content) {
+      plainObject.content = doc.content.map((c) => Document.toPlainObject(c));
+    }
+
+    if (doc.options) {
+      plainObject.options = doc.options.map((o) => Option.toPlainObject(o));
+    }
+
+    return plainObject;
+  }
+
+  static fromPlainObject(obj: any): Document {
+    return new Document(
+      obj.id,
+      obj.name,
+      obj.type,
+      obj.content
+        ? obj.content.map((c: any) => Document.fromPlainObject(c))
+        : undefined,
+      obj.options
+        ? obj.options.map((o: any) => Option.fromPlainObject(o))
+        : undefined
+    );
+  }
 }
+
 export class Option {
   id: string;
   content: string;
@@ -29,5 +64,13 @@ export class Option {
     this.id = id;
     this.content = content;
     this.correct = correct;
+  }
+
+  static toPlainObject(option: Option): any {
+    return { ...option };
+  }
+
+  static fromPlainObject(obj: any): Option {
+    return new Option(obj.id, obj.content, obj.correct);
   }
 }

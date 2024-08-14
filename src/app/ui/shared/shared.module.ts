@@ -9,6 +9,7 @@ import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 
 import { MatRadioModule } from "@angular/material/radio";
+import { UserService } from "../../core/services/UserService.service";
 @NgModule({
   declarations: [IconComponent, NavbarComponent],
   imports: [
@@ -27,6 +28,6 @@ import { MatRadioModule } from "@angular/material/radio";
     MatFormFieldModule,
     MatRadioModule,
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [provideNativeDateAdapter(), UserService],
 })
 export class SharedModule {}

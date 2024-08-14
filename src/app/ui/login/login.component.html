@@ -1,14 +1,14 @@
-<div class="hero bg-base-200 h-[90%]">
+<div class="hero bg-base-200 h-[100%]">
   <div class="hero-content flex-col lg:flex-row-reverse">
     <div class="text-center lg:text-left">
       <h1 class="text-5xl font-bold">INICIAR SESIÓN</h1>
       <p class="py-6">
-        Si cuentas con u usuario registrado previamente en la plataforma pueden
+        Si cuentas con un usuario registrado previamente en la plataforma pueden
         iniciar sesión en cualquier momento desde cualquier dispositivo.
       </p>
     </div>
     <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl">
-      <form class="card-body">
+      <form [formGroup]="loginForm" class="card-body" (ngSubmit)="onSubmit()">
         <div class="form-control">
           <label class="label">
             <span class="label-text">Correo</span>
@@ -16,6 +16,7 @@
           <input
             type="email"
             placeholder="correo"
+            formControlName="email"
             class="input input-bordered"
             required
           />
@@ -27,17 +28,21 @@
           <input
             type="password"
             placeholder="contraseña"
+            formControlName="password"
             class="input input-bordered"
             required
           />
           <label class="label">
-            <a href="#" class="label-text-alt link link-hover"
-              >¿olvidó su contraseña?</a
+            <a (click)="resetPassword()" class="label-text-alt link link-hover"
+              >¿Olvidó su contraseña?</a
             >
           </label>
         </div>
+        <div *ngIf="errorMessage" class="text-red-500 text-sm mt-2">
+          {{ errorMessage }}
+        </div>
         <div class="form-control mt-6">
-          <button class="btn btn-primary">Iniciar sesión</button>
+          <button class="btn btn-primary" type="submit">Iniciar sesión</button>
         </div>
       </form>
     </div>

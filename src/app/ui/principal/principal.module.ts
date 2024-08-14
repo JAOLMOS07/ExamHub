@@ -11,6 +11,7 @@ import { CreateFolderComponent } from "./home/components/create-folder/create-fo
 import { CreateQuestionDialogComponent } from "../exam/create-question-dialog/create-question.component";
 import { QuestionListComponent } from "./home/components/question-list/question-list.component";
 import { ItemListSelectedComponent } from "./home/components/item-list-selected/item-list-selected.component";
+import { UserService } from "../../core/services/UserService.service";
 @NgModule({
   declarations: [
     PrincipalComponent,
@@ -27,7 +28,7 @@ import { ItemListSelectedComponent } from "./home/components/item-list-selected/
     SharedModule,
     RouterOutlet,
   ],
-  providers: [PDFService],
+  providers: [PDFService, UserService],
   exports: [PrincipalComponent, QuestionListComponent],
 })
 export class PrincipalModule {}

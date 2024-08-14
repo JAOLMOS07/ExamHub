@@ -1,4 +1,4 @@
 export enum objectType {
-  folder,
-  question,
+  FOLDER,
+  QUESTION,
 }

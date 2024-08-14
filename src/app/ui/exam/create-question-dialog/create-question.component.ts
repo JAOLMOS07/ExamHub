@@ -30,7 +30,7 @@ export class CreateQuestionDialogComponent {
     this.newQuestion = {
       id: "",
       name: "",
-      type: objectType.question,
+      type: objectType.QUESTION,
       options: [],
     };
   }
@@ -50,11 +50,12 @@ export class CreateQuestionDialogComponent {
       this.data.question = {
         id: crypto.randomUUID(),
         name: this.newQuestion.name,
-        type: objectType.question,
+        type: objectType.QUESTION,
         options: this.options.map(
           (opt) => new Option(crypto.randomUUID(), opt.content, opt.correct)
         ),
       };
+
       this.dialogRef.close(this.data.question);
       this.resetNewQuestion();
     } else {

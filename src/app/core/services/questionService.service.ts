@@ -19,7 +19,7 @@ export class QuestionService {
   }
 
   addQuestion(question: Document): void {
-    if (question.type !== objectType.question) {
+    if (question.type !== objectType.QUESTION) {
       console.error("Only questions can be added");
       return;
     }
