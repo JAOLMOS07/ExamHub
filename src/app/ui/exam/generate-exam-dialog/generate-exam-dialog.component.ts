@@ -262,7 +262,7 @@ export class GenerateExamDialogComponent implements OnInit {
                       {
                         text:
                           examToGenerate.length > 9
-                            ? $index > 9
+                            ? $index > 8
                               ? `${$index + 1}.`
                               : `0${$index + 1}.`
                             : `${$index + 1}.`,
