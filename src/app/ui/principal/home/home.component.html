@@ -166,53 +166,12 @@
           'xl:grid-cols-3': showCurrentExam
         }"
       >
-        @for ( folder of documents; track $index) { @if (folder.type
+        @for ( question of documents; track $index) { @if (question.type
         ===objectType.QUESTION ) {
-
-        <div
-          class="card bg-slate-200 shadow-xl cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
-        >
-          <div class="card-body">
-            <h3 class="break-words card-title no-select">
-              {{ folder.name }}
-            </h3>
-          </div>
-          <figure class="bg-slate-600">
-            <div class="my-2">
-              <button class="btn btn-sm btn-circle btn-ghost">
-                <app-icon
-                  class="text-slate-400 hover:text-white"
-                  [icon]="'create'"
-                />
-              </button>
-              <button class="btn btn-sm btn-circle btn-ghost">
-                @if (questionSelected(folder)) {
-                <app-icon
-                  class="text-white"
-                  [icon]="'playlist_add_check'"
-                  (click)="removeQuestionCurrentExam(folder)"
-                />
-                }@else {
-                <app-icon
-                  class="text-slate-400 hover:text-white"
-                  [icon]="'playlist_add'"
-                  (click)="addQuestionCurrentExam(folder)"
-                />
-                }
-              </button>
-              <button
-                (click)="deleteDocument(folder)"
-                class="btn btn-sm btn-circle btn-ghost"
-              >
-                <app-icon
-                  class="text-slate-400 hover:text-white"
-                  [icon]="'delete_outline'"
-                />
-              </button>
-            </div>
-          </figure>
-        </div>
-
+        <app-item-question
+          [question]="question"
+          (deleteEvent)="deleteDocument($event)"
+        />
         } }
       </div>
       }@else {

@@ -12,6 +12,7 @@ import { CreateQuestionDialogComponent } from "../exam/create-question-dialog/cr
 import { QuestionListComponent } from "./home/components/question-list/question-list.component";
 import { ItemListSelectedComponent } from "./home/components/item-list-selected/item-list-selected.component";
 import { UserService } from "../../core/services/UserService.service";
+import { ItemQuestionComponent } from "./home/components/item-question/item-question.component";
 @NgModule({
   declarations: [
     PrincipalComponent,
@@ -19,6 +20,7 @@ import { UserService } from "../../core/services/UserService.service";
     CreateQuestionDialogComponent,
     QuestionListComponent,
     ItemListSelectedComponent,
+    ItemQuestionComponent,
   ],
   imports: [
     CommonModule,
@@ -29,6 +31,6 @@ import { UserService } from "../../core/services/UserService.service";
     RouterOutlet,
   ],
   providers: [PDFService, UserService],
-  exports: [PrincipalComponent, QuestionListComponent],
+  exports: [PrincipalComponent, QuestionListComponent, ItemQuestionComponent],
 })
 export class PrincipalModule {}

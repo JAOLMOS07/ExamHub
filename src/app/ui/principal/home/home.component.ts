@@ -96,12 +96,6 @@ export class HomeComponent {
     });
   }
 
-  addQuestionCurrentExam(question: Document) {
-    this.questionService.addQuestion(question);
-  }
-  removeQuestionCurrentExam(question: Document) {
-    this.questionService.removeQuestion(question.id);
-  }
   addFolder(name: string): void {
     const newFolder: Document = {
       id: crypto.randomUUID(),
@@ -115,24 +109,8 @@ export class HomeComponent {
     this.addFolderToPath(newFolder);
   }
 
-  addFolderToPath(folder: Document): void {
-    /*     let folders = this.documents;
-    for (const id of this.currentPath) {
-      const foundFolder = folders.find((f) => f.id === id);
-      if (foundFolder && foundFolder.content) {
-        folders = foundFolder.content;
-      } else {
-        console.error(
-          `Carpeta con ID ${id} no encontrada en el path ${this.currentPath.join(
-            "/"
-          )}`
-        );
-        return;
-      }
-    }
+  addFolderToPath(folder: Document): void {}
 
-    folders.push(folder); */
-  }
   deleteDocument(document: Document): void {
     if (confirm(`¿Estás seguro de que deseas eliminar ${document.name}?`)) {
       this.examService;
@@ -154,6 +132,7 @@ export class HomeComponent {
       width: "900px",
     });
   }
+
   goBack(): void {
     if (this.currentPath.length > 1) {
       this.currentPath.pop();
