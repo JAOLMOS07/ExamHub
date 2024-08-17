@@ -41,32 +41,6 @@
         class="flex flex-col"
         *ngIf="examConfigForm.value.headerType === 'text'"
       >
-        <label for="institution" class="text-sm font-medium"
-          >Cantidad de examenes</label
-        >
-        <input
-          id="institution"
-          formControlName="institution"
-          class="mt-1 p-2 border rounded-md"
-        />
-      </div>
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
-        <label for="title" class="text-sm font-medium"
-          >Preguntas por examen</label
-        >
-        <input
-          id="title"
-          formControlName="title"
-          class="mt-1 p-2 border rounded-md"
-        />
-      </div>
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
         <label for="place" class="text-sm font-medium">Lugar</label>
         <input
           id="place"
