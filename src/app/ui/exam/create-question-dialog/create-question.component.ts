@@ -11,11 +11,10 @@ import { objectType } from "../../../core/models/objectType.enum";
   styleUrl: "./create-question.component.css",
 })
 export class CreateQuestionDialogComponent {
-  questions: Question[] = [];
-
+  editMode: boolean = false;
   newQuestion!: Document;
   onPushNewQuestion = output<Question>();
-  options: Option[] = [new Option("", "", false)];
+  options: Option[] = [];
   constructor(
     private formBuilder: FormBuilder,
     private dialogRef: MatDialogRef<CreateQuestionDialogComponent>,
@@ -24,7 +23,17 @@ export class CreateQuestionDialogComponent {
     this.resetNewQuestion();
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    if (this.data.question) {
+      this.editMode = true;
+      this.newQuestion.name = this.data.question.name;
+      if (this.data.question.options) {
+        this.options = this.data.question!.options.map((op) => {
+          return new Option(op.id, op.content, op.correct);
+        });
+      }
+    }
+  }
 
   resetNewQuestion() {
     this.newQuestion = {

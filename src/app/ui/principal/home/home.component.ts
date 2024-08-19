@@ -68,10 +68,13 @@ export class HomeComponent {
   questionSelected(question: Document): boolean {
     return this.questionsSelected.some((q) => q.id === question.id);
   }
-
-  openDialog(): void {
+  editDocument(docuent: Document) {
+    this.examService.updateDocument(this.currentPath, docuent.id, docuent);
+    this.loadDocuments();
+  }
+  createFolderDialog(): void {
     const dialogRef = this.dialog.open(CreateFolderComponent, {
-      data: { folderName: this.folderName },
+      data: {},
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -80,11 +83,20 @@ export class HomeComponent {
       }
     });
   }
+  editFolderDialog(folder: Document): void {
+    const dialogRef = this.dialog.open(CreateFolderComponent, {
+      data: { folder: folder },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.editDocument(result);
+      }
+    });
+  }
   createQuestionDialog(): void {
     const dialogRef = this.dialog.open(CreateQuestionDialogComponent, {
-      data: {
-        question: { id: "", name: "", type: objectType.QUESTION, options: [] },
-      },
+      data: {},
     });
 
     dialogRef.afterClosed().subscribe((result) => {

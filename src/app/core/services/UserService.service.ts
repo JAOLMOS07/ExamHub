@@ -14,7 +14,6 @@ export class UserService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private auth: Auth) {
-    // Mantén el estado del usuario autenticado actualizado
     this.auth.onAuthStateChanged((user) => {
       this.currentUserSubject.next(user);
     });

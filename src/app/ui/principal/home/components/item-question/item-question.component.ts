@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { Document } from "../../../../../core/models/folder.model";
 import { QuestionService } from "../../../../../core/services/questionService.service";
+import { MatDialog } from "@angular/material/dialog";
+import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
 
 @Component({
   selector: "app-item-question",
@@ -10,7 +12,10 @@ import { QuestionService } from "../../../../../core/services/questionService.se
 export class ItemQuestionComponent {
   questionsSelected: Document[] = [];
   questionCopied: boolean = false;
-  constructor(private questionService: QuestionService) {
+  constructor(
+    public dialog: MatDialog,
+    private questionService: QuestionService
+  ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
     });
@@ -18,7 +23,7 @@ export class ItemQuestionComponent {
 
   @Input() question!: Document;
   @Output() deleteEvent = new EventEmitter<Document>();
-
+  @Output() editEvent = new EventEmitter<Document>();
   deleteDocument(): void {
     this.deleteEvent.emit(this.question);
   }
@@ -37,6 +42,25 @@ export class ItemQuestionComponent {
 
     return text;
   }
+
+  editQuestionDialog(): void {
+    const dialogRef = this.dialog.open(CreateQuestionDialogComponent, {
+      data: {
+        question: this.question,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result: Document) => {
+      if (result) {
+        this.question.name = result.name;
+        if (result.options) {
+          this.question.options = result.options;
+        }
+        this.editEvent.emit(this.question);
+      }
+    });
+  }
+
   addQuestionCurrentExam() {
     this.questionService.addQuestion(this.question);
   }

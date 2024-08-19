@@ -95,7 +95,7 @@
             <app-icon class="text-xs" [icon]="'note_add'" />Crear Pregunta
           </div>
         </li>
-        <li (click)="openDialog()">
+        <li (click)="createFolderDialog()">
           <div class="flex">
             <app-icon class="text-xs" [icon]="'create_new_folder'" />Crear
             Carpeta
@@ -136,7 +136,7 @@
               </h2>
               <button
                 class="btn btn-circle btn-ghost"
-                (click)="$event.stopPropagation()"
+                (click)="$event.stopPropagation(); editFolderDialog(folder)"
               >
                 <app-icon
                   class="text-slate-400 hover:text-slate-600"
@@ -171,6 +171,7 @@
         <app-item-question
           [question]="question"
           (deleteEvent)="deleteDocument($event)"
+          (editEvent)="editDocument($event)"
         />
         } }
       </div>

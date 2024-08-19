@@ -21,7 +21,6 @@ export class Document {
     this.options = options;
   }
 
-  // Método para convertir a objeto plano y omitir campos undefined
   static toPlainObject(doc: Document): any {
     const plainObject: any = {
       id: doc.id,

@@ -18,7 +18,10 @@
         />
         }
       </button>
-      <button class="btn btn-sm btn-circle btn-ghost">
+      <button
+        (click)="editQuestionDialog()"
+        class="btn btn-sm btn-circle btn-ghost"
+      >
         <app-icon class="text-slate-400 hover:text-white" [icon]="'create'" />
       </button>
       <button class="btn btn-sm btn-circle btn-ghost">

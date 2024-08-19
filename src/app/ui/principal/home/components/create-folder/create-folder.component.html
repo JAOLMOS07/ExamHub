@@ -1,4 +1,6 @@
-<h2 mat-dialog-title class="text-xl font-bold mb-4">Crear Carpeta</h2>
+<h2 mat-dialog-title class="text-xl font-bold mb-4">
+  {{ editMode ? "Editar Carpeta" : "Crear Carpeta" }}
+</h2>
 <mat-dialog-content class="mat-typography">
   <div class="form-control w-full max-w-xs">
     <label class="label">
@@ -8,7 +10,7 @@
       type="text"
       placeholder="Nombre de la carpeta"
       class="input input-bordered w-full max-w-xs"
-      [(ngModel)]="data.folderName"
+      [(ngModel)]="folderName"
     />
   </div>
 </mat-dialog-content>
@@ -23,9 +25,10 @@
   <button
     class="btn btn-sm btn-primary flex items-center"
     mat-button
-    [mat-dialog-close]="data.folderName"
+    (click)="addFolder()"
     cdkFocusInitial
   >
-    <app-icon [icon]="'create'" /> Crear
+    <app-icon [icon]="'create'" />
+    {{ editMode ? "Editar Carpeta" : "Crear Carpeta" }}
   </button>
 </mat-dialog-actions>
