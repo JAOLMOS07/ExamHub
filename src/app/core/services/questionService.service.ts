@@ -43,4 +43,8 @@ export class QuestionService {
     this.questions.splice(questionIndex, 1);
     this.questionsSubject.next(this.questions);
   }
+  discardExam(): void {
+    this.questions = [];
+    this.questionsSubject.next(this.questions);
+  }
 }

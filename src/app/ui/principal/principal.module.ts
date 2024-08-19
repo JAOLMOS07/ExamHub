@@ -13,6 +13,7 @@ import { QuestionListComponent } from "./home/components/question-list/question-
 import { ItemListSelectedComponent } from "./home/components/item-list-selected/item-list-selected.component";
 import { UserService } from "../../core/services/UserService.service";
 import { ItemQuestionComponent } from "./home/components/item-question/item-question.component";
+import { SweetAlert2Module } from "@sweetalert2/ngx-sweetalert2";
 @NgModule({
   declarations: [
     PrincipalComponent,
@@ -29,6 +30,7 @@ import { ItemQuestionComponent } from "./home/components/item-question/item-ques
     FormsModule,
     SharedModule,
     RouterOutlet,
+    SweetAlert2Module.forRoot(),
   ],
   providers: [PDFService, UserService],
   exports: [PrincipalComponent, QuestionListComponent, ItemQuestionComponent],

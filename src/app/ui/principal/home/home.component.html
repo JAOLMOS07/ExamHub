@@ -145,7 +145,15 @@
               </button>
               <button
                 class="btn btn-circle btn-ghost"
-                (click)="$event.stopPropagation(); deleteDocument(folder)"
+                (click)="$event.stopPropagation()"
+                [swal]="{
+                  title: '¿¿Desea eliminar esta carpeta?',
+                  showDenyButton: true,
+                  icon: 'question',
+                  confirmButtonText: 'Si',
+                  denyButtonText: 'No',
+                }"
+                (confirm)="deleteDocument(folder)"
               >
                 <app-icon
                   class="text-slate-400 hover:text-slate-600"
@@ -250,32 +258,67 @@
             <h2 class="">Examen en curso</h2>
           </div>
         </div>
-        <button
-          [disabled]="questionsSelected.length < 1"
-          (click)="showModalGenerateExam()"
-          class="btn btn-sm btn-primary"
-        >
-          <span class="hidden xl:flex">Generar examen</span>
-          <svg
-            class="w-[23px] h-[23px]"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
+
+        <div class="join">
+          <button
+            [disabled]="questionsSelected.length < 1"
+            (click)="showModalGenerateExam()"
+            class="btn btn-sm btn-primary join-item"
           >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.4"
-              d="M5 17v-5h1.5a1.5 1.5 0 1 1 0 3H5m12 2v-5h2m-2 3h2M5 10V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1v6M5 19v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1M10 3v4a1 1 0 0 1-1 1H5m6 4v5h1.375A1.627 1.627 0 0 0 14 15.375v-1.75A1.627 1.627 0 0 0 12.375 12H11Z"
-            />
-          </svg>
-        </button>
+            <span class="hidden xl:flex">Generar examen</span>
+            <svg
+              class="w-[23px] h-[23px]"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+                d="M5 17v-5h1.5a1.5 1.5 0 1 1 0 3H5m12 2v-5h2m-2 3h2M5 10V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1v6M5 19v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1M10 3v4a1 1 0 0 1-1 1H5m6 4v5h1.375A1.627 1.627 0 0 0 14 15.375v-1.75A1.627 1.627 0 0 0 12.375 12H11Z"
+              />
+            </svg>
+          </button>
+          <button
+            [disabled]="questionsSelected.length < 1"
+            class="btn btn-sm btn-secondary join-item"
+            [swal]="deleteSwal"
+            (confirm)="discardExam()"
+          >
+            <svg
+              class="w-6 h-6"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="m15 9-6 6m0-6 6 6m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       <question-list />
     </div>
   </div>
 </div>
+<swal
+  #deleteSwal
+  confirmButtonText="Confirmar"
+  cancelButtonText="Cancelar"
+  [showCancelButton]="true"
+  icon="question"
+  title="¿Desea descartar el examen actual?"
+></swal>

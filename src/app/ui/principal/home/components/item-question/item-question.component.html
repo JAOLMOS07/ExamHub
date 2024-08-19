@@ -40,8 +40,15 @@
         }
       </button>
       <button
-        (click)="deleteDocument()"
         class="btn btn-sm btn-circle btn-ghost"
+        [swal]="{
+          title: '¿Desea eliminar esta pregunta?',
+          showDenyButton: true,
+          icon: 'question',
+          confirmButtonText: 'Si',
+          denyButtonText: 'No',
+        }"
+        (confirm)="deleteDocument()"
       >
         <app-icon
           class="text-slate-400 hover:text-white"

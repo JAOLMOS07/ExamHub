@@ -11,11 +11,22 @@ import { QuestionService } from "../../../core/services/questionService.service"
 import { PrincipalModule } from "../principal.module";
 import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/generate-exam-dialog.component";
 import { ExamService } from "../../../core/services/ExamService.service";
+import { NgToastService } from "ng-angular-popup";
+import {
+  SweetAlert2LoaderService,
+  SweetAlert2Module,
+} from "@sweetalert2/ngx-sweetalert2";
 
 @Component({
   selector: "app-home",
   standalone: true,
-  imports: [FormsModule, SharedModule, CommonModule, PrincipalModule],
+  imports: [
+    FormsModule,
+    SharedModule,
+    CommonModule,
+    PrincipalModule,
+    SweetAlert2Module,
+  ],
   templateUrl: "./home.component.html",
   styleUrls: ["./home.component.css"],
 })
@@ -33,7 +44,8 @@ export class HomeComponent {
   constructor(
     public dialog: MatDialog,
     private questionService: QuestionService,
-    private examService: ExamService
+    private examService: ExamService,
+    private toast: NgToastService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
@@ -69,8 +81,17 @@ export class HomeComponent {
     return this.questionsSelected.some((q) => q.id === question.id);
   }
   editDocument(docuent: Document) {
-    this.examService.updateDocument(this.currentPath, docuent.id, docuent);
-    this.loadDocuments();
+    this.examService
+      .updateDocument(this.currentPath, docuent.id, docuent)
+      .then(() => {
+        this.toast.success("Modificado con éxito", "ExamHub", 2000);
+      })
+      .catch(() => {
+        this.toast.danger("Error al editar", "ExamHub", 2000);
+      })
+      .finally(() => {
+        this.loadDocuments();
+      });
   }
   createFolderDialog(): void {
     const dialogRef = this.dialog.open(CreateFolderComponent, {
@@ -101,9 +122,18 @@ export class HomeComponent {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.examService.createDocument(this.currentPath, result);
-        this.loadDocuments();
-        this.addFolderToPath(result);
+        this.examService
+          .createDocument(this.currentPath, result)
+          .then(() => {
+            this.toast.success("Pregunta creada con éxito", "ExamHub", 2000);
+            this.addFolderToPath(result);
+          })
+          .catch(() => {
+            this.toast.danger("Error al creada la pregunta", "ExamHub", 2000);
+          })
+          .finally(() => {
+            this.loadDocuments();
+          });
       }
     });
   }
@@ -116,22 +146,34 @@ export class HomeComponent {
       content: [],
     };
 
-    this.examService.createDocument(this.currentPath, newFolder);
-    this.loadDocuments();
-    this.addFolderToPath(newFolder);
+    this.examService
+      .createDocument(this.currentPath, newFolder)
+      .then(() => {
+        this.toast.success("Carpeta creada con éxito", "ExamHub", 2000);
+        this.addFolderToPath(newFolder);
+      })
+      .catch(() => {
+        this.toast.danger("Error al creada la carpeta", "ExamHub", 2000);
+      })
+      .finally(() => {
+        this.loadDocuments();
+      });
   }
 
   addFolderToPath(folder: Document): void {}
 
   deleteDocument(document: Document): void {
-    if (confirm(`¿Estás seguro de que deseas eliminar ${document.name}?`)) {
-      this.examService;
-      this.examService
-        .deleteDocumentAndCollection(this.currentPath, document.id)
-        .then(() => {
-          this.loadDocuments();
-        });
-    }
+    this.examService
+      .deleteDocumentAndCollection(this.currentPath, document.id)
+      .then(() => {
+        this.toast.success("Eliminada con éxito", "ExamHub", 2000);
+      })
+      .catch(() => {
+        this.toast.danger("Error al eliminar", "ExamHub", 2000);
+      })
+      .finally(() => {
+        this.loadDocuments();
+      });
   }
   navigateToFolder(folder: Document): void {
     this.documents = [];
@@ -144,7 +186,9 @@ export class HomeComponent {
       width: "900px",
     });
   }
-
+  discardExam() {
+    this.questionService.discardExam();
+  }
   goBack(): void {
     if (this.currentPath.length > 1) {
       this.currentPath.pop();

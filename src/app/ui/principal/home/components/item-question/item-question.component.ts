@@ -3,6 +3,7 @@ import { Document } from "../../../../../core/models/folder.model";
 import { QuestionService } from "../../../../../core/services/questionService.service";
 import { MatDialog } from "@angular/material/dialog";
 import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
+import { NgToastService } from "ng-angular-popup";
 
 @Component({
   selector: "app-item-question",
@@ -14,7 +15,8 @@ export class ItemQuestionComponent {
   questionCopied: boolean = false;
   constructor(
     public dialog: MatDialog,
-    private questionService: QuestionService
+    private questionService: QuestionService,
+    private toast: NgToastService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
@@ -89,5 +91,6 @@ export class ItemQuestionComponent {
   copyQuestions(): void {
     const text = this.convertDocumentToText(this.question);
     this.copyToClipboard(text);
+    this.toast.info("Pregunta copiada en el portapapeles", "ExamHub", 1000);
   }
 }
