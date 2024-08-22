@@ -343,10 +343,20 @@ export class GenerateExamDialogComponent implements OnInit {
         },
       };
       if (amount > 1) {
-        this.pdfService.download(
-          docDefinition,
-          config.date.toLocaleDateString() + config.grade
-        );
+        let date = new Date();
+        let name;
+        if (config.grade !== "") {
+          if (config.date) {
+            name =
+              config.date && config.date.toLocaleDateString() + config.grade;
+          } else {
+            name = date.toLocaleDateString() + config.grade;
+          }
+        } else {
+          name = date.toLocaleDateString() + "exam " + (index + 1);
+        }
+
+        this.pdfService.download(docDefinition, name);
       } else {
         this.pdfService.open(docDefinition);
       }
