@@ -7,6 +7,8 @@ import { QuestionService } from "../../../core/services/questionService.service"
 import { Document, Option } from "../../../core/models/folder.model";
 import { text } from "stream/consumers";
 import { objectType } from "../../../core/models/objectType.enum";
+import { NgToastService } from "ng-angular-popup";
+import { error } from "astro/dist/core/logger/core";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -25,6 +27,7 @@ export class GenerateExamDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<GenerateExamDialogComponent>,
     private pdfService: PDFService,
     private questionService: QuestionService,
+    private toast: NgToastService,
     @Inject(MAT_DIALOG_DATA) public data: { exam: Question[] }
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
@@ -39,8 +42,8 @@ export class GenerateExamDialogComponent implements OnInit {
       title: ["EXAMEN DE CIENCIAS", Validators.required],
       place: ["Valledupar Cesar - 100004", Validators.required],
       subtitle: ["Profesor: Jhoger Andrés Olmos", Validators.required],
-      date: [new Date(), Validators.required],
-      grade: ["10A", Validators.required],
+      date: [new Date()],
+      grade: ["10A"],
       amount: [4, Validators.required],
     });
 
@@ -54,14 +57,19 @@ export class GenerateExamDialogComponent implements OnInit {
   async generate() {
     if (this.examConfigForm.valid) {
       const config = this.examConfigForm.value;
-      await this.generatePDF(config, this.amount);
-      this.dialogRef.close();
+      await this.generatePDF(config, this.amount).then(() => {
+        this.dialogRef.close();
+      });
+    } else {
+      this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
     }
   }
   async preview() {
     if (this.examConfigForm.valid) {
       const config = this.examConfigForm.value;
       await this.generatePDF(config, 1);
+    } else {
+      this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
     }
   }
   getBase64ImageFromURL(url: any) {
@@ -104,6 +112,10 @@ export class GenerateExamDialogComponent implements OnInit {
   async generatePDF(config: any, amount: number) {
     let header;
     if (config.headerType === "image") {
+      if (this.logoBase64 === null) {
+        this.toast.danger("Debe seleccionar una imagen", "ExamHub", 3000);
+        throw new Error("Image error");
+      }
       header = {
         image: await this.getBase64ImageFromURL(this.logoBase64),
         opacity: 1,
@@ -115,7 +127,9 @@ export class GenerateExamDialogComponent implements OnInit {
         margin: 10,
         columns: [
           {
-            image: await this.getBase64ImageFromURL(this.logoBase64),
+            image: await this.getBase64ImageFromURL(
+              this.logoBase64 ?? "assets/logoexamhub.webp"
+            ),
             opacity: 0.5,
             width: 80,
           },
@@ -159,9 +173,13 @@ export class GenerateExamDialogComponent implements OnInit {
         header: header,
         content: [
           {
-            text: `Nombre: __________________________________________    Fecha: ${config.date.toLocaleDateString()}   Grado:${
-              config.grade
-            }   Examen: ${this.getAlphabetLetter(index + 1)}`,
+            text: `Nombre: _________________________________    Fecha: ${
+              config.date ? config.date.toLocaleDateString() : " _________ "
+            }   Grado:${
+              config.grade !== "" ? config.grade : " ___ "
+            }   Examen: ${
+              amount > 26 ? index + 1 : this.getAlphabetLetter(index + 1)
+            }`,
             style: "subtitle",
             alignment: "center",
             margin: [0, 0, 0, 10],
