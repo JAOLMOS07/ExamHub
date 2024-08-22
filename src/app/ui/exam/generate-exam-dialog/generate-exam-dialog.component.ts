@@ -5,10 +5,8 @@ import { Question } from "../../../core/models/question.model";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { QuestionService } from "../../../core/services/questionService.service";
 import { Document, Option } from "../../../core/models/folder.model";
-import { text } from "stream/consumers";
 import { objectType } from "../../../core/models/objectType.enum";
 import { NgToastService } from "ng-angular-popup";
-import { error } from "astro/dist/core/logger/core";
 
 @Component({
   selector: "app-generate-exam-dialog",
