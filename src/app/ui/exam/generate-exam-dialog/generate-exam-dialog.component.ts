@@ -161,7 +161,7 @@ export class GenerateExamDialogComponent implements OnInit {
         ],
       };
     }
-
+    const pdfDefs = [];
     for (let index = 0; index < amount; index++) {
       var examToGenerate: Document[] = this.shuffleExam(this.exam);
 
@@ -343,23 +343,23 @@ export class GenerateExamDialogComponent implements OnInit {
         },
       };
       if (amount > 1) {
-        let date = new Date();
         let name;
         if (config.grade !== "") {
-          if (config.date) {
-            name =
-              config.date && config.date.toLocaleDateString() + config.grade;
-          } else {
-            name = date.toLocaleDateString() + config.grade;
-          }
+          name = config.grade + "-" + (index + 1);
         } else {
-          name = date.toLocaleDateString() + "exam " + (index + 1);
+          name = "exam " + "-" + (index + 1);
         }
-
-        this.pdfService.download(docDefinition, name);
+        pdfDefs.push({ def: docDefinition, name: name });
       } else {
         this.pdfService.open(docDefinition);
       }
+    }
+    if (amount > 1) {
+      let date = new Date();
+      this.pdfService.downloadZip(
+        pdfDefs,
+        date.toLocaleDateString() + "_" + date.toLocaleTimeString() + "_exams"
+      );
     }
   }
 
