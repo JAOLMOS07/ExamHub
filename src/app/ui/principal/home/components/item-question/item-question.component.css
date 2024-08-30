@@ -1,0 +1,7 @@
+.line-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 4; /* Cambia el número para limitar las líneas */
+  white-space: normal;
+}

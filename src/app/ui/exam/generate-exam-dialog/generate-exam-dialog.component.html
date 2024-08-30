@@ -93,12 +93,13 @@
             ? "Logo del documento"
             : "Encabezado del documento"
         }}</label>
+
         <input
           type="file"
           id="logo"
           (change)="onFileChange($event)"
           accept="image/png, image/webp, image/jpeg, image/jpg"
-          class="mt-1 p-2 border rounded-md"
+          class="file-input file-input-bordered file-input-sm w-full"
         />
       </div>
     </form>
