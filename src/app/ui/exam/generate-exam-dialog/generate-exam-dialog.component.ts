@@ -36,12 +36,12 @@ export class GenerateExamDialogComponent implements OnInit {
   ngOnInit() {
     this.examConfigForm = this.formBuilder.group({
       headerType: ["text", Validators.required],
-      institution: ["UNIVERSIDAD POPULAR DEL CESAR", Validators.required],
-      title: ["EXAMEN DE CIENCIAS", Validators.required],
-      place: ["Valledupar Cesar - 100004", Validators.required],
-      subtitle: ["Profesor: Jhoger Andrés Olmos", Validators.required],
+      institution: ["", Validators.required],
+      title: ["", Validators.required],
+      place: ["", Validators.required],
+      subtitle: ["", Validators.required],
       date: [new Date()],
-      grade: ["10A"],
+      grade: [""],
       amount: [4, Validators.required],
     });
 

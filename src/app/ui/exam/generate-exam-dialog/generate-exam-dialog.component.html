@@ -23,7 +23,16 @@
         <input
           id="institution"
           formControlName="institution"
-          class="mt-1 p-2 border rounded-md"
+          placeholder="Institución"
+          class="mt-1 p-2 input w-full"
+          [ngClass]="{
+            'input-primary':
+              examConfigForm.controls['institution'].valid ||
+              examConfigForm.controls['institution'].untouched,
+            'input-error':
+              examConfigForm.controls['institution'].invalid &&
+              examConfigForm.controls['institution'].touched
+          }"
         />
       </div>
       <div
@@ -34,7 +43,16 @@
         <input
           id="title"
           formControlName="title"
-          class="mt-1 p-2 border rounded-md"
+          placeholder="Título"
+          class="mt-1 p-2 input w-full"
+          [ngClass]="{
+            'input-primary':
+              examConfigForm.controls['title'].valid ||
+              examConfigForm.controls['title'].untouched,
+            'input-error':
+              examConfigForm.controls['title'].invalid &&
+              examConfigForm.controls['title'].touched
+          }"
         />
       </div>
       <div
@@ -44,8 +62,17 @@
         <label for="place" class="text-sm font-medium">Lugar</label>
         <input
           id="place"
+          placeholder="Lugar"
           formControlName="place"
-          class="mt-1 p-2 border rounded-md"
+          class="mt-1 p-2 input w-full"
+          [ngClass]="{
+            'input-primary':
+              examConfigForm.controls['place'].valid ||
+              examConfigForm.controls['place'].untouched,
+            'input-error':
+              examConfigForm.controls['place'].invalid &&
+              examConfigForm.controls['place'].touched
+          }"
         />
       </div>
       <div
@@ -56,7 +83,16 @@
         <input
           id="subtitle"
           formControlName="subtitle"
-          class="mt-1 p-2 border rounded-md"
+          placeholder="Subtítulo"
+          class="mt-1 p-2 input w-full"
+          [ngClass]="{
+            'input-primary':
+              examConfigForm.controls['subtitle'].valid ||
+              examConfigForm.controls['subtitle'].untouched,
+            'input-error':
+              examConfigForm.controls['subtitle'].invalid &&
+              examConfigForm.controls['subtitle'].touched
+          }"
         />
       </div>
 
@@ -65,9 +101,10 @@
         <div class="flex flex-row items-center mt-1 w-full">
           <input
             id="date"
+            placeholder="Fecha"
             [matDatepicker]="picker"
             formControlName="date"
-            class="p-2 border rounded-md flex-grow"
+            class="p-2 input input-bordered input-primary w-full flex-grow"
           />
           <mat-datepicker-toggle
             matIconSuffix
@@ -82,8 +119,9 @@
         <label for="grade" class="text-sm font-medium">Grado</label>
         <input
           id="grade"
+          placeholder="Grado"
           formControlName="grade"
-          class="mt-1 p-2 border rounded-md"
+          class="mt-1 p-2 input input-bordered input-primary w-full"
         />
       </div>
 
@@ -140,10 +178,18 @@
     </div>
     <div class="flex items-center space-x-2"></div>
     <div class="join">
-      <button class="btn btn-sm join-item btn-primary" (click)="preview()">
+      <button
+        [disabled]="examConfigForm.invalid"
+        class="btn btn-sm join-item btn-primary"
+        (click)="preview()"
+      >
         Vista previa
       </button>
-      <button class="btn btn-sm join-item btn-secondary" (click)="generate()">
+      <button
+        [disabled]="examConfigForm.invalid"
+        class="btn btn-sm join-item btn-secondary"
+        (click)="generate()"
+      >
         Generar
       </button>
       <button class="btn btn-sm join-item btn-error" (click)="cancel()">
