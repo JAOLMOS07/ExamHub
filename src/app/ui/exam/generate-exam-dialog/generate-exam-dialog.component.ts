@@ -53,7 +53,10 @@ export class GenerateExamDialogComponent implements OnInit {
   }
 
   async generate() {
-    if (this.examConfigForm.valid) {
+    if (
+      this.examConfigForm.valid ||
+      this.examConfigForm.value.headerType === "image"
+    ) {
       const config = this.examConfigForm.value;
       await this.generatePDF(config, this.amount).then(() => {
         this.dialogRef.close();
@@ -110,12 +113,10 @@ export class GenerateExamDialogComponent implements OnInit {
   async generatePDF(config: any, amount: number) {
     let header;
     if (config.headerType === "image") {
-      if (this.logoBase64 === null) {
-        this.toast.danger("Debe seleccionar una imagen", "ExamHub", 3000);
-        throw new Error("Image error");
-      }
       header = {
-        image: await this.getBase64ImageFromURL(this.logoBase64),
+        image: await this.getBase64ImageFromURL(
+          this.logoBase64 ?? "assets/headerexamhub.webp"
+        ),
         opacity: 1,
         width: 580,
         alignment: "center",

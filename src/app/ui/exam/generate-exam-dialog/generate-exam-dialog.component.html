@@ -186,7 +186,10 @@
         Vista previa
       </button>
       <button
-        [disabled]="examConfigForm.invalid"
+        [disabled]="
+          examConfigForm.invalid &&
+          this.examConfigForm.value.headerType === 'text'
+        "
         class="btn btn-sm join-item btn-secondary"
         (click)="generate()"
       >
