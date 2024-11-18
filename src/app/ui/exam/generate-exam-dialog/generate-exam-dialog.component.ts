@@ -66,7 +66,10 @@ export class GenerateExamDialogComponent implements OnInit {
     }
   }
   async preview() {
-    if (this.examConfigForm.valid) {
+    if (
+      this.examConfigForm.valid ||
+      this.examConfigForm.value.headerType === "image"
+    ) {
       const config = this.examConfigForm.value;
       await this.generatePDF(config, 1);
     } else {
