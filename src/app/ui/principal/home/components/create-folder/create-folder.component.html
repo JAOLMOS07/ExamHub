@@ -11,7 +11,15 @@
       placeholder="Nombre de la carpeta"
       class="input input-bordered w-full max-w-xs"
       [(ngModel)]="folderName"
+      name="folderName"
+      #folderNameInput="ngModel"
+      required
+      minlength="4"
+      maxlength="39"
     />
+    <div *ngIf="folderNameInput.invalid && folderNameInput.touched" class="text-red-500">
+      El nombre debe tener entre 4 y 39 caracteres.
+    </div>
   </div>
 </mat-dialog-content>
 <mat-dialog-actions class="mt-4 flex space-x-2">
@@ -26,6 +34,7 @@
     class="btn btn-sm btn-primary flex items-center"
     mat-button
     (click)="addFolder()"
+    [disabled]="folderNameInput.invalid"
     cdkFocusInitial
   >
     <app-icon [icon]="'create'" />

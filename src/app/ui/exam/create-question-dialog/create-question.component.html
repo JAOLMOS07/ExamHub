@@ -17,7 +17,14 @@
           placeholder="Pregunta"
           [(ngModel)]="newQuestion.name"
           [ngModelOptions]="{ standalone: true }"
+          minlength="10"
+          maxlength="3999"
+          required
+          #QuestionNameInput="ngModel"
         ></textarea>
+        <div *ngIf="QuestionNameInput.invalid && QuestionNameInput.touched" class="text-red-500">
+          La pregunta debe tener entre 10 y 3999 caracteres
+        </div>
       </div>
 
       <div>
@@ -66,7 +73,7 @@
       </div>
 
       <div class="flex justify-center">
-        <button type="submit" class="btn btn-sm btn-primary px-6 py-2">
+        <button type="submit" class="btn btn-sm btn-primary px-6 py-2"   [disabled]="QuestionNameInput.invalid">
           {{ editMode ? "Editar Pregunta" : "Crear Pregunta" }}
         </button>
       </div>
