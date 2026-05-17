@@ -32,16 +32,28 @@
    ------------------------------------------------------------------ */
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   font-family: "Inter", "Roboto", "Helvetica Neue", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.005em;
+  /* Fondo aplicado en html para que SIEMPRE cubra toda la altura,
+     incluso cuando el contenido es más alto que el viewport y al
+     scrollear hacia abajo. Antes solo estaba en body y se "cortaba". */
+  background-color: var(--brand-surface-muted);
 }
 
 body {
   margin: 0;
   color: var(--brand-text);
+  background-color: var(--brand-surface-muted);
+}
+
+/* El shell de la app llena al menos toda la pantalla para que el
+   fondo gris siempre llegue al borde inferior. */
+app-root {
+  display: block;
+  min-height: 100vh;
 }
 
 /* Jerarquía consistente: Inter para todo, peso variable. */
@@ -153,6 +165,15 @@ h3 {
   border: 1px solid var(--brand-border);
   border-radius: 0.75rem;
   padding: 1.25rem;
+}
+
+/* Scroll horizontal sin barra visible — para breadcrumbs en móvil */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* ------------------------------------------------------------------

@@ -8,6 +8,11 @@ import {
   QUESTION_KIND_ICON,
   QUESTION_KIND_LABEL,
 } from "../../../../../core/models/questionKind.enum";
+import {
+  DIFFICULTY_COLOR,
+  DIFFICULTY_LABEL,
+  Difficulty,
+} from "../../../../../core/models/difficulty.enum";
 import { QuestionService } from "../../../../../core/services/questionService.service";
 import { MatDialog } from "@angular/material/dialog";
 import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
@@ -32,6 +37,9 @@ export class ItemQuestionComponent {
   }
 
   @Input() question!: Document;
+  /** Sugerencias para autocompletar al editar (vienen del HomeComponent). */
+  @Input() subjectSuggestions: string[] = [];
+  @Input() gradeSuggestions: string[] = [];
   @Output() deleteEvent = new EventEmitter<Document>();
   @Output() editEvent = new EventEmitter<Document>();
 
@@ -47,6 +55,16 @@ export class ItemQuestionComponent {
   /** Ícono Material asociado al tipo. */
   get kindIcon(): string {
     return QUESTION_KIND_ICON[getQuestionKind(this.question)];
+  }
+
+  /** Color de fondo/texto/borde para el badge de dificultad. */
+  get difficultyStyle(): { bg: string; text: string; border: string } | null {
+    if (!this.question.difficulty) return null;
+    return DIFFICULTY_COLOR[this.question.difficulty as Difficulty] ?? null;
+  }
+  get difficultyLabel(): string {
+    if (!this.question.difficulty) return "";
+    return DIFFICULTY_LABEL[this.question.difficulty as Difficulty] ?? "";
   }
 
   deleteDocument(): void {
@@ -72,6 +90,8 @@ export class ItemQuestionComponent {
     const dialogRef = this.dialog.open(CreateQuestionDialogComponent, {
       data: {
         question: this.question,
+        subjectSuggestions: this.subjectSuggestions,
+        gradeSuggestions: this.gradeSuggestions,
       },
     });
 
@@ -84,6 +104,9 @@ export class ItemQuestionComponent {
         this.question.numericTolerance = result.numericTolerance;
         this.question.imageUrl = result.imageUrl;
         this.question.imagePath = result.imagePath;
+        this.question.subject = result.subject;
+        this.question.grade = result.grade;
+        this.question.difficulty = result.difficulty;
         this.editEvent.emit(this.question);
       }
     });

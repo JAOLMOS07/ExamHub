@@ -15,6 +15,7 @@ import { ExamService } from "../../../core/services/ExamService.service";
 import { UserService } from "../../../core/services/UserService.service";
 import { NgToastService } from "ng-angular-popup";
 import { filter, take } from "rxjs/operators";
+import { firstValueFrom } from "rxjs";
 import {
   SweetAlert2LoaderService,
   SweetAlert2Module,
@@ -75,6 +76,95 @@ export class HomeComponent {
   }
   get isEmpty(): boolean {
     return !this.isLoading && this.documents.length === 0;
+  }
+
+  // ============== FILTROS DEL BANCO ==============
+  /** Texto de búsqueda libre (se aplica sobre nombre y enunciados). */
+  searchQuery: string = "";
+  /** Filtros activos: si están null, no filtran. */
+  filterSubject: string | null = null;
+  filterGrade: string | null = null;
+  filterDifficulty: number | null = null;
+
+  /** ¿Hay algún filtro activo? Sirve para mostrar el botón "limpiar". */
+  get hasActiveFilters(): boolean {
+    return (
+      !!this.searchQuery.trim() ||
+      !!this.filterSubject ||
+      !!this.filterGrade ||
+      !!this.filterDifficulty
+    );
+  }
+
+  /** Valores únicos para los selectores de filtro (extraídos del nivel actual). */
+  get availableSubjects(): string[] {
+    const set = new Set<string>();
+    for (const d of this.documents) {
+      if (d.subject) set.add(d.subject);
+    }
+    return Array.from(set).sort();
+  }
+  get availableGrades(): string[] {
+    const set = new Set<string>();
+    for (const d of this.documents) {
+      if (d.grade) set.add(d.grade);
+    }
+    return Array.from(set).sort();
+  }
+
+  /** Documents filtrados según searchQuery + filtros activos. */
+  get filteredDocuments(): Document[] {
+    if (!this.hasActiveFilters) return this.documents;
+    const q = this.searchQuery.trim().toLowerCase();
+    return this.documents.filter((d) => {
+      // Carpetas siempre pasan (sirven para navegación)
+      if (d.type === objectType.FOLDER) {
+        // ...salvo que haya búsqueda explícita por nombre
+        if (q) return d.name.toLowerCase().includes(q);
+        return true;
+      }
+      // Búsqueda por texto en nombre o enunciado/lectura
+      if (q) {
+        const hay =
+          d.name.toLowerCase().includes(q) ||
+          (d.passageText?.toLowerCase().includes(q) ?? false) ||
+          (d.passageContext?.toLowerCase().includes(q) ?? false);
+        if (!hay) return false;
+      }
+      // Filtros de clasificación solo aplican a preguntas (las lecturas pasan)
+      if (d.type === objectType.QUESTION) {
+        if (this.filterSubject && d.subject !== this.filterSubject) return false;
+        if (this.filterGrade && d.grade !== this.filterGrade) return false;
+        if (
+          this.filterDifficulty &&
+          d.difficulty !== this.filterDifficulty
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  /** Contadores filtrados (para mostrar al lado de los títulos de sección). */
+  get filteredFolderCount(): number {
+    return this.filteredDocuments.filter((d) => d.type === objectType.FOLDER)
+      .length;
+  }
+  get filteredPassageCount(): number {
+    return this.filteredDocuments.filter((d) => d.type === objectType.PASSAGE)
+      .length;
+  }
+  get filteredQuestionCount(): number {
+    return this.filteredDocuments.filter((d) => d.type === objectType.QUESTION)
+      .length;
+  }
+
+  clearFilters(): void {
+    this.searchQuery = "";
+    this.filterSubject = null;
+    this.filterGrade = null;
+    this.filterDifficulty = null;
   }
 
   constructor(
@@ -201,6 +291,165 @@ export class HomeComponent {
    * porque en Firestore viven en una SUBCOLECCIÓN (`/<uid>/.../passageId/content/`).
    * Tenemos que pedirlas explícitamente al service.
    */
+  /**
+   * Recolecta recursivamente todos los Documents bajo un path: preguntas
+   * sueltas, lecturas (con sus preguntas hijas), y desciende a
+   * subcarpetas. Cada pregunta hija de una lectura recibe `passageId`
+   * y `passageContext` (denormalizado) si no los tenía aún, para que
+   * el generador de examen pueda armar el bloque de lectura
+   * correctamente.
+   */
+  private async collectRecursive(
+    path: string[]
+  ): Promise<{ questions: Document[]; passages: Document[]; folders: number }> {
+    const items = await firstValueFrom(this.examService.getDocuments(path));
+    const collected: Document[] = [];
+    const passages: Document[] = [];
+    let folders = 0;
+
+    for (const item of items) {
+      if (item.type === objectType.QUESTION) {
+        collected.push(item);
+      } else if (item.type === objectType.PASSAGE) {
+        passages.push(item);
+        // Cargar las preguntas hijas de la lectura
+        const children = await firstValueFrom(
+          this.examService.getDocuments([...path, item.id])
+        );
+        for (const child of children) {
+          if (child.type === objectType.QUESTION) {
+            // Defensa: asignar passageId/Context si falta
+            if (!child.passageId) child.passageId = item.id;
+            if (!child.passageContext && item.passageText) {
+              child.passageContext = item.passageText;
+            }
+            collected.push(child);
+          }
+        }
+      } else if (item.type === objectType.FOLDER) {
+        folders++;
+        const sub = await this.collectRecursive([...path, item.id]);
+        collected.push(...sub.questions);
+        passages.push(...sub.passages);
+        folders += sub.folders;
+      }
+    }
+    return { questions: collected, passages, folders };
+  }
+
+  /**
+   * Agrega al examen actual TODAS las preguntas y lecturas contenidas
+   * en la carpeta indicada, descendiendo recursivamente por
+   * subcarpetas. Los duplicados los maneja silenciosamente
+   * QuestionService.
+   */
+  async addFolderToExam(folder: Document): Promise<void> {
+    const childPath = [...this.currentPath, folder.id];
+    try {
+      const { questions, passages, folders } = await this.collectRecursive(
+        childPath
+      );
+
+      // Primero las lecturas (para que el id quede registrado y el
+      // generator pueda asociar correctamente).
+      for (const p of passages) this.questionService.addQuestion(p);
+      for (const q of questions) this.questionService.addQuestion(q);
+
+      const parts: string[] = [];
+      if (questions.length > 0) {
+        parts.push(
+          `${questions.length} ${questions.length === 1 ? "pregunta" : "preguntas"}`
+        );
+      }
+      if (passages.length > 0) {
+        parts.push(
+          `${passages.length} ${passages.length === 1 ? "lectura" : "lecturas"}`
+        );
+      }
+      if (folders > 0) {
+        parts.push(
+          `${folders} ${folders === 1 ? "subcarpeta" : "subcarpetas"}`
+        );
+      }
+
+      if (questions.length === 0 && passages.length === 0) {
+        this.toast.info(
+          "La carpeta no tiene preguntas para agregar.",
+          "ExamHub",
+          2500
+        );
+      } else {
+        this.toast.success(
+          `Agregadas al examen: ${parts.join(" + ")}`,
+          "ExamHub",
+          3000
+        );
+      }
+    } catch (e: any) {
+      this.toast.danger(
+        "Error al cargar el contenido de la carpeta.",
+        "ExamHub",
+        3000
+      );
+    }
+  }
+
+  /**
+   * Quita del examen actual TODAS las preguntas y lecturas contenidas
+   * en la carpeta indicada (recursivamente).
+   */
+  async removeFolderFromExam(folder: Document): Promise<void> {
+    const childPath = [...this.currentPath, folder.id];
+    try {
+      const { questions, passages } = await this.collectRecursive(childPath);
+      const ids = new Set<string>([
+        ...questions.map((q) => q.id),
+        ...passages.map((p) => p.id),
+      ]);
+      let removed = 0;
+      for (const id of ids) {
+        if (this.questionsSelected.some((q) => q.id === id)) {
+          this.questionService.removeQuestion(id);
+          removed++;
+        }
+      }
+      if (removed > 0) {
+        this.toast.success(
+          `Se quitaron ${removed} elemento(s) del examen.`,
+          "ExamHub",
+          2500
+        );
+      } else {
+        this.toast.info(
+          "Esta carpeta no tenía contenido en el examen actual.",
+          "ExamHub",
+          2500
+        );
+      }
+    } catch {
+      this.toast.danger(
+        "Error al procesar la carpeta.",
+        "ExamHub",
+        3000
+      );
+    }
+  }
+
+  /**
+   * ¿Hay al menos UNA pregunta/lectura de esta carpeta ya seleccionada
+   * en el examen actual? Sirve para alternar el botón de la tarjeta
+   * entre "agregar" y "quitar". Evita la recursión real chequeando
+   * solo los hijos directos (heurística suficiente para la UI).
+   */
+  folderHasSelection(folder: Document): boolean {
+    // Heurística rápida: si alguna pregunta seleccionada tiene un
+    // passageId que apunta a una lectura dentro de esta carpeta, o si
+    // su id está en el content (cuando esté denormalizado).
+    // Como no tenemos eso aún, mostramos siempre "agregar". Una versión
+    // futura puede mantener un mapa folderId -> hasSelection.
+    return false;
+  }
+
   addPassageToExam(passage: Document): void {
     this.questionService.addQuestion(passage);
     const childPath = [...this.currentPath, passage.id];
@@ -243,7 +492,10 @@ export class HomeComponent {
   }
   createQuestionDialog(): void {
     const dialogRef = this.dialog.open(CreateQuestionDialogComponent, {
-      data: {},
+      data: {
+        subjectSuggestions: this.availableSubjects,
+        gradeSuggestions: this.availableGrades,
+      },
     });
 
     dialogRef.afterClosed().subscribe((result: Document) => {

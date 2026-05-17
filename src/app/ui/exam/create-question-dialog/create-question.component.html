@@ -69,6 +69,82 @@
         }
       </div>
 
+      <!-- ============== CLASIFICACIÓN (opcional pero útil) ============== -->
+      <div class="border-t border-slate-200 pt-4">
+        <label class="block text-gray-700 text-sm font-bold mb-3">
+          Clasificación
+          <span class="text-xs font-normal text-slate-500 ml-1">(opcional)</span>
+        </label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <!-- Materia -->
+          <div>
+            <label for="subject" class="block text-xs font-medium text-slate-600 mb-1">
+              Materia
+            </label>
+            <input
+              id="subject"
+              type="text"
+              list="subject-suggestions"
+              placeholder="Matemática, Sociales..."
+              [(ngModel)]="subject"
+              name="subject"
+              maxlength="40"
+              class="input input-bordered input-sm w-full"
+            />
+            <datalist id="subject-suggestions">
+              @for (s of subjectSuggestions; track s) {
+                <option [value]="s"></option>
+              }
+            </datalist>
+          </div>
+
+          <!-- Grado -->
+          <div>
+            <label for="grade" class="block text-xs font-medium text-slate-600 mb-1">
+              Grado
+            </label>
+            <input
+              id="grade"
+              type="text"
+              list="grade-suggestions"
+              placeholder="6°, Primero medio..."
+              [(ngModel)]="grade"
+              name="grade"
+              maxlength="40"
+              class="input input-bordered input-sm w-full"
+            />
+            <datalist id="grade-suggestions">
+              @for (g of gradeSuggestions; track g) {
+                <option [value]="g"></option>
+              }
+            </datalist>
+          </div>
+
+          <!-- Dificultad -->
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">
+              Dificultad
+            </label>
+            <div class="flex gap-1">
+              @for (level of difficultyOptions; track level) {
+                <button
+                  type="button"
+                  (click)="difficulty = (difficulty === level ? null : level)"
+                  class="flex-1 px-2 py-1 rounded-md text-xs font-medium border transition"
+                  [ngStyle]="{
+                    'background-color': difficulty === level ? (level === 1 ? '#ecfdf5' : level === 2 ? '#fffbeb' : '#fef2f2') : '#fff',
+                    'color': difficulty === level ? (level === 1 ? '#047857' : level === 2 ? '#92400e' : '#b91c1c') : '#64748b',
+                    'border-color': difficulty === level ? (level === 1 ? '#a7f3d0' : level === 2 ? '#fde68a' : '#fecaca') : '#cbd5e1'
+                  }"
+                >
+                  {{ DIFFICULTY_LABEL[level] }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Subida de imagen (opcional) -->
       <!--
         Sección oculta tras feature flag environment.features.enableImages.

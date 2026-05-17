@@ -70,6 +70,17 @@ export class Document {
    */
   imagePath?: string;
 
+  /** Materia/área de la pregunta. Texto libre con autocompletar
+   *  basado en lo ya usado en el banco. Ej: "Matemática", "Sociales". */
+  subject?: string;
+
+  /** Grado/curso al que está dirigida la pregunta. Ej: "6°", "Primero medio". */
+  grade?: string;
+
+  /** Nivel de dificultad (1=fácil, 2=media, 3=difícil). Se persiste
+   *  como número para facilitar filtros y ordenamientos. */
+  difficulty?: number;
+
   constructor(
     id: string,
     name: string,
@@ -83,7 +94,10 @@ export class Document {
     passageId?: string,
     passageContext?: string,
     imageUrl?: string,
-    imagePath?: string
+    imagePath?: string,
+    subject?: string,
+    grade?: string,
+    difficulty?: number
   ) {
     this.id = id;
     this.name = name;
@@ -98,6 +112,9 @@ export class Document {
     this.passageContext = passageContext;
     this.imageUrl = imageUrl;
     this.imagePath = imagePath;
+    this.subject = subject;
+    this.grade = grade;
+    this.difficulty = difficulty;
   }
 
   static toPlainObject(doc: Document): any {
@@ -141,6 +158,15 @@ export class Document {
     if (doc.imagePath) {
       plainObject.imagePath = doc.imagePath;
     }
+    if (doc.subject) {
+      plainObject.subject = doc.subject;
+    }
+    if (doc.grade) {
+      plainObject.grade = doc.grade;
+    }
+    if (doc.difficulty !== undefined && doc.difficulty !== null) {
+      plainObject.difficulty = doc.difficulty;
+    }
 
     return plainObject;
   }
@@ -163,7 +189,10 @@ export class Document {
       obj.passageId,
       obj.passageContext,
       obj.imageUrl,
-      obj.imagePath
+      obj.imagePath,
+      obj.subject,
+      obj.grade,
+      obj.difficulty
     );
   }
 }

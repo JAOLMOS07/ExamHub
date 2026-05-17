@@ -21,6 +21,7 @@ import {
   QUESTION_KIND_LABEL,
   QuestionKind,
 } from "../../../core/models/questionKind.enum";
+import { Difficulty, DIFFICULTY_LABEL } from "../../../core/models/difficulty.enum";
 import {
   MathEditorDialogComponent,
   MathEditorDialogResult,
@@ -79,6 +80,30 @@ export class CreateQuestionDialogComponent {
   imageUrl: string | null = null;
   imagePath: string | null = null;
 
+  /** Clasificación de la pregunta — opcional pero recomendado. */
+  subject: string = "";
+  grade: string = "";
+  difficulty: Difficulty | null = null;
+
+  /** Enum + labels expuestos al template. */
+  Difficulty = Difficulty;
+  DIFFICULTY_LABEL = DIFFICULTY_LABEL;
+  difficultyOptions: Difficulty[] = [
+    Difficulty.EASY,
+    Difficulty.MEDIUM,
+    Difficulty.HARD,
+  ];
+
+  /**
+   * Sugerencias para autocompletar materia y grado. Se pueblan desde
+   * fuera (HomeComponent las pasa por `data.subjectSuggestions` /
+   * `data.gradeSuggestions`) con los valores únicos ya usados en el
+   * banco. Permite que los profes mantengan consistencia
+   * ("Matemática" vs "Matemáticas" vs "Mate") sin imponerla.
+   */
+  subjectSuggestions: string[] = [];
+  gradeSuggestions: string[] = [];
+
   /** Flag de "subiendo imagen" para deshabilitar el form mientras tanto. */
   uploadingImage = false;
 
@@ -96,7 +121,12 @@ export class CreateQuestionDialogComponent {
     private toast: NgToastService,
     private mathDialog: MatDialog,
     private imageUpload: ImageUploadService,
-    @Inject(MAT_DIALOG_DATA) public data: { question: Document }
+    @Inject(MAT_DIALOG_DATA)
+    public data: {
+      question?: Document;
+      subjectSuggestions?: string[];
+      gradeSuggestions?: string[];
+    }
   ) {
     this.resetNewQuestion();
   }
@@ -195,7 +225,11 @@ export class CreateQuestionDialogComponent {
   }
 
   ngOnInit() {
-    if (this.data.question) {
+    // Sugerencias para autocompletar (independientes de modo edición).
+    this.subjectSuggestions = this.data?.subjectSuggestions ?? [];
+    this.gradeSuggestions = this.data?.gradeSuggestions ?? [];
+
+    if (this.data?.question) {
       this.editMode = true;
       this.questionId = this.data.question.id;
       this.newQuestion.name = this.data.question.name;
@@ -215,6 +249,10 @@ export class CreateQuestionDialogComponent {
       // Cargar imagen existente si la hay
       this.imageUrl = this.data.question.imageUrl ?? null;
       this.imagePath = this.data.question.imagePath ?? null;
+      // Cargar clasificación
+      this.subject = this.data.question.subject ?? "";
+      this.grade = this.data.question.grade ?? "";
+      this.difficulty = (this.data.question.difficulty as Difficulty) ?? null;
     }
   }
 
@@ -406,6 +444,11 @@ export class CreateQuestionDialogComponent {
       result.imageUrl = this.imageUrl;
       result.imagePath = this.imagePath;
     }
+
+    // Clasificación (todos opcionales — los persistimos solo si tienen valor)
+    if (this.subject.trim()) result.subject = this.subject.trim();
+    if (this.grade.trim()) result.grade = this.grade.trim();
+    if (this.difficulty) result.difficulty = this.difficulty;
 
     this.dialogRef.close(result);
     this.resetNewQuestion();

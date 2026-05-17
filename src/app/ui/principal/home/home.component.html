@@ -1,412 +1,630 @@
 <app-navbar />
-<div class="mx-auto p-4">
-  <div class="flex items-center justify-between mb-4">
-    <button
-      class="btn btn-xs btn-secondary mx-3"
-      [disabled]="currentPath.length <= 1"
-      (click)="goBack()"
-    >
-      <svg
-        class="w-[18px] h-[18px]"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        fill="none"
-        viewBox="0 0 24 24"
+
+<main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+  <!-- ====================== HEADER DEL NIVEL ====================== -->
+  <header class="mb-6">
+    <!-- Breadcrumb + acción "Volver" -->
+    <div class="flex items-center gap-2 mb-3">
+      <button
+        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        [disabled]="currentPath.length <= 1"
+        (click)="goBack()"
+        title="Volver al nivel anterior"
       >
-        <path
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="m15 19-7-7 7-7"
-        />
-      </svg>
-    </button>
-    <div class="breadcrumbs text-sm text-gray-900/70">
-      <ul>
-        @for (path of paths; track $index) {
-        <li>
-          <span class="bg-slate-200 rounded-md flex gap-2 px-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              class="h-4 w-4 stroke-current"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-              ></path>
-            </svg>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m15 19-7-7 7-7" />
+        </svg>
+      </button>
+
+      <nav class="flex items-center gap-1 text-sm overflow-x-auto scrollbar-hide flex-1 min-w-0">
+        @for (path of paths; track $index; let last = $last) {
+          <span
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md shrink-0"
+            [class.text-slate-900]="last"
+            [class.font-semibold]="last"
+            [class.text-slate-500]="!last"
+          >
+            @if ($index === 0) {
+              <app-icon [icon]="'home'" />
+            } @else if (pathTypes[$index] === objectType.PASSAGE) {
+              <app-icon class="text-amber-600" [icon]="'menu_book'" />
+            } @else {
+              <app-icon [icon]="'folder'" />
+            }
             {{ path }}
           </span>
-        </li>
+          @if (!last) {
+            <svg class="w-3 h-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          }
         }
-      </ul>
+      </nav>
     </div>
-    <div class="dropdown dropdown-end">
-      <div tabindex="0" role="button" class="btn btn-primary btn-sm m-1">
-        <svg
-          class="w-[18px] h-[18px]"
-          aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 12h14m-7 7V5"
-          />
-        </svg>
-        <span class="hidden md:flex">Nuevo</span>
-        <svg
-          class="w-6 h-6 opacity-60 hover:opacity-100 transition hidden md:flex"
-          aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="m19 9-7 7-7-7"
-          />
-        </svg>
+
+    <!-- Título grande + acciones -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          @if (paths.length === 1) {
+            Mi banco de preguntas
+          } @else {
+            {{ paths[paths.length - 1] }}
+          }
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+          @if (isInsidePassage) {
+            Estás dentro de una <span class="font-medium text-amber-700">lectura</span>. Las preguntas que crees acá quedan asociadas a su contexto.
+          } @else if (paths.length === 1) {
+            Organizá tu material en carpetas, lecturas y preguntas. Después armás exámenes a medida.
+          } @else {
+            Carpeta dentro de tu banco.
+          }
+        </p>
+
+        <!-- Contadores rápidos -->
+        @if (!isLoading && documents.length > 0) {
+          <div class="flex flex-wrap gap-2 mt-3">
+            @if (folderCount > 0) {
+              <span class="eh-tag">
+                <app-icon [icon]="'folder'" />
+                {{ folderCount }} {{ folderCount === 1 ? 'carpeta' : 'carpetas' }}
+              </span>
+            }
+            @if (passageCount > 0) {
+              <span class="eh-tag" style="background:#fffbeb; color:#92400e; border-color:#fde68a;">
+                <app-icon [icon]="'menu_book'" />
+                {{ passageCount }} {{ passageCount === 1 ? 'lectura' : 'lecturas' }}
+              </span>
+            }
+            @if (questionCount > 0) {
+              <span class="eh-tag" style="background:#eef2ff; color:#3730a3; border-color:#c7d2fe;">
+                <app-icon [icon]="'help_outline'" />
+                {{ questionCount }} {{ questionCount === 1 ? 'pregunta' : 'preguntas' }}
+              </span>
+            }
+          </div>
+        }
       </div>
-      <ul
-        tabindex="0"
-        class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
-      >
-        <li (click)="createQuestionDialog()">
-          <div class="flex">
-            <app-icon class="text-xs" [icon]="'note_add'" />Crear Pregunta
-          </div>
-        </li>
-        <li (click)="createFolderDialog()">
-          <div class="flex">
-            <app-icon class="text-xs" [icon]="'create_new_folder'" />Crear
-            Carpeta
-          </div>
-        </li>
-        @if (!isInsidePassage) {
-        <li (click)="createPassageDialog()">
-          <div class="flex">
-            <app-icon class="text-xs" [icon]="'menu_book'" />Crear Lectura
-          </div>
-        </li>
-        }
-      </ul>
-    </div>
-  </div>
 
-  <div class="flex">
-    <div
-      [ngClass]="{
-        'hidden lg:block': showCurrentExam,
-        'w-[0%] lg:w-[70%]': showCurrentExam,
-        'w-[100%]': !showCurrentExam
-      }"
-      class="px-1"
-    >
-      @if(!isLoading){
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
-        [ngClass]="{
-          'xl:grid-cols-4': !showCurrentExam,
-          'xl:grid-cols-3': showCurrentExam
-        }"
-      >
-        @for ( folder of documents; track $index) { @if (folder.type
-        ===objectType.FOLDER ) {
-
+      <!-- Botón "Nuevo" con dropdown -->
+      <div class="dropdown dropdown-end">
         <div
-          class="card bg-slate-200 shadow-xl cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
-          (click)="navigateToFolder(folder)"
+          tabindex="0"
+          role="button"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium shadow-sm hover:shadow-md transition cursor-pointer"
+          style="background-color: #4338ca;"
+          onmouseover="this.style.backgroundColor='#3730a3'"
+          onmouseout="this.style.backgroundColor='#4338ca'"
         >
-          <div class="card-body">
-            <div class="my-2">
-              <h2 class="break-words card-title">
-                {{ folder.name }}
-              </h2>
-              <button
-                class="btn btn-circle btn-ghost"
-                (click)="$event.stopPropagation(); editFolderDialog(folder)"
-              >
-                <app-icon
-                  class="text-slate-400 hover:text-slate-600"
-                  [icon]="'create'"
-                />
-              </button>
-              <button
-                class="btn btn-circle btn-ghost"
-                (click)="$event.stopPropagation()"
-                [swal]="{
-                  title: '¿¿Desea eliminar esta carpeta?',
-                  showDenyButton: true,
-                  icon: 'question',
-                  confirmButtonText: 'Si',
-                  denyButtonText: 'No',
-                }"
-                (confirm)="deleteDocument(folder)"
-              >
-                <app-icon
-                  class="text-slate-400 hover:text-slate-600"
-                  [icon]="'delete_outline'"
-                />
-              </button>
-            </div>
-          </div>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7 7V5" />
+          </svg>
+          Nuevo
+          <svg class="w-3 h-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7" />
+          </svg>
+        </div>
+        <ul
+          tabindex="0"
+          class="dropdown-content menu mt-2 z-30 p-2 shadow-card bg-white rounded-xl w-56 border border-slate-200"
+        >
+          <li (click)="createQuestionDialog()">
+            <a class="flex items-center gap-3 py-2">
+              <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                <app-icon [icon]="'note_add'" />
+              </span>
+              <div>
+                <div class="font-medium text-slate-900">Pregunta</div>
+                <div class="text-xs text-slate-500">Opción múltiple, V/F, abierta, numérica</div>
+              </div>
+            </a>
+          </li>
+          <li (click)="createFolderDialog()">
+            <a class="flex items-center gap-3 py-2">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                <app-icon [icon]="'create_new_folder'" />
+              </span>
+              <div>
+                <div class="font-medium text-slate-900">Carpeta</div>
+                <div class="text-xs text-slate-500">Organizá por materia, grado, tema</div>
+              </div>
+            </a>
+          </li>
+          @if (!isInsidePassage) {
+            <li (click)="createPassageDialog()">
+              <a class="flex items-center gap-3 py-2">
+                <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <app-icon [icon]="'menu_book'" />
+                </span>
+                <div>
+                  <div class="font-medium text-slate-900">Lectura</div>
+                  <div class="text-xs text-slate-500">Texto con preguntas asociadas</div>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====================== BARRA DE FILTROS ====================== -->
+  @if (!isLoading && documents.length > 0) {
+    <div class="mb-5 p-3 bg-white border border-slate-200 rounded-xl">
+      <div class="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
+        <!-- Búsqueda -->
+        <div class="relative flex-1 min-w-0">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+            <app-icon [icon]="'search'" />
+          </span>
+          <input
+            type="search"
+            placeholder="Buscar por nombre o texto..."
+            [(ngModel)]="searchQuery"
+            class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+          />
         </div>
 
-        } }
-      </div>
-
-      <!-- LECTURAS (passages) -->
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5"
-        [ngClass]="{
-          'xl:grid-cols-3': !showCurrentExam,
-          'xl:grid-cols-2': showCurrentExam
-        }"
-      >
-        @for (passage of documents; track $index) { @if (passage.type
-        === objectType.PASSAGE) {
-        <div
-          class="card bg-amber-50 border border-amber-200 shadow-xl cursor-pointer hover:bg-amber-100 hover:shadow-2xl transition"
-          (click)="navigateToFolder(passage)"
+        <!-- Filtro Materia -->
+        <select
+          [(ngModel)]="filterSubject"
+          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[140px]"
+          [class.text-indigo-700]="filterSubject"
+          [class.font-semibold]="filterSubject"
         >
-          <div class="card-body">
-            <div class="flex items-center gap-2 mb-1">
-              <app-icon class="text-amber-700" [icon]="'menu_book'" />
-              <span class="text-xs uppercase tracking-wide text-amber-700 font-semibold">
-                Lectura
-              </span>
-              <span class="text-xs text-amber-700/70 ml-auto">
-                {{ passage.content?.length || 0 }} pregunta(s)
-              </span>
-            </div>
-            <h2 class="break-words card-title text-gray-800">
-              {{ passage.name }}
-            </h2>
-            <p class="text-sm text-gray-600 line-clamp-2 mt-1">
-              {{ passage.passageText }}
-            </p>
-            <div class="mt-2 flex gap-1">
-              <button
-                class="btn btn-circle btn-ghost btn-sm"
-                (click)="$event.stopPropagation(); editPassageDialog(passage)"
-                title="Editar lectura"
-              >
-                <app-icon
-                  class="text-amber-700/60 hover:text-amber-800"
-                  [icon]="'create'"
-                />
-              </button>
-              <button
-                class="btn btn-circle btn-ghost btn-sm"
-                (click)="$event.stopPropagation(); addPassageToExam(passage)"
-                title="Agregar lectura completa al examen"
-              >
-                <app-icon
-                  class="text-amber-700/60 hover:text-amber-800"
-                  [icon]="'playlist_add'"
-                />
-              </button>
-              <button
-                class="btn btn-circle btn-ghost btn-sm"
-                (click)="$event.stopPropagation()"
-                [swal]="{
-                  title: '¿Desea eliminar esta lectura y sus preguntas?',
-                  showDenyButton: true,
-                  icon: 'question',
-                  confirmButtonText: 'Si',
-                  denyButtonText: 'No',
-                }"
-                (confirm)="deleteDocument(passage)"
-              >
-                <app-icon
-                  class="text-amber-700/60 hover:text-amber-800"
-                  [icon]="'delete_outline'"
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-        } }
+          <option [ngValue]="null">Todas las materias</option>
+          @for (s of availableSubjects; track s) {
+            <option [ngValue]="s">{{ s }}</option>
+          }
+        </select>
+
+        <!-- Filtro Grado -->
+        <select
+          [(ngModel)]="filterGrade"
+          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[130px]"
+          [class.text-indigo-700]="filterGrade"
+          [class.font-semibold]="filterGrade"
+        >
+          <option [ngValue]="null">Todos los grados</option>
+          @for (g of availableGrades; track g) {
+            <option [ngValue]="g">{{ g }}</option>
+          }
+        </select>
+
+        <!-- Filtro Dificultad -->
+        <select
+          [(ngModel)]="filterDifficulty"
+          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[130px]"
+          [class.text-indigo-700]="filterDifficulty"
+          [class.font-semibold]="filterDifficulty"
+        >
+          <option [ngValue]="null">Toda dificultad</option>
+          <option [ngValue]="1">Fácil</option>
+          <option [ngValue]="2">Media</option>
+          <option [ngValue]="3">Difícil</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button
+            (click)="clearFilters()"
+            class="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+            title="Quitar filtros"
+          >
+            <app-icon [icon]="'close'" />
+            Limpiar
+          </button>
+        }
       </div>
 
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5"
-        [ngClass]="{
-          'xl:grid-cols-4': !showCurrentExam,
-          'xl:grid-cols-3': showCurrentExam
-        }"
-      >
-        @for ( question of documents; track $index) { @if (question.type
-        ===objectType.QUESTION ) {
-        <app-item-question
-          [question]="question"
-          (deleteEvent)="deleteDocument($event)"
-          (editEvent)="editDocument($event)"
-        />
-        } }
-      </div>
-      }@else {
-      <div class="flex items-center justify-center w-100">
-        <span class="loading loading-ring loading-lg"></span>
-      </div>
+      @if (hasActiveFilters) {
+        <p class="text-xs text-slate-500 mt-2">
+          Mostrando {{ filteredQuestionCount }} pregunta(s) · {{ filteredPassageCount }} lectura(s) · {{ filteredFolderCount }} carpeta(s)
+        </p>
       }
     </div>
-    <div class="divider divider-horizontal divider-start">
-      <button
-        (click)="showCurrentExam = !showCurrentExam"
-        class="btn btn-ghost btn-sm text-gray-500"
-      >
-        @if(!showCurrentExam){
-        <div class="flex items-center justify-center">
-          <svg
-            class="w-6 h-6"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1"
-              d="M16 16.881V7.119a1 1 0 0 0-1.636-.772l-5.927 4.881a1 1 0 0 0 0 1.544l5.927 4.88a1 1 0 0 0 1.636-.77Z"
-            />
-          </svg>
-          <span
-            *ngIf="questionsSelected.length > 0"
-            class="indicator-item indicator-end badge badge-secondary"
-            >{{ questionsSelected.length }}</span
-          >
+  }
+
+  <!-- ====================== LAYOUT PRINCIPAL ====================== -->
+  <div class="flex gap-4 items-start">
+    <!-- Columna izquierda: banco -->
+    <section
+      [ngClass]="{
+        'hidden lg:block': showCurrentExam,
+        'lg:flex-1': showCurrentExam,
+        'flex-1': !showCurrentExam
+      }"
+    >
+      <!-- Loading -->
+      @if (isLoading) {
+        <div class="flex items-center justify-center py-20">
+          <span class="loading loading-ring loading-lg text-indigo-600"></span>
         </div>
-        <p style="text-orientation: mixed; writing-mode: vertical-rl">
-          Examen en curso
-        </p>
-        }@else {
-        <svg
-          class="w-6 h-6"
-          aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1"
-            d="M8 16.881V7.119a1 1 0 0 1 1.636-.772l5.927 4.881a1 1 0 0 1 0 1.544l-5.927 4.88A1 1 0 0 1 8 16.882Z"
-          />
-        </svg>
-
+      } @else if (isEmpty) {
+        <!-- Empty state -->
+        <div class="eh-empty">
+          <div class="w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+            <svg class="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">
+            @if (isInsidePassage) {
+              Esta lectura aún no tiene preguntas
+            } @else if (paths.length === 1) {
+              Tu banco está vacío
+            } @else {
+              Esta carpeta está vacía
+            }
+          </h3>
+          <p class="text-sm text-slate-500 max-w-md mb-5">
+            @if (isInsidePassage) {
+              Usá el botón <strong>Nuevo → Pregunta</strong> para agregar preguntas asociadas al texto de esta lectura.
+            } @else {
+              Empezá creando una carpeta para organizarte, o una pregunta para tu primer banco.
+            }
+          </p>
+          <button
+            (click)="createQuestionDialog()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition shadow-sm hover:shadow-md"
+            style="background-color: #4338ca;"
+            onmouseover="this.style.backgroundColor='#3730a3'"
+            onmouseout="this.style.backgroundColor='#4338ca'"
+          >
+            <app-icon [icon]="'note_add'" />
+            Crear primera pregunta
+          </button>
+        </div>
+      } @else {
+        <!-- Empty state cuando los filtros no devuelven nada -->
+        @if (hasActiveFilters && filteredFolderCount === 0 && filteredPassageCount === 0 && filteredQuestionCount === 0) {
+          <div class="eh-empty">
+            <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+              <app-icon class="text-slate-400 text-2xl" [icon]="'search_off'" />
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900 mb-1">
+              No hay resultados
+            </h3>
+            <p class="text-sm text-slate-500 max-w-md mb-4">
+              Ningún elemento de este nivel coincide con los filtros actuales. Probá ajustar la búsqueda o quitar filtros.
+            </p>
+            <button
+              (click)="clearFilters()"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 hover:bg-slate-50 transition"
+            >
+              <app-icon [icon]="'close'" />
+              Limpiar filtros
+            </button>
+          </div>
         }
-      </button>
-    </div>
 
-    <div
+        <!-- ======================= CARPETAS ======================= -->
+        @if (filteredFolderCount > 0) {
+          <div class="mb-8">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <app-icon [icon]="'folder'" />
+              Carpetas
+              <span class="text-slate-400 normal-case font-normal">· {{ filteredFolderCount }}</span>
+            </h2>
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+              [ngClass]="{
+                'xl:grid-cols-4': !showCurrentExam,
+                'xl:grid-cols-3': showCurrentExam
+              }"
+            >
+              @for (folder of filteredDocuments; track folder.id) { @if (folder.type === objectType.FOLDER) {
+                <article
+                  class="eh-card cursor-pointer p-3 group h-full flex flex-col"
+                  (click)="navigateToFolder(folder)"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="shrink-0 w-9 h-9 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center group-hover:bg-indigo-100 transition">
+                      <app-icon [icon]="'folder'" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-semibold text-slate-900 truncate text-sm">
+                        {{ folder.name }}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <!-- Footer con acciones — todo en íconos -->
+                  <div class="mt-3 pt-2 border-t border-slate-100 flex items-center gap-0.5 mt-auto">
+                    <button
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 transition"
+                      (click)="$event.stopPropagation(); addFolderToExam(folder)"
+                      title="Agregar todo el contenido de esta carpeta al examen"
+                      aria-label="Agregar carpeta al examen"
+                    >
+                      <app-icon [icon]="'playlist_add'" />
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-amber-50 hover:text-amber-700 transition"
+                      (click)="$event.stopPropagation(); removeFolderFromExam(folder)"
+                      title="Quitar el contenido de esta carpeta del examen"
+                      aria-label="Quitar del examen"
+                    >
+                      <app-icon [icon]="'playlist_remove'" />
+                    </button>
+                    <div class="flex-1"></div>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                      (click)="$event.stopPropagation(); editFolderDialog(folder)"
+                      title="Editar carpeta"
+                      aria-label="Editar carpeta"
+                    >
+                      <app-icon [icon]="'create'" />
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                      (click)="$event.stopPropagation()"
+                      [swal]="{
+                        title: '¿Eliminar esta carpeta?',
+                        text: 'Se borrará junto con todo su contenido.',
+                        showDenyButton: true,
+                        icon: 'warning',
+                        confirmButtonText: 'Eliminar',
+                        denyButtonText: 'Cancelar'
+                      }"
+                      (confirm)="deleteDocument(folder)"
+                      title="Eliminar carpeta"
+                      aria-label="Eliminar carpeta"
+                    >
+                      <app-icon [icon]="'delete_outline'" />
+                    </button>
+                  </div>
+                </article>
+              } }
+            </div>
+          </div>
+        }
+
+        <!-- ======================= LECTURAS ======================= -->
+        @if (filteredPassageCount > 0) {
+          <div class="mb-8">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-3 flex items-center gap-2">
+              <app-icon [icon]="'menu_book'" />
+              Lecturas
+              <span class="text-amber-700/60 normal-case font-normal">· {{ filteredPassageCount }}</span>
+            </h2>
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+              [ngClass]="{
+                'xl:grid-cols-3': !showCurrentExam,
+                'xl:grid-cols-2': showCurrentExam
+              }"
+            >
+              @for (passage of filteredDocuments; track passage.id) { @if (passage.type === objectType.PASSAGE) {
+                <article
+                  class="eh-card cursor-pointer p-4 group relative overflow-hidden h-full flex flex-col"
+                  style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #fde68a;"
+                  (click)="navigateToFolder(passage)"
+                >
+                  <!-- Barra lateral decorativa -->
+                  <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
+
+                  <div class="flex items-start gap-3 pl-2 flex-1">
+                    <div class="shrink-0 w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                      <app-icon [icon]="'menu_book'" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                          Lectura
+                        </span>
+                      </div>
+                      <h3 class="font-semibold text-slate-900 line-clamp-1 mb-1">
+                        {{ passage.name }}
+                      </h3>
+                      <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed min-h-[2.4em]">
+                        {{ passage.passageText }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 pt-2 border-t border-amber-200/60 flex items-center gap-0.5 pl-2">
+                    <button
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-md text-amber-700 hover:bg-white transition"
+                      (click)="$event.stopPropagation(); addPassageToExam(passage)"
+                      title="Agregar lectura completa al examen"
+                      aria-label="Agregar lectura al examen"
+                    >
+                      <app-icon [icon]="'playlist_add'" />
+                    </button>
+                    <div class="flex-1"></div>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-md text-amber-700/70 hover:bg-white hover:text-amber-900 transition"
+                      (click)="$event.stopPropagation(); editPassageDialog(passage)"
+                      title="Editar lectura"
+                      aria-label="Editar lectura"
+                    >
+                      <app-icon [icon]="'create'" />
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-md text-amber-700/70 hover:bg-red-50 hover:text-red-600 transition"
+                      (click)="$event.stopPropagation()"
+                      [swal]="{
+                        title: '¿Eliminar esta lectura?',
+                        text: 'Se borrarán todas sus preguntas asociadas.',
+                        showDenyButton: true,
+                        icon: 'warning',
+                        confirmButtonText: 'Eliminar',
+                        denyButtonText: 'Cancelar'
+                      }"
+                      (confirm)="deleteDocument(passage)"
+                      title="Eliminar lectura"
+                      aria-label="Eliminar lectura"
+                    >
+                      <app-icon [icon]="'delete_outline'" />
+                    </button>
+                  </div>
+                </article>
+              } }
+            </div>
+          </div>
+        }
+
+        <!-- ======================= PREGUNTAS ======================= -->
+        @if (filteredQuestionCount > 0) {
+          <div class="mb-4">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-3 flex items-center gap-2">
+              <app-icon [icon]="'help_outline'" />
+              Preguntas
+              <span class="text-indigo-700/60 normal-case font-normal">· {{ filteredQuestionCount }}</span>
+            </h2>
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+              [ngClass]="{
+                'xl:grid-cols-4': !showCurrentExam,
+                'xl:grid-cols-3': showCurrentExam
+              }"
+            >
+              @for (question of filteredDocuments; track question.id) { @if (question.type === objectType.QUESTION) {
+                <app-item-question
+                  [question]="question"
+                  [subjectSuggestions]="availableSubjects"
+                  [gradeSuggestions]="availableGrades"
+                  (deleteEvent)="deleteDocument($event)"
+                  (editEvent)="editDocument($event)"
+                />
+              } }
+            </div>
+          </div>
+        }
+      }
+    </section>
+
+    <!-- ====================== TOGGLE EXAMEN EN CURSO ====================== -->
+    <button
+      (click)="showCurrentExam = !showCurrentExam"
+      class="hidden lg:flex shrink-0 flex-col items-center gap-2 px-2 py-4 rounded-lg hover:bg-slate-100 transition group"
+      title="Mostrar/ocultar examen en curso"
+    >
+      <div class="relative">
+        <svg class="w-5 h-5 text-slate-500 group-hover:text-slate-900 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          @if (!showCurrentExam) {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          } @else {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          }
+        </svg>
+        @if (!showCurrentExam && questionsSelected.length > 0) {
+          <span
+            class="absolute -top-2 -right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
+            style="background-color:#d97706;"
+          >
+            {{ questionsSelected.length }}
+          </span>
+        }
+      </div>
+      @if (!showCurrentExam) {
+        <span class="text-xs font-medium text-slate-500 group-hover:text-slate-900" style="writing-mode: vertical-rl; text-orientation: mixed;">
+          Examen en curso
+        </span>
+      }
+    </button>
+
+    <!-- ====================== PANEL DEL EXAMEN EN CURSO ====================== -->
+    <!--
+      En MÓVIL (lg-): el panel es un overlay fullscreen (`fixed inset-0`)
+      que aparece sobre el contenido cuando showCurrentExam es true.
+      En DESKTOP (lg+): es una columna lateral pegada (`sticky top-20`)
+      que coexiste con la grilla del banco.
+    -->
+    <aside
       class="transition-all"
       [ngClass]="{
         hidden: !showCurrentExam,
-        'w-[100%] lg:w-[30%]': showCurrentExam,
-        'w-[0%]': !showCurrentExam
+        'fixed inset-0 z-40 bg-slate-50 overflow-y-auto p-4 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:w-[360px] xl:w-[400px] shrink-0 lg:p-0 lg:overflow-visible': showCurrentExam
       }"
     >
-      <div class="flex text-center justify-between text-gray-600 mt-2">
-        <div class="flex text-center">
-          <div class="indicator">
-            <span
-              *ngIf="questionsSelected.length > 0"
-              class="indicator-item indicator-end badge badge-secondary"
-              >{{ questionsSelected.length }}</span
-            >
-            <app-icon class="mt-1" [icon]="'list'" />
-            <h2 class="">Examen en curso</h2>
+      <div class="eh-section lg:sticky lg:top-20">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+              <app-icon [icon]="'assignment'" />
+            </div>
+            <div>
+              <h2 class="font-semibold text-slate-900 text-sm">Examen en curso</h2>
+              <p class="text-xs text-slate-500">
+                {{ questionsSelected.length }} {{ questionsSelected.length === 1 ? 'pregunta' : 'preguntas' }} seleccionada(s)
+              </p>
+            </div>
           </div>
+          <button
+            class="lg:hidden text-slate-400 hover:text-slate-700"
+            (click)="showCurrentExam = false"
+          >
+            <app-icon [icon]="'close'" />
+          </button>
         </div>
 
-        <div class="join">
+        <!-- Lista de preguntas -->
+        <div class="mb-4">
+          <question-list />
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex gap-2 pt-3 border-t border-slate-200">
           <button
             [disabled]="questionsSelected.length < 1"
             (click)="showModalGenerateExam()"
-            class="btn btn-sm btn-primary join-item"
+            class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white font-medium text-sm transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            style="background-color: #4338ca;"
+            onmouseover="if(!this.disabled) this.style.backgroundColor='#3730a3'"
+            onmouseout="this.style.backgroundColor='#4338ca'"
           >
-            <span class="hidden 2xl:flex">Generar examen</span>
-            <svg
-              class="w-[23px] h-[23px]"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.4"
-                d="M5 17v-5h1.5a1.5 1.5 0 1 1 0 3H5m12 2v-5h2m-2 3h2M5 10V7.914a1 1 0 0 1 .293-.707l3.914-3.914A1 1 0 0 1 9.914 3H18a1 1 0 0 1 1 1v6M5 19v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1M10 3v4a1 1 0 0 1-1 1H5m6 4v5h1.375A1.627 1.627 0 0 0 14 15.375v-1.75A1.627 1.627 0 0 0 12.375 12H11Z"
-              />
-            </svg>
+            <app-icon [icon]="'picture_as_pdf'" />
+            Generar examen
           </button>
           <button
             [disabled]="questionsSelected.length < 1"
-            class="btn btn-sm btn-secondary join-item"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 text-slate-500 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
             [swal]="deleteSwal"
             (confirm)="discardExam()"
+            title="Descartar examen actual"
           >
-            <svg
-              class="w-6 h-6"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="m15 9-6 6m0-6 6 6m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-            </svg>
+            <app-icon [icon]="'delete_outline'" />
           </button>
         </div>
       </div>
-      <question-list />
-    </div>
+    </aside>
   </div>
-</div>
+
+  <!--
+    ====================== FAB MÓVIL ======================
+    Botón flotante que aparece solo en móvil cuando el panel del
+    examen está cerrado y hay preguntas seleccionadas. Click abre el
+    panel como overlay (gracias a showCurrentExam=true + las clases
+    `fixed inset-0` del aside).
+  -->
+  @if (!showCurrentExam && questionsSelected.length > 0) {
+    <button
+      type="button"
+      (click)="showCurrentExam = true"
+      class="lg:hidden fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 px-4 py-3 rounded-full text-white font-semibold shadow-lg hover:shadow-xl transition active:scale-95"
+      style="background-color: #4338ca;"
+      aria-label="Abrir examen en curso"
+    >
+      <app-icon [icon]="'assignment'" />
+      <span class="text-sm">Examen</span>
+      <span
+        class="inline-flex items-center justify-center min-w-[1.4rem] h-[1.4rem] px-1.5 rounded-full text-[11px] font-bold"
+        style="background-color: #d97706; color: white;"
+      >
+        {{ questionsSelected.length }}
+      </span>
+    </button>
+  }
+</main>
+
 <swal
   #deleteSwal
-  confirmButtonText="Confirmar"
+  confirmButtonText="Sí, descartar"
   cancelButtonText="Cancelar"
   [showCancelButton]="true"
   icon="question"
-  title="¿Desea descartar el examen actual?"
+  title="¿Descartar examen actual?"
+  text="Se quitarán todas las preguntas seleccionadas. Las preguntas siguen en tu banco."
 ></swal>
