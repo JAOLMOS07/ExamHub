@@ -1,5 +1,13 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Document } from "../../../../../core/models/folder.model";
+import {
+  Document,
+  getQuestionKind,
+} from "../../../../../core/models/folder.model";
+import { environment } from "../../../../../../environments/environment";
+import {
+  QUESTION_KIND_ICON,
+  QUESTION_KIND_LABEL,
+} from "../../../../../core/models/questionKind.enum";
 import { QuestionService } from "../../../../../core/services/questionService.service";
 import { MatDialog } from "@angular/material/dialog";
 import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
@@ -26,6 +34,21 @@ export class ItemQuestionComponent {
   @Input() question!: Document;
   @Output() deleteEvent = new EventEmitter<Document>();
   @Output() editEvent = new EventEmitter<Document>();
+
+  /** Feature flag: las imágenes están off en MVP. Cuando esté on, la
+   *  tarjeta muestra el thumbnail y el badge de "tiene imagen". */
+  imagesEnabled = environment.features?.enableImages === true;
+
+  /** Etiqueta del tipo de pregunta para mostrar en el badge. */
+  get kindLabel(): string {
+    return QUESTION_KIND_LABEL[getQuestionKind(this.question)];
+  }
+
+  /** Ícono Material asociado al tipo. */
+  get kindIcon(): string {
+    return QUESTION_KIND_ICON[getQuestionKind(this.question)];
+  }
+
   deleteDocument(): void {
     this.deleteEvent.emit(this.question);
   }
@@ -55,9 +78,12 @@ export class ItemQuestionComponent {
     dialogRef.afterClosed().subscribe((result: Document) => {
       if (result) {
         this.question.name = result.name;
-        if (result.options) {
-          this.question.options = result.options;
-        }
+        this.question.kind = result.kind;
+        this.question.options = result.options;
+        this.question.numericAnswer = result.numericAnswer;
+        this.question.numericTolerance = result.numericTolerance;
+        this.question.imageUrl = result.imageUrl;
+        this.question.imagePath = result.imagePath;
         this.editEvent.emit(this.question);
       }
     });

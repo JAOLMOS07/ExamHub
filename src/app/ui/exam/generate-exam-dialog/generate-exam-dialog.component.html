@@ -140,6 +140,22 @@
           class="file-input file-input-bordered file-input-sm w-full"
         />
       </div>
+
+      <!-- Layout del cuerpo del examen -->
+      <div class="flex flex-col col-span-1 md:col-span-2 border-t border-gray-200 pt-3">
+        <label class="text-sm font-medium mb-1">Disposición del examen</label>
+        <mat-radio-group formControlName="layout" class="flex gap-4">
+          <mat-radio-button value="1col">
+            1 columna (clásico)
+          </mat-radio-button>
+          <mat-radio-button value="2col">
+            2 columnas (ahorra papel)
+          </mat-radio-button>
+        </mat-radio-group>
+        <p class="text-xs text-gray-500 mt-1">
+          2 columnas es ideal para exámenes con muchas preguntas cortas. El encabezado y la hoja de respuestas siempre van a ancho completo.
+        </p>
+      </div>
     </form>
   </div>
   <div

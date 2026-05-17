@@ -1,29 +1,30 @@
 import { ApplicationConfig } from "@angular/core";
 import { provideRouter } from "@angular/router";
-
-import { routes } from "./app.routes";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { initializeApp, provideFirebaseApp } from "@angular/fire/app";
 import { getAuth, provideAuth } from "@angular/fire/auth";
 import { getFirestore, provideFirestore } from "@angular/fire/firestore";
+import { getStorage, provideStorage } from "@angular/fire/storage";
+
+import { routes } from "./app.routes";
+import { environment } from "../../environments/environment";
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideAnimationsAsync(),
-    provideAnimationsAsync(),
-    provideFirebaseApp(() =>
-      initializeApp({
-        projectId: "examhub-5679c",
-        appId: "1:667352988613:web:b8011df03751a2354be9ac",
-        storageBucket: "examhub-5679c.appspot.com",
-        apiKey: "AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI",
-        authDomain: "examhub-5679c.firebaseapp.com",
-        messagingSenderId: "667352988613",
-        measurementId: "G-4EWWXQ9T4N",
-      })
-    ),
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()), provideFirebaseApp(() => initializeApp({"projectId":"examhub-5679c","appId":"1:667352988613:web:b8011df03751a2354be9ac","storageBucket":"examhub-5679c.appspot.com","apiKey":"AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI","authDomain":"examhub-5679c.firebaseapp.com","messagingSenderId":"667352988613","measurementId":"G-4EWWXQ9T4N"})), provideAuth(() => getAuth()), provideFirestore(() => getFirestore()), provideFirebaseApp(() => initializeApp({"projectId":"examhub-5679c","appId":"1:667352988613:web:b8011df03751a2354be9ac","storageBucket":"examhub-5679c.appspot.com","apiKey":"AIzaSyAsfs_j_nBOGG6lrJcX_3Y0lZ9f46E17LI","authDomain":"examhub-5679c.firebaseapp.com","messagingSenderId":"667352988613","measurementId":"G-4EWWXQ9T4N"})), provideAuth(() => getAuth()),
+    provideFirestore(() => getFirestore()),
+    /**
+     * Firebase Storage para subir imágenes de preguntas.
+     * Ruta de archivos: users/<uid>/questions/<questionId>/<filename>.
+     * Las reglas de Storage (que se publican en Firebase Console)
+     * deben permitir lectura/escritura solo al dueño:
+     *   match /users/{uid}/{allPaths=**} {
+     *     allow read, write: if request.auth.uid == uid;
+     *   }
+     */
+    provideStorage(() => getStorage()),
   ],
 };

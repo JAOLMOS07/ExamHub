@@ -1,39 +1,179 @@
 @tailwind base;
 
-:root {
-  --primary: rgb(221, 221, 221);
-  --secondary: rgb(138, 138, 138);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--secondary) var(--primary);
-  user-select: none;
-}
-
-/* Chrome, Edge, and Safari */
-*::-webkit-scrollbar {
-  width: 15px;
-
-}
-
-*::-webkit-scrollbar-track {
-  background: var(--primary);
-  border-radius: 5px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: var(--secondary);
-  border-radius: 14px;
-  border: 3px solid var(--primary);
-}
-
+/* KaTeX — estilos para fórmulas renderizadas en pantalla. */
+@import "katex/dist/katex.min.css";
 
 @tailwind components;
 @tailwind utilities;
-@include mat.core();
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-.mat-mdc-dialog-content{
+/* ------------------------------------------------------------------
+   Variables de marca — exposed como custom properties para que
+   componentes que no usan clases Tailwind las puedan referenciar.
+   ------------------------------------------------------------------ */
+:root {
+  --brand-primary: #4338ca;
+  --brand-primary-hover: #3730a3;
+  --brand-secondary: #d97706;
+  --brand-accent: #10b981;
+  --brand-surface: #ffffff;
+  --brand-surface-muted: #f8fafc;
+  --brand-border: #e2e8f0;
+  --brand-text: #0f172a;
+  --brand-text-muted: #475569;
+  --brand-text-subtle: #94a3b8;
+
+  /* Scrollbar */
+  --primary: var(--brand-surface-muted);
+  --secondary: #cbd5e1;
+}
+
+/* ------------------------------------------------------------------
+   Tipografía
+   ------------------------------------------------------------------ */
+html,
+body {
+  height: 100%;
+  font-family: "Inter", "Roboto", "Helvetica Neue", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+body {
+  margin: 0;
+  color: var(--brand-text);
+}
+
+/* Jerarquía consistente: Inter para todo, peso variable. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Inter", system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--brand-text);
+}
+h1 {
+  font-weight: 700;
+}
+h2 {
+  font-weight: 700;
+}
+h3 {
+  font-weight: 600;
+}
+
+/* Texto editorial — usado en lecturas largas y enunciados extensos. */
+.prose-editorial {
+  font-family: "Source Serif Pro", "Times New Roman", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--brand-text);
+}
+
+/* ------------------------------------------------------------------
+   Scrollbar moderno
+   ------------------------------------------------------------------ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary) var(--primary);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--primary);
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--secondary);
+  border-radius: 8px;
+  border: 2px solid var(--primary);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* ------------------------------------------------------------------
+   Material — pequeños ajustes
+   ------------------------------------------------------------------ */
+.mat-mdc-dialog-content {
   max-height: 80vh !important;
+}
+
+/* ------------------------------------------------------------------
+   Clases de marca reutilizables
+   ------------------------------------------------------------------ */
+/* Pill/tag para metadata (materia, grado, dificultad, etc.) */
+.eh-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: var(--brand-surface-muted);
+  color: var(--brand-text-muted);
+  border: 1px solid var(--brand-border);
+}
+
+/* Tarjeta base — bordes suaves, sombra mínima, hover sutil */
+.eh-card {
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 0.75rem;
+  transition: box-shadow 150ms ease, border-color 150ms ease,
+    transform 150ms ease;
+}
+.eh-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08),
+    0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  border-color: #cbd5e1;
+}
+
+/* Empty state */
+.eh-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  color: var(--brand-text-muted);
+  border: 1px dashed var(--brand-border);
+  border-radius: 1rem;
+  background: var(--brand-surface);
+}
+
+/* Sección con bordes muy suaves */
+.eh-section {
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* ------------------------------------------------------------------
+   MathLive — el teclado virtual por defecto se ancla flotante y
+   queda debajo del backdrop del MatDialog. Forzamos z-index alto y,
+   cuando se rendea dentro del modal, le quitamos el position:fixed.
+   ------------------------------------------------------------------ */
+.ML__keyboard {
+  z-index: 100000 !important;
+}
+.math-keyboard-host .ML__keyboard {
+  position: relative !important;
+  inset: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+}
+
+/* ------------------------------------------------------------------
+   KaTeX — color y selección
+   ------------------------------------------------------------------ */
+.katex,
+.katex * {
+  color: #000;
 }

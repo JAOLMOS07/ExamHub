@@ -20,32 +20,9 @@ export class ExamComponent {
   }
 
   ngOnInit() {
-    this.questions = [
-      new Question("q1", "¿Cuál es la capital de Francia?", [
-        new Option("o1", "Madrid", false),
-        new Option("o2", "Berlin", false),
-        new Option("o3", "París", true),
-        new Option("o4", "Lisboa", false),
-      ]),
-      new Question("q2", "¿Cuál es el río más largo del mundo?", [
-        new Option("o1", "Amazonas", true),
-        new Option("o2", "Nilo", false),
-        new Option("o3", "Yangtsé", false),
-        new Option("o4", "Misisipi", false),
-      ]),
-      new Question("q3", "¿Quién pintó la Mona Lisa?", [
-        new Option("o1", "Vincent van Gogh", false),
-        new Option("o2", "Leonardo da Vinci", true),
-        new Option("o3", "Pablo Picasso", false),
-        new Option("o4", "Claude Monet", false),
-      ]),
-      new Question("q4", "¿Cuál es el elemento químico con símbolo O?", [
-        new Option("o1", "Oro", false),
-        new Option("o2", "Oxígeno", true),
-        new Option("o3", "Osmio", false),
-        new Option("o4", "Oganesón", false),
-      ]),
-    ];
+    // Las preguntas reales se cargan desde el banco del usuario.
+    // (Antes había 4 preguntas demo hardcodeadas que se mostraban
+    // siempre — quedaron como ruido visible en la pantalla.)
   }
   protected showModalGenerateExam(): void {
     this.dialog.open(GenerateExamDialogComponent, {

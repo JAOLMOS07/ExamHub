@@ -7,7 +7,7 @@ import {
   collectionData,
   CollectionReference,
 } from "@angular/fire/firestore";
-import { Auth } from "@angular/fire/auth";
+import { Auth, onAuthStateChanged } from "@angular/fire/auth";
 import { Document } from "../models/folder.model";
 import { Observable, of } from "rxjs";
 import { map } from "rxjs/operators";
@@ -18,15 +18,31 @@ import { sendPasswordResetEmail } from "firebase/auth";
   providedIn: "root",
 })
 export class ExamService {
-  userUUID!: string | null;
+  /**
+   * UID del usuario autenticado. Se mantiene sincronizado con Firebase Auth
+   * vía onAuthStateChanged para que no quede null si el servicio se
+   * instancia antes de que termine el login (bug histórico de v1).
+   */
+  userUUID: string | null = null;
 
   constructor(private firestore: Firestore, private auth: Auth) {
-    if (this.auth.currentUser) {
-      this.userUUID = this.auth.currentUser?.uid;
-    }
+    // Lectura síncrona: si ya hay sesión hidratada al construir el
+    // servicio (caso común al navegar de /login a /home), el UID
+    // queda disponible inmediatamente.
+    this.userUUID = this.auth.currentUser?.uid ?? null;
+
+    // Suscripción para cambios futuros (login/logout posteriores).
+    onAuthStateChanged(this.auth, (user) => {
+      this.userUUID = user ? user.uid : null;
+    });
   }
 
   private getCollectionReference(path: string[]): CollectionReference {
+    if (!this.userUUID) {
+      throw new Error(
+        "ExamService: no hay usuario autenticado. Iniciá sesión antes de operar sobre Firestore."
+      );
+    }
     let collectionPath = `${this.userUUID}`;
     path.forEach((folderId) => {
       collectionPath += `/${folderId}/content`;

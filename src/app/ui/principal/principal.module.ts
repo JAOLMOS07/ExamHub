@@ -14,6 +14,8 @@ import { ItemListSelectedComponent } from "./home/components/item-list-selected/
 import { UserService } from "../../core/services/UserService.service";
 import { ItemQuestionComponent } from "./home/components/item-question/item-question.component";
 import { SweetAlert2Module } from "@sweetalert2/ngx-sweetalert2";
+import { MathTextComponent } from "../shared/math/math-text.component";
+import { CreatePassageDialogComponent } from "./home/components/create-passage/create-passage.component";
 @NgModule({
   declarations: [
     PrincipalComponent,
@@ -31,6 +33,8 @@ import { SweetAlert2Module } from "@sweetalert2/ngx-sweetalert2";
     SharedModule,
     RouterOutlet,
     SweetAlert2Module.forRoot(),
+    MathTextComponent,
+    CreatePassageDialogComponent,
   ],
   providers: [PDFService, UserService],
   exports: [PrincipalComponent, QuestionListComponent, ItemQuestionComponent],

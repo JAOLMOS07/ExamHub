@@ -1,5 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { RouterModule } from "@angular/router";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { FtxIconComponent as IconComponent } from "./ftx-icon/ftx-icon.component";
 import { MatIconModule } from "@angular/material/icon";
@@ -7,22 +8,26 @@ import { NavbarComponent } from "./components/navbar/navbar.component";
 import { MatDialogModule } from "@angular/material/dialog";
 import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
-
 import { MatRadioModule } from "@angular/material/radio";
 import { UserService } from "../../core/services/UserService.service";
+import { LogoComponent } from "./brand/logo.component";
+
 @NgModule({
   declarations: [IconComponent, NavbarComponent],
   imports: [
     CommonModule,
+    RouterModule,
     MatIconModule,
     MatDialogModule,
     MatDatepickerModule,
     MatFormFieldModule,
     MatRadioModule,
+    LogoComponent,
   ],
   exports: [
     IconComponent,
     NavbarComponent,
+    LogoComponent,
     MatDialogModule,
     MatDatepickerModule,
     MatFormFieldModule,

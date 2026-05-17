@@ -1,20 +1,66 @@
-<div class="navbar bg-slate-200 rounded-b-lg">
-  <div class="flex-1">
-    <a class="btn btn-ghost text-xl">examhub</a>
-  </div>
-  <div class="flex-none">
-    <div class="dropdown dropdown-end">
-      <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-        <div class="mask mask-hexagon w-20">
-          <img alt="Tailwind CSS Navbar component" src="assets/logo.webp" />
-        </div>
+<header class="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-14 items-center justify-between gap-4">
+      <!-- Logo -->
+      <a routerLink="/home" class="flex items-center gap-2 group">
+        <eh-logo [size]="30" />
+      </a>
+
+      <!-- Espacio central reservado para breadcrumbs / search en el futuro -->
+      <div class="hidden md:flex flex-1 items-center justify-center text-sm text-slate-400">
+        <!-- Reservado para barra de búsqueda global / breadcrumbs globales -->
       </div>
-      <ul
-        tabindex="0"
-        class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
-      >
-        <li><a (click)="logout()">Logout</a></li>
-      </ul>
+
+      <!-- Usuario -->
+      @if (user) {
+        <div class="dropdown dropdown-end">
+          <div
+            tabindex="0"
+            role="button"
+            class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+          >
+            <div
+              class="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-semibold flex items-center justify-center"
+              style="background: linear-gradient(135deg, #6366f1, #4338ca);"
+            >
+              {{ initials }}
+            </div>
+            <span class="hidden sm:inline text-sm font-medium text-slate-700 max-w-[200px] truncate">
+              {{ user.email }}
+            </span>
+            <svg
+              class="hidden sm:inline w-4 h-4 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m19 9-7 7-7-7"
+              />
+            </svg>
+          </div>
+          <ul
+            tabindex="0"
+            class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-56 border border-slate-200"
+          >
+            <li class="menu-title">
+              <span class="text-xs text-slate-400">Sesión activa</span>
+            </li>
+            <li class="px-3 py-1 text-xs text-slate-500 truncate">
+              {{ user.email }}
+            </li>
+            <li class="border-t border-slate-100 mt-1 pt-1">
+              <a (click)="logout()" class="text-red-600 hover:bg-red-50">
+                <app-icon [icon]="'logout'" />
+                Cerrar sesión
+              </a>
+            </li>
+          </ul>
+        </div>
+      }
     </div>
   </div>
-</div>
+</header>

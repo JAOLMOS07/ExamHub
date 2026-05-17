@@ -101,6 +101,13 @@
             Carpeta
           </div>
         </li>
+        @if (!isInsidePassage) {
+        <li (click)="createPassageDialog()">
+          <div class="flex">
+            <app-icon class="text-xs" [icon]="'menu_book'" />Crear Lectura
+          </div>
+        </li>
+        }
       </ul>
     </div>
   </div>
@@ -164,6 +171,80 @@
           </div>
         </div>
 
+        } }
+      </div>
+
+      <!-- LECTURAS (passages) -->
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5"
+        [ngClass]="{
+          'xl:grid-cols-3': !showCurrentExam,
+          'xl:grid-cols-2': showCurrentExam
+        }"
+      >
+        @for (passage of documents; track $index) { @if (passage.type
+        === objectType.PASSAGE) {
+        <div
+          class="card bg-amber-50 border border-amber-200 shadow-xl cursor-pointer hover:bg-amber-100 hover:shadow-2xl transition"
+          (click)="navigateToFolder(passage)"
+        >
+          <div class="card-body">
+            <div class="flex items-center gap-2 mb-1">
+              <app-icon class="text-amber-700" [icon]="'menu_book'" />
+              <span class="text-xs uppercase tracking-wide text-amber-700 font-semibold">
+                Lectura
+              </span>
+              <span class="text-xs text-amber-700/70 ml-auto">
+                {{ passage.content?.length || 0 }} pregunta(s)
+              </span>
+            </div>
+            <h2 class="break-words card-title text-gray-800">
+              {{ passage.name }}
+            </h2>
+            <p class="text-sm text-gray-600 line-clamp-2 mt-1">
+              {{ passage.passageText }}
+            </p>
+            <div class="mt-2 flex gap-1">
+              <button
+                class="btn btn-circle btn-ghost btn-sm"
+                (click)="$event.stopPropagation(); editPassageDialog(passage)"
+                title="Editar lectura"
+              >
+                <app-icon
+                  class="text-amber-700/60 hover:text-amber-800"
+                  [icon]="'create'"
+                />
+              </button>
+              <button
+                class="btn btn-circle btn-ghost btn-sm"
+                (click)="$event.stopPropagation(); addPassageToExam(passage)"
+                title="Agregar lectura completa al examen"
+              >
+                <app-icon
+                  class="text-amber-700/60 hover:text-amber-800"
+                  [icon]="'playlist_add'"
+                />
+              </button>
+              <button
+                class="btn btn-circle btn-ghost btn-sm"
+                (click)="$event.stopPropagation()"
+                [swal]="{
+                  title: '¿Desea eliminar esta lectura y sus preguntas?',
+                  showDenyButton: true,
+                  icon: 'question',
+                  confirmButtonText: 'Si',
+                  denyButtonText: 'No',
+                }"
+                (confirm)="deleteDocument(passage)"
+              >
+                <app-icon
+                  class="text-amber-700/60 hover:text-amber-800"
+                  [icon]="'delete_outline'"
+                />
+              </button>
+            </div>
+          </div>
+        </div>
         } }
       </div>
 

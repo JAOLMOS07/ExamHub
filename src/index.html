@@ -1,22 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="pastel">
+<html lang="es" data-theme="examhub">
   <head>
     <meta charset="utf-8" />
-    <title>examhub</title>
+    <title>ExamHub — Banco de preguntas y generador de exámenes</title>
+    <meta
+      name="description"
+      content="Crea, organiza y genera exámenes con hoja de respuestas a partir de tu banco de preguntas."
+    />
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4338ca" />
 
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Tipografía de marca: Inter (UI moderna) + Source Serif Pro (lecturas). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:wght@400;600&display=swap"
       rel="stylesheet"
     />
+
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
+
+    <!--
+      KaTeX CSS — cargado como <link> separado además del @import de
+      styles.css. El helper que genera el PDF necesita pasarle este
+      href al iframe aislado donde renderiza las fórmulas; si solo
+      estuviera por @import (in-bundle), no podría encontrarlo.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+      crossorigin="anonymous"
+    />
   </head>
-  <body class="mat-typography">
+  <body class="mat-typography font-sans antialiased bg-base-200 text-base-content">
     <app-root></app-root>
   </body>
 </html>

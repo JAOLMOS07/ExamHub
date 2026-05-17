@@ -4,9 +4,15 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Question } from "../../../core/models/question.model";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { QuestionService } from "../../../core/services/questionService.service";
-import { Document, Option } from "../../../core/models/folder.model";
+import {
+  Document,
+  Option,
+  getQuestionKind,
+} from "../../../core/models/folder.model";
 import { objectType } from "../../../core/models/objectType.enum";
+import { QuestionKind } from "../../../core/models/questionKind.enum";
 import { NgToastService } from "ng-angular-popup";
+import { textToPdfNode } from "../../shared/math/math-pdf.helper";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -71,6 +77,17 @@ export class GenerateExamDialogComponent implements OnInit {
       date: [new Date()],
       grade: [""],
       amount: [4, Validators.required],
+      /**
+       * Layout del cuerpo del examen.
+       *   '1col' — clásico, una columna a página completa.
+       *   '2col' — dos columnas para ahorrar páginas (ideal para
+       *           exámenes con preguntas cortas tipo elección
+       *           múltiple). El encabezado y la hoja de respuestas
+       *           siguen a ancho completo.
+       */
+      layout: ["1col", Validators.required],
+      /** Espaciado vertical entre preguntas en pt. */
+      questionSpacing: [10],
     });
 
     this.amountQuestions = this.exam.length;
@@ -142,6 +159,11 @@ export class GenerateExamDialogComponent implements OnInit {
   }
 
   async generatePDF(config: any, amount: number) {
+    // Reseteamos el conteo máximo de opciones — antes acumulaba entre
+    // llamadas y la hoja de respuestas terminaba con burbujas de más
+    // en la segunda generación de la sesión.
+    this.greaterAmount = 0;
+
     let header;
     if (config.headerType === "image") {
       header = {
@@ -196,6 +218,13 @@ export class GenerateExamDialogComponent implements OnInit {
     const pdfDefs = [];
     for (let index = 0; index < amount; index++) {
       var examToGenerate: Document[] = this.shuffleExam(this.exam);
+      // Para las hojas de respuestas necesitamos SOLO las preguntas
+      // (sin las lecturas), porque las lecturas no se contestan. Si
+      // las dejábamos, se numeraban como pregunta extra y rompían el
+      // alineamiento de las burbujas.
+      const answerQuestions = examToGenerate.filter(
+        (d) => d.type === objectType.QUESTION
+      );
 
       let docDefinition: any = {
         margin: 10,
@@ -207,38 +236,102 @@ export class GenerateExamDialogComponent implements OnInit {
               config.date ? config.date.toLocaleDateString() : " _________ "
             }   Grado:${
               config.grade !== "" ? config.grade : " ___ "
-            }   Examen: ${
-              amount > 26 ? index + 1 : this.getAlphabetLetter(index + 1)
-            }`,
+            }   Examen: ${this.getExamCode(index + 1)}`,
             style: "subtitle",
             alignment: "center",
             margin: [0, 0, 0, 10],
           },
+          await this.buildExamBody(examToGenerate, config),
+          { text: "", pageBreak: "before" },
           {
-            ol: examToGenerate.map((question) => {
-              if (question.options!.length > this.greaterAmount) {
-                this.greaterAmount = question.options!.length;
-              }
-              return [
-                {
-                  text: question.name,
-                  style: "questionHeader",
-                  margin: [0, 10, 0, 0],
-                },
-                {
-                  type: "upper-alpha",
-                  ol: question.options!.map((option, i) => {
-                    return {
-                      text: ` - ${option.content}`,
-                    };
-                  }),
-                },
-              ];
-            }),
+            text: `Hoja de respuestas examen: ${this.getExamCode(index + 1)}`,
+            alignment: "center",
+            margin: [0, 0, 0, 10],
+          },
+          {
+            stack: await Promise.all(
+              answerQuestions.map(async (question, $index): Promise<any> => {
+                const kind = getQuestionKind(question);
+                const numberLabel =
+                  answerQuestions.length > 9
+                    ? $index > 8
+                      ? `${$index + 1}.`
+                      : `0${$index + 1}.`
+                    : `${$index + 1}.`;
+
+                let answerCell: any;
+                if (
+                  kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
+                  kind === QuestionKind.TRUE_FALSE
+                ) {
+                  const bubbleCount =
+                    kind === QuestionKind.TRUE_FALSE
+                      ? 2
+                      : this.greaterAmount;
+                  answerCell = {
+                    width: "auto",
+                    stack: [
+                      {
+                        columns: await Promise.all(
+                          Array(bubbleCount)
+                            .fill(null)
+                            .map(async (_, $b): Promise<any> => [
+                              {
+                                image: await this.getBase64ImageFromURL(
+                                  `assets/op${this.getAlphabetLetter(
+                                    $b + 1
+                                  )}.png`
+                                ),
+                                width: 15,
+                                margin: [10, 0, 10, 0],
+                              },
+                            ])
+                        ),
+                        margin: [10, 5, 10, 5],
+                      },
+                    ],
+                  };
+                } else if (kind === QuestionKind.NUMERIC) {
+                  answerCell = {
+                    width: "*",
+                    text: "Respuesta: ______________________",
+                    margin: [10, 5, 10, 5],
+                  };
+                } else {
+                  // OPEN: dos renglones en blanco compactos
+                  answerCell = {
+                    width: "*",
+                    stack: [
+                      { text: "_____________________________________________" },
+                      {
+                        text: "_____________________________________________",
+                        margin: [0, 4, 0, 0],
+                      },
+                    ],
+                    margin: [10, 5, 10, 5],
+                  };
+                }
+
+                return [
+                  {
+                    columns: [
+                      {
+                        text: numberLabel,
+                        width: "auto",
+                        margin: [10, 5, 10, 5],
+                      },
+                      answerCell,
+                    ],
+                  },
+                ];
+              })
+            ),
+            margin: [10, 0, 0, 0],
+            alignment: "left",
           },
           { text: "", pageBreak: "before" },
           {
-            text: `Hoja de respuestas examen: ${this.getAlphabetLetter(
+            text: `Hoja de respuestas del maestro examen: ${this.getExamCode(
               index + 1
             )}`,
             alignment: "center",
@@ -246,121 +339,99 @@ export class GenerateExamDialogComponent implements OnInit {
           },
           {
             stack: await Promise.all(
-              examToGenerate.map(async (question, $index): Promise<any> => {
+              answerQuestions.map(async (question, $index): Promise<any> => {
+                const kind = getQuestionKind(question);
+                const numberLabel =
+                  answerQuestions.length > 9
+                    ? $index > 8
+                      ? `${$index + 1}.`
+                      : `0${$index + 1}.`
+                    : `${$index + 1}.`;
+
+                let answerCell: any;
+                if (
+                  (kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
+                    kind === QuestionKind.TRUE_FALSE) &&
+                  question.options
+                ) {
+                  answerCell = {
+                    width: "auto",
+                    stack: [
+                      {
+                        columns: await Promise.all(
+                          question.options.map(
+                            async (item, $b): Promise<any> => {
+                              if (item.correct) {
+                                return [
+                                  {
+                                    image: await this.getBase64ImageFromURL(
+                                      "assets/relleno.png"
+                                    ),
+                                    width: 15,
+                                    margin: [10, 0, 10, 0],
+                                  },
+                                ];
+                              }
+                              return [
+                                {
+                                  image: await this.getBase64ImageFromURL(
+                                    `assets/op${this.getAlphabetLetter(
+                                      $b + 1
+                                    )}.png`
+                                  ),
+                                  width: 15,
+                                  margin: [10, 0, 10, 0],
+                                },
+                              ];
+                            }
+                          )
+                        ),
+                        margin: [10, 5, 10, 5],
+                      },
+                    ],
+                  };
+                } else if (kind === QuestionKind.NUMERIC) {
+                  const ans =
+                    question.numericAnswer !== undefined
+                      ? `${question.numericAnswer}`
+                      : "—";
+                  const tol =
+                    question.numericTolerance && question.numericTolerance > 0
+                      ? ` (± ${question.numericTolerance})`
+                      : "";
+                  answerCell = {
+                    width: "*",
+                    text: `Respuesta: ${ans}${tol}`,
+                    bold: true,
+                    margin: [10, 5, 10, 5],
+                  };
+                } else {
+                  // OPEN: el maestro corrige a mano
+                  answerCell = {
+                    width: "*",
+                    text: "(respuesta abierta — corregir a mano)",
+                    italics: true,
+                    color: "#666",
+                    margin: [10, 5, 10, 5],
+                  };
+                }
+
                 return [
                   {
                     columns: [
                       {
-                        text:
-                          examToGenerate.length > 9
-                            ? $index > 8
-                              ? `${$index + 1}.`
-                              : `0${$index + 1}.`
-                            : `${$index + 1}.`,
+                        text: numberLabel,
                         width: "auto",
                         margin: [10, 5, 10, 5],
                       },
-                      {
-                        width: "auto",
-                        stack: [
-                          {
-                            columns: await Promise.all(
-                              Array(this.greaterAmount)
-                                .fill(null)
-                                .map(async (item, $index): Promise<any> => {
-                                  return [
-                                    {
-                                      image: await this.getBase64ImageFromURL(
-                                        `assets/op${this.getAlphabetLetter(
-                                          $index + 1
-                                        )}.png`
-                                      ),
-                                      width: 15,
-                                      margin: [10, 0, 10, 0],
-                                    },
-                                  ];
-                                })
-                            ),
-                            margin: [10, 5, 10, 5],
-                          },
-                        ],
-                      },
+                      answerCell,
                     ],
                   },
                 ];
               })
             ),
             margin: [10, 0, 0, 0],
-            alignment: "center",
-          },
-          { text: "", pageBreak: "before" },
-          {
-            text: `Hoja de respuestas del maestro examen: ${this.getAlphabetLetter(
-              index + 1
-            )}`,
-            alignment: "center",
-            margin: [0, 0, 0, 10],
-          },
-          {
-            stack: await Promise.all(
-              examToGenerate.map(async (question, $index): Promise<any> => {
-                return [
-                  {
-                    columns: [
-                      {
-                        text:
-                          examToGenerate.length > 9
-                            ? $index > 8
-                              ? `${$index + 1}.`
-                              : `0${$index + 1}.`
-                            : `${$index + 1}.`,
-                        width: "auto",
-                        margin: [10, 5, 10, 5],
-                      },
-                      {
-                        width: "auto",
-                        stack: [
-                          {
-                            columns: await Promise.all(
-                              question.options!.map(
-                                async (item, $index): Promise<any> => {
-                                  if (item.correct) {
-                                    return [
-                                      {
-                                        image: await this.getBase64ImageFromURL(
-                                          "assets/relleno.png"
-                                        ),
-                                        width: 15,
-                                        margin: [10, 0, 10, 0],
-                                      },
-                                    ];
-                                  } else {
-                                    return [
-                                      {
-                                        image: await this.getBase64ImageFromURL(
-                                          `assets/op${this.getAlphabetLetter(
-                                            $index + 1
-                                          )}.png`
-                                        ),
-                                        width: 15,
-                                        margin: [10, 0, 10, 0],
-                                      },
-                                    ];
-                                  }
-                                }
-                              )
-                            ),
-                            margin: [10, 5, 10, 5],
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ];
-              })
-            ),
-            margin: [10, 0, 0, 0],
-            alignment: "center",
+            alignment: "left",
           },
         ],
 
@@ -395,33 +466,345 @@ export class GenerateExamDialogComponent implements OnInit {
     }
   }
 
-  shuffleExam(exam: Document[]): Document[] {
-    let shuffledExam = exam
-      .map((question) => {
-        if (question.type === objectType.QUESTION) {
-          question.options = this.shuffleArray(question.options!);
-        }
-        return question;
-      })
-      .sort(() => Math.random() - 0.5);
-    this.exam = shuffledExam;
+  /**
+   * Construye el cuerpo del examen (sección de preguntas) para
+   * pdfmake. Maneja:
+   *   - Numeración manual continua (1, 2, 3...) saltando las lecturas.
+   *   - Bloques de lectura (PASSAGE) renderizados como contexto.
+   *   - Layout en 1 o 2 columnas según `config.layout`.
+   *   - Tipos de pregunta: opción múltiple, V/F, abierta, numérica.
+   *
+   * Devuelve UN nodo pdfmake listo para meter en `content`.
+   */
+  private async buildExamBody(
+    exam: Document[],
+    config: any
+  ): Promise<any> {
+    const is2Col = config.layout === "2col";
 
-    if (shuffledExam.length > this.amountQuestions) {
-      shuffledExam = shuffledExam.slice(0, this.amountQuestions);
+    // Anchos máximos para textToPdfNode según layout. El espacio útil
+    // de A4 con margen 40 es ~515pt. Para 2 columnas con gap 20:
+    // (515 - 20) / 2 = ~247pt por columna; dejamos buffer.
+    const enuncMaxWidth = is2Col ? 215 : 460;
+    const optMaxWidth = is2Col ? 195 : 400;
+    const enuncFontSize = is2Col ? 10 : 12;
+    const optFontSize = is2Col ? 9 : 11;
+    const numberColWidth = is2Col ? 16 : 22;
+    const optionLetterWidth = is2Col ? 12 : 16;
+
+    const blocks: any[] = [];
+    let qNumber = 0;
+
+    for (const item of exam) {
+      if (item.type === objectType.PASSAGE) {
+        // Bloque de lectura: título + texto. Se imprime una sola vez,
+        // sin numerar, antes de sus preguntas asociadas.
+        const passageBody = await textToPdfNode(
+          item.passageText ?? "",
+          is2Col ? 235 : 480,
+          enuncFontSize
+        );
+        if (!passageBody.image) {
+          passageBody.style = undefined;
+          passageBody.color = "#1f2937";
+          passageBody.fontSize = enuncFontSize;
+          passageBody.alignment = "justify";
+        }
+        blocks.push({
+          stack: [
+            {
+              text: item.name,
+              bold: true,
+              fontSize: enuncFontSize + 1,
+              color: "#92400e",
+              margin: [0, 0, 0, 3],
+            },
+            passageBody,
+          ],
+          margin: [0, 8, 0, 6],
+          // Barra de color al lado de la lectura
+          fillColor: "#fffbeb",
+          // pdfmake no soporta border-left directo en stack, pero
+          // emulamos el efecto con un columnas hack si lo necesitamos.
+        });
+        continue;
+      }
+
+      // ----- ES PREGUNTA -----
+      qNumber++;
+      const kind = getQuestionKind(item);
+      const hasOptions =
+        kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
+        kind === QuestionKind.TRUE_FALSE;
+
+      if (hasOptions && item.options) {
+        if (item.options.length > this.greaterAmount) {
+          this.greaterAmount = item.options.length;
+        }
+      }
+
+      // Enunciado (puede contener fórmulas LaTeX)
+      const enunciadoNode = await textToPdfNode(
+        item.name,
+        enuncMaxWidth,
+        enuncFontSize
+      );
+      if (!enunciadoNode.image) {
+        enunciadoNode.bold = true;
+        enunciadoNode.fontSize = enuncFontSize;
+      }
+
+      // Opciones / respuesta según tipo
+      const subBlocks: any[] = [];
+
+      if (hasOptions && item.options) {
+        for (let i = 0; i < item.options.length; i++) {
+          const opt = item.options[i];
+          const letter = String.fromCharCode(65 + i);
+          const optNode = await textToPdfNode(
+            opt.content,
+            optMaxWidth,
+            optFontSize
+          );
+          if (!optNode.image) {
+            optNode.fontSize = optFontSize;
+          }
+          subBlocks.push({
+            columns: [
+              {
+                text: `${letter}.`,
+                width: optionLetterWidth,
+                fontSize: optFontSize,
+                margin: [0, 0, 0, 0],
+              },
+              optNode,
+            ],
+            columnGap: 2,
+            margin: [0, 1, 0, 1],
+          });
+        }
+      } else if (kind === QuestionKind.OPEN) {
+        const lineCount = is2Col ? 6 : 9;
+        const dash = is2Col
+          ? "_____________________________________"
+          : "______________________________________________________________________________";
+        for (let i = 0; i < lineCount; i++) {
+          subBlocks.push({
+            text: dash,
+            margin: [0, i === 0 ? 4 : 4, 0, 0],
+            fontSize: optFontSize,
+          });
+        }
+      } else if (kind === QuestionKind.NUMERIC) {
+        subBlocks.push({
+          text: "Respuesta: ______________________",
+          margin: [0, 4, 0, 0],
+          fontSize: optFontSize,
+        });
+      }
+
+      // Componer la pregunta: número a la izquierda, contenido a la derecha
+      blocks.push({
+        columns: [
+          {
+            text: `${qNumber}.`,
+            width: numberColWidth,
+            bold: true,
+            fontSize: enuncFontSize,
+          },
+          {
+            stack: [enunciadoNode, ...subBlocks],
+            width: "*",
+          },
+        ],
+        columnGap: 4,
+        margin: [0, 0, 0, config.questionSpacing ?? 10],
+      });
     }
 
-    return shuffledExam;
+    // 1 columna: stack vertical normal
+    if (!is2Col) {
+      return { stack: blocks };
+    }
+
+    // 2 columnas: dividir por cantidad de bloques (aproximado).
+    // No partimos bloques de lectura — los mantenemos completos.
+    const half = Math.ceil(blocks.length / 2);
+    const leftBlocks = blocks.slice(0, half);
+    const rightBlocks = blocks.slice(half);
+
+    return {
+      columns: [
+        { stack: leftBlocks, width: "*" },
+        { stack: rightBlocks, width: "*" },
+      ],
+      columnGap: 20,
+    };
   }
 
+  /**
+   * Baraja el examen respetando los grupos lectura↔preguntas.
+   *
+   * Reglas:
+   *   1. Las preguntas con el mismo `passageId` forman un grupo
+   *      indivisible: siempre van juntas, siempre debajo de su
+   *      lectura, nunca con otras preguntas en el medio.
+   *   2. Las preguntas sueltas (sin passageId) son cada una su propio
+   *      grupo de tamaño 1, así pueden barajarse libremente entre sí.
+   *   3. Los grupos se barajan entre ellos.
+   *   4. Dentro de cada grupo de lectura, las preguntas se barajan
+   *      libremente. La lectura siempre va primero.
+   *   5. Las opciones de cada pregunta también se barajan.
+   *   6. Si una lectura no está como Document explícito pero alguna
+   *      pregunta tiene `passageContext`, se sintetiza el bloque de
+   *      lectura desde ese texto denormalizado.
+   *   7. Se respeta `amountQuestions` contando solo QUESTION (las
+   *      lecturas no consumen cupo). Los grupos se incluyen completos
+   *      o no se incluyen (no se parte una lectura por la mitad).
+   */
+  shuffleExam(exam: Document[]): Document[] {
+    // 1. Indexar lecturas explícitas y agrupar preguntas por passageId
+    const explicitPassages = new Map<string, Document>();
+    const groups = new Map<string, Document[]>();
+    const LOOSE = "__loose__";
+
+    for (const item of exam) {
+      if (item.type === objectType.PASSAGE) {
+        explicitPassages.set(item.id, item);
+        continue;
+      }
+      if (item.type !== objectType.QUESTION) continue;
+
+      const key = item.passageId ?? LOOSE;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(item);
+    }
+
+    // 2. Construir chunks: cada chunk es indivisible
+    const chunks: Document[][] = [];
+
+    // 2a. Preguntas sueltas: cada una un chunk individual
+    const loose = groups.get(LOOSE) ?? [];
+    for (const q of loose) {
+      chunks.push([this.cloneAndShuffleOptions(q)]);
+    }
+
+    // 2b. Grupos lectura↔preguntas
+    for (const [key, questions] of groups.entries()) {
+      if (key === LOOSE) continue;
+      const passageId = key;
+
+      // Barajar las preguntas internas y sus opciones
+      const shuffledQs = this.shuffleArray(questions).map((q) =>
+        this.cloneAndShuffleOptions(q)
+      );
+
+      // ¿Tenemos la lectura como Document explícito? Si no, la
+      // sintetizamos a partir del passageContext denormalizado en la
+      // primera pregunta del grupo.
+      let passageDoc: Document | undefined = explicitPassages.get(passageId);
+      if (!passageDoc) {
+        const ctx = shuffledQs[0]?.passageContext;
+        if (ctx) {
+          passageDoc = {
+            id: passageId,
+            name: "Lectura",
+            type: objectType.PASSAGE,
+            passageText: ctx,
+          } as Document;
+        }
+      }
+
+      const chunk: Document[] = [];
+      if (passageDoc) chunk.push({ ...passageDoc } as Document);
+      chunk.push(...shuffledQs);
+      chunks.push(chunk);
+    }
+
+    // 2c. Lecturas explícitas que no tienen preguntas (raro, pero
+    //     puede pasar si el profe agregó solo la lectura). Las
+    //     incluimos sueltas.
+    for (const [pid, passage] of explicitPassages.entries()) {
+      if (!groups.has(pid)) {
+        chunks.push([{ ...passage } as Document]);
+      }
+    }
+
+    // 3. Barajar los chunks entre sí
+    const shuffledChunks = this.shuffleArray(chunks);
+
+    // 4. Aplanar respetando el límite de cantidad de preguntas
+    const result: Document[] = [];
+    let count = 0;
+    for (const chunk of shuffledChunks) {
+      if (count >= this.amountQuestions) break;
+      const qInChunk = chunk.filter(
+        (d) => d.type === objectType.QUESTION
+      ).length;
+      // No partimos chunks de lectura: si la lectura excede el cupo,
+      // saltamos al siguiente chunk en busca de uno que entre.
+      if (
+        count + qInChunk > this.amountQuestions &&
+        chunk.some((d) => d.type === objectType.PASSAGE)
+      ) {
+        continue;
+      }
+      result.push(...chunk);
+      count += qInChunk;
+    }
+
+    return result;
+  }
+
+  /** Helper: clona la pregunta y baraja sus opciones (si tiene). */
+  private cloneAndShuffleOptions(q: Document): Document {
+    if (q.options && q.options.length > 0) {
+      return { ...q, options: this.shuffleArray(q.options) } as Document;
+    }
+    return { ...q } as Document;
+  }
+
+  /**
+   * Fisher-Yates: cada permutación tiene la misma probabilidad.
+   * No muta el arreglo de entrada.
+   */
   shuffleArray<T>(array: T[]): T[] {
-    return array.slice().sort(() => Math.random() - 0.5);
+    const result = array.slice();
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
   }
 
+  /**
+   * Letra para opciones de respuesta (A–Z). Solo se usa para las
+   * burbujas, donde nunca hay más de 26 opciones por pregunta.
+   */
   getAlphabetLetter(number: number): string {
     if (number < 1 || number > 26) {
       throw new Error("El número debe estar entre 1 y 26.");
     }
-
     return String.fromCharCode(65 + number - 1);
+  }
+
+  /**
+   * Código del examen estilo planilla: 1→A, 2→B, …, 26→Z, 27→AA,
+   * 28→AB, …, 702→ZZ, 703→AAA… Soporta cualquier cantidad de
+   * versiones sin tirar excepción (bug viejo: con >26 versiones
+   * la app crasheaba silenciosamente).
+   */
+  getExamCode(number: number): string {
+    if (number < 1) {
+      throw new Error("El código de examen debe ser >= 1.");
+    }
+    let n = number;
+    let code = "";
+    while (n > 0) {
+      n--;
+      code = String.fromCharCode(65 + (n % 26)) + code;
+      n = Math.floor(n / 26);
+    }
+    return code;
   }
 }

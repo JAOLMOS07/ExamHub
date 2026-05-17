@@ -2,8 +2,33 @@
   class="card bg-slate-200 shadow-xl h-[100%] cursor-pointer hover:bg-slate-300 hover:shadow-2xl transition"
 >
   <div class="card-body">
+    <div class="flex items-center gap-2 mb-2">
+      <span
+        class="badge badge-sm badge-neutral gap-1 text-xs"
+        [title]="kindLabel"
+      >
+        <app-icon [icon]="kindIcon" />
+        {{ kindLabel }}
+      </span>
+      @if (imagesEnabled && question.imageUrl) {
+        <span
+          class="badge badge-sm badge-info gap-1 text-xs"
+          title="Tiene imagen"
+        >
+          <app-icon [icon]="'image'" />
+        </span>
+      }
+    </div>
+    @if (imagesEnabled && question.imageUrl) {
+      <img
+        [src]="question.imageUrl"
+        alt="Imagen de la pregunta"
+        class="w-full max-h-32 object-contain rounded mb-2 bg-white"
+        loading="lazy"
+      />
+    }
     <h3 class="break-words card-title no-select line-clamp">
-      {{ question.name }}
+      <math-text [content]="question.name"></math-text>
     </h3>
   </div>
   <figure class="bg-slate-600">

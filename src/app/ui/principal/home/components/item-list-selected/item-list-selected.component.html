@@ -5,14 +5,14 @@
   <input type="checkbox" name="accordion-question" />
   <div class="collapse-title text-md font-medium whitespace-normal break-words">
     <div class="flex justify-between items-center">
-      <span>{{ question.name }}</span>
+      <span><math-text [content]="question.name"></math-text></span>
     </div>
   </div>
   <div class="collapse-content">
     <ul class="list-disc pl-5 mt-2 space-y-1">
       @for (option of question.options; track $index) { @if(!showAnswer){
       <li class="text-gray-700">
-        {{ option.content }}
+        <math-text [content]="option.content"></math-text>
       </li>
       }@else {
       <li
@@ -21,7 +21,7 @@
           'text-gray-300': !option.correct
         }"
       >
-        {{ option.content }}
+        <math-text [content]="option.content"></math-text>
       </li>
       } }
     </ul>
