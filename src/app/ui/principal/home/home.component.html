@@ -56,7 +56,7 @@
           @if (isInsidePassage) {
             Estás dentro de una <span class="font-medium text-amber-700">lectura</span>. Las preguntas que crees acá quedan asociadas a su contexto.
           } @else if (paths.length === 1) {
-            Organizá tu material en carpetas, lecturas y preguntas. Después armás exámenes a medida.
+            Organiza tu material en carpetas, lecturas y preguntas. Después armás exámenes a medida.
           } @else {
             Carpeta dentro de tu banco.
           }
@@ -127,7 +127,7 @@
               </span>
               <div>
                 <div class="font-medium text-slate-900">Carpeta</div>
-                <div class="text-xs text-slate-500">Organizá por materia, grado, tema</div>
+                <div class="text-xs text-slate-500">Organiza por materia, grado, tema</div>
               </div>
             </a>
           </li>
@@ -144,83 +144,196 @@
               </a>
             </li>
           }
+          <li class="border-t border-slate-100 mt-1 pt-1" (click)="openImportDialog()">
+            <a class="flex items-center gap-3 py-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <app-icon [icon]="'auto_awesome'" />
+              </span>
+              <div>
+                <div class="font-medium text-slate-900">Importar con IA</div>
+                <div class="text-xs text-slate-500">Cargá tu banco existente con tu IA preferida</div>
+              </div>
+            </a>
+          </li>
         </ul>
       </div>
     </div>
   </header>
 
-  <!-- ====================== BARRA DE FILTROS ====================== -->
+  <!-- ====================== BARRA DE FILTROS (compacta) ====================== -->
   @if (!isLoading && documents.length > 0) {
-    <div class="mb-5 p-3 bg-white border border-slate-200 rounded-xl">
-      <div class="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-        <!-- Búsqueda -->
+    <div class="mb-4">
+      <!-- Línea principal: buscador + botón filtros -->
+      <div class="flex gap-2">
         <div class="relative flex-1 min-w-0">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
             <app-icon [icon]="'search'" />
           </span>
           <input
             type="search"
-            placeholder="Buscar por nombre o texto..."
+            placeholder="Buscar en el banco..."
             [(ngModel)]="searchQuery"
-            class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+            class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
           />
         </div>
 
-        <!-- Filtro Materia -->
-        <select
-          [(ngModel)]="filterSubject"
-          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[140px]"
-          [class.text-indigo-700]="filterSubject"
-          [class.font-semibold]="filterSubject"
-        >
-          <option [ngValue]="null">Todas las materias</option>
-          @for (s of availableSubjects; track s) {
-            <option [ngValue]="s">{{ s }}</option>
-          }
-        </select>
-
-        <!-- Filtro Grado -->
-        <select
-          [(ngModel)]="filterGrade"
-          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[130px]"
-          [class.text-indigo-700]="filterGrade"
-          [class.font-semibold]="filterGrade"
-        >
-          <option [ngValue]="null">Todos los grados</option>
-          @for (g of availableGrades; track g) {
-            <option [ngValue]="g">{{ g }}</option>
-          }
-        </select>
-
-        <!-- Filtro Dificultad -->
-        <select
-          [(ngModel)]="filterDifficulty"
-          class="text-sm rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition min-w-[130px]"
-          [class.text-indigo-700]="filterDifficulty"
-          [class.font-semibold]="filterDifficulty"
-        >
-          <option [ngValue]="null">Toda dificultad</option>
-          <option [ngValue]="1">Fácil</option>
-          <option [ngValue]="2">Media</option>
-          <option [ngValue]="3">Difícil</option>
-        </select>
-
-        @if (hasActiveFilters) {
-          <button
-            (click)="clearFilters()"
-            class="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
-            title="Quitar filtros"
+        <!-- Botón "Filtros" con dropdown -->
+        <div class="dropdown dropdown-end">
+          <div
+            tabindex="0"
+            role="button"
+            class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium border transition cursor-pointer"
+            [class.bg-white]="!hasActiveStructuredFilters"
+            [class.text-slate-700]="!hasActiveStructuredFilters"
+            [class.border-slate-200]="!hasActiveStructuredFilters"
+            [class.hover:bg-slate-50]="!hasActiveStructuredFilters"
+            [class.bg-indigo-50]="hasActiveStructuredFilters"
+            [class.text-indigo-700]="hasActiveStructuredFilters"
+            [class.border-indigo-200]="hasActiveStructuredFilters"
           >
-            <app-icon [icon]="'close'" />
-            Limpiar
-          </button>
-        }
+            <app-icon [icon]="'tune'" />
+            <span class="hidden sm:inline">Filtros</span>
+            @if (activeFilterCount > 0) {
+              <span
+                class="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-bold text-white"
+                style="background-color:#4338ca;"
+              >{{ activeFilterCount }}</span>
+            }
+          </div>
+
+          <!-- Panel desplegable -->
+          <div
+            tabindex="0"
+            class="dropdown-content mt-2 z-20 p-3 shadow-card bg-white rounded-xl w-72 border border-slate-200"
+          >
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Materia</label>
+                <select
+                  [(ngModel)]="filterSubject"
+                  class="w-full text-sm rounded-lg border border-slate-300 px-2.5 py-1.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                >
+                  <option [ngValue]="null">Todas</option>
+                  @for (s of suggestionSubjects; track s) {
+                    <option [ngValue]="s">{{ s }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Grado</label>
+                <select
+                  [(ngModel)]="filterGrade"
+                  class="w-full text-sm rounded-lg border border-slate-300 px-2.5 py-1.5 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                >
+                  <option [ngValue]="null">Todos</option>
+                  @for (g of suggestionGrades; track g) {
+                    <option [ngValue]="g">{{ g }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Dificultad</label>
+                <div class="grid grid-cols-3 gap-1">
+                  <button
+                    type="button"
+                    (click)="filterDifficulty = filterDifficulty === 1 ? null : 1"
+                    class="px-2 py-1 rounded text-xs font-medium border transition"
+                    [ngStyle]="filterDifficulty === 1
+                      ? { 'background-color': '#ecfdf5', 'color': '#047857', 'border-color': '#a7f3d0' }
+                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                  >Fácil</button>
+                  <button
+                    type="button"
+                    (click)="filterDifficulty = filterDifficulty === 2 ? null : 2"
+                    class="px-2 py-1 rounded text-xs font-medium border transition"
+                    [ngStyle]="filterDifficulty === 2
+                      ? { 'background-color': '#fffbeb', 'color': '#92400e', 'border-color': '#fde68a' }
+                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                  >Media</button>
+                  <button
+                    type="button"
+                    (click)="filterDifficulty = filterDifficulty === 3 ? null : 3"
+                    class="px-2 py-1 rounded text-xs font-medium border transition"
+                    [ngStyle]="filterDifficulty === 3
+                      ? { 'background-color': '#fef2f2', 'color': '#b91c1c', 'border-color': '#fecaca' }
+                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                  >Difícil</button>
+                </div>
+              </div>
+
+              @if (hasActiveStructuredFilters) {
+                <div class="pt-2 border-t border-slate-100">
+                  <button
+                    (click)="clearFilters()"
+                    class="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+                  >
+                    <app-icon [icon]="'close'" />
+                    Limpiar filtros
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
       </div>
 
+      <!-- Chips de filtros activos (incluye el texto de búsqueda) -->
       @if (hasActiveFilters) {
-        <p class="text-xs text-slate-500 mt-2">
-          Mostrando {{ filteredQuestionCount }} pregunta(s) · {{ filteredPassageCount }} lectura(s) · {{ filteredFolderCount }} carpeta(s)
-        </p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-2 text-xs">
+          @if (searchQuery.trim()) {
+            <span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-slate-100 text-slate-700">
+              <app-icon class="text-slate-400" [icon]="'search'" />
+              "{{ searchQuery }}"
+              <button
+                (click)="searchQuery = ''"
+                class="w-4 h-4 rounded-full hover:bg-red-100 hover:text-red-600 text-slate-400 flex items-center justify-center"
+                title="Quitar"
+              ><app-icon [icon]="'close'" /></button>
+            </span>
+          }
+          @if (filterSubject) {
+            <span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+              Materia: {{ filterSubject }}
+              <button
+                (click)="filterSubject = null"
+                class="w-4 h-4 rounded-full hover:bg-red-100 hover:text-red-600 text-indigo-400 flex items-center justify-center"
+                title="Quitar"
+              ><app-icon [icon]="'close'" /></button>
+            </span>
+          }
+          @if (filterGrade) {
+            <span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+              Grado: {{ filterGrade }}
+              <button
+                (click)="filterGrade = null"
+                class="w-4 h-4 rounded-full hover:bg-red-100 hover:text-red-600 text-indigo-400 flex items-center justify-center"
+                title="Quitar"
+              ><app-icon [icon]="'close'" /></button>
+            </span>
+          }
+          @if (filterDifficulty) {
+            <span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+              Dificultad: {{ filterDifficulty === 1 ? 'Fácil' : filterDifficulty === 2 ? 'Media' : 'Difícil' }}
+              <button
+                (click)="filterDifficulty = null"
+                class="w-4 h-4 rounded-full hover:bg-red-100 hover:text-red-600 text-indigo-400 flex items-center justify-center"
+                title="Quitar"
+              ><app-icon [icon]="'close'" /></button>
+            </span>
+          }
+          <button
+            (click)="clearFilters()"
+            class="text-slate-500 hover:text-slate-900 underline underline-offset-2 ml-1"
+          >
+            limpiar todo
+          </button>
+          <span class="text-slate-400 ml-2">·</span>
+          <span class="text-slate-500">
+            {{ filteredQuestionCount }} preguntas, {{ filteredPassageCount }} lecturas, {{ filteredFolderCount }} carpetas
+          </span>
+        </div>
       }
     </div>
   }
@@ -483,8 +596,8 @@
               @for (question of filteredDocuments; track question.id) { @if (question.type === objectType.QUESTION) {
                 <app-item-question
                   [question]="question"
-                  [subjectSuggestions]="availableSubjects"
-                  [gradeSuggestions]="availableGrades"
+                  [subjectSuggestions]="suggestionSubjects"
+                  [gradeSuggestions]="suggestionGrades"
                   (deleteEvent)="deleteDocument($event)"
                   (editEvent)="editDocument($event)"
                 />
@@ -560,13 +673,9 @@
           </button>
         </div>
 
-        <!-- Lista de preguntas -->
-        <div class="mb-4">
-          <question-list />
-        </div>
 
         <!-- Acciones -->
-        <div class="flex gap-2 pt-3 border-t border-slate-200">
+        <div class="flex gap-2 mb-4 ">
           <button
             [disabled]="questionsSelected.length < 1"
             (click)="showModalGenerateExam()"
@@ -588,6 +697,11 @@
             <app-icon [icon]="'delete_outline'" />
           </button>
         </div>
+        <!-- Lista de preguntas -->
+        <div class=" pt-3 border-t border-slate-200" >
+          <question-list />
+        </div>
+
       </div>
     </aside>
   </div>

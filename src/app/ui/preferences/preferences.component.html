@@ -1,0 +1,378 @@
+<app-navbar />
+
+<main class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
+  <!-- Header -->
+  <header class="mb-6">
+    <div class="flex items-center gap-2 mb-2">
+      <a
+        routerLink="/home"
+        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+        title="Volver al banco"
+      >
+        <app-icon [icon]="'arrow_back'" />
+      </a>
+      <nav class="text-sm text-slate-500">
+        <a routerLink="/home" class="hover:text-slate-900">Inicio</a>
+        <span class="mx-1">/</span>
+        <span class="text-slate-900 font-medium">Preferencias</span>
+      </nav>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+      Preferencias
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Configurá las materias, grados y plantillas de examen que vas a reutilizar.
+      Aparecen como sugerencias en los formularios.
+    </p>
+  </header>
+
+  <!-- Tabs -->
+  <div class="border-b border-slate-200 mb-6">
+    <nav class="flex gap-1">
+      <button
+        (click)="setTab('subjects')"
+        class="px-4 py-2 text-sm font-medium border-b-2 transition"
+        [class.border-indigo-600]="activeTab === 'subjects'"
+        [class.text-indigo-700]="activeTab === 'subjects'"
+        [class.border-transparent]="activeTab !== 'subjects'"
+        [class.text-slate-500]="activeTab !== 'subjects'"
+        [class.hover:text-slate-900]="activeTab !== 'subjects'"
+      >
+        <app-icon [icon]="'school'" />
+        Materias
+        <span class="ml-1 text-xs text-slate-400">({{ prefs.subjects.length }})</span>
+      </button>
+      <button
+        (click)="setTab('grades')"
+        class="px-4 py-2 text-sm font-medium border-b-2 transition"
+        [class.border-indigo-600]="activeTab === 'grades'"
+        [class.text-indigo-700]="activeTab === 'grades'"
+        [class.border-transparent]="activeTab !== 'grades'"
+        [class.text-slate-500]="activeTab !== 'grades'"
+        [class.hover:text-slate-900]="activeTab !== 'grades'"
+      >
+        <app-icon [icon]="'grade'" />
+        Grados
+        <span class="ml-1 text-xs text-slate-400">({{ prefs.grades.length }})</span>
+      </button>
+      <button
+        (click)="setTab('templates')"
+        class="px-4 py-2 text-sm font-medium border-b-2 transition"
+        [class.border-indigo-600]="activeTab === 'templates'"
+        [class.text-indigo-700]="activeTab === 'templates'"
+        [class.border-transparent]="activeTab !== 'templates'"
+        [class.text-slate-500]="activeTab !== 'templates'"
+        [class.hover:text-slate-900]="activeTab !== 'templates'"
+      >
+        <app-icon [icon]="'description'" />
+        Plantillas de examen
+        <span class="ml-1 text-xs text-slate-400">({{ prefs.examTemplates.length }})</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ====================== MATERIAS ====================== -->
+  @if (activeTab === 'subjects') {
+    <section class="eh-section">
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-slate-900 mb-1">Materias</h2>
+        <p class="text-sm text-slate-500">
+          Estas materias aparecen como sugerencias al clasificar preguntas. Podés agregar las que uses regularmente.
+        </p>
+      </div>
+
+      <!-- Form de agregar -->
+      <form (ngSubmit)="addSubject()" class="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Ej: Matemática"
+          [(ngModel)]="newSubject"
+          name="newSubject"
+          maxlength="40"
+          class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+        />
+        <button
+          type="submit"
+          class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition"
+          style="background-color: #4338ca;"
+        >
+          <app-icon [icon]="'add'" />
+          Agregar
+        </button>
+      </form>
+
+      <!-- Lista de chips -->
+      @if (prefs.subjects.length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (s of prefs.subjects; track s) {
+            <span class="inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-slate-100 text-slate-700 text-sm">
+              {{ s }}
+              <button
+                (click)="removeSubject(s)"
+                class="w-5 h-5 rounded-full hover:bg-red-100 hover:text-red-600 text-slate-400 flex items-center justify-center transition"
+                title="Quitar"
+              >
+                <app-icon [icon]="'close'" />
+              </button>
+            </span>
+          }
+        </div>
+      } @else {
+        <div class="eh-empty py-8">
+          <p class="text-sm text-slate-500">Todavía no agregaste materias.</p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ====================== GRADOS ====================== -->
+  @if (activeTab === 'grades') {
+    <section class="eh-section">
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-slate-900 mb-1">Grados</h2>
+        <p class="text-sm text-slate-500">
+          Los grados a los que les das clase. Aparecen como sugerencias al clasificar preguntas y como opción en las plantillas.
+        </p>
+      </div>
+
+      <form (ngSubmit)="addGrade()" class="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Ej: 6° básico, Primero medio"
+          [(ngModel)]="newGrade"
+          name="newGrade"
+          maxlength="40"
+          class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+        />
+        <button
+          type="submit"
+          class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition"
+          style="background-color: #4338ca;"
+        >
+          <app-icon [icon]="'add'" />
+          Agregar
+        </button>
+      </form>
+
+      @if (prefs.grades.length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (g of prefs.grades; track g) {
+            <span class="inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-slate-100 text-slate-700 text-sm">
+              {{ g }}
+              <button
+                (click)="removeGrade(g)"
+                class="w-5 h-5 rounded-full hover:bg-red-100 hover:text-red-600 text-slate-400 flex items-center justify-center transition"
+                title="Quitar"
+              >
+                <app-icon [icon]="'close'" />
+              </button>
+            </span>
+          }
+        </div>
+      } @else {
+        <div class="eh-empty py-8">
+          <p class="text-sm text-slate-500">Todavía no agregaste grados.</p>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ====================== PLANTILLAS ====================== -->
+  @if (activeTab === 'templates') {
+    <section class="eh-section">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 mb-1">
+            Plantillas de examen
+          </h2>
+          <p class="text-sm text-slate-500">
+            Guardá perfiles con los datos del header del examen (institución, título, lugar...) para no re-escribirlos cada vez que generes un PDF.
+          </p>
+        </div>
+        @if (!editingTemplate) {
+          <button
+            (click)="startNewTemplate()"
+            class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition shrink-0"
+            style="background-color: #4338ca;"
+          >
+            <app-icon [icon]="'add'" />
+            Nueva plantilla
+          </button>
+        }
+      </div>
+
+      <!-- Editor de plantilla -->
+      @if (editingTemplate) {
+        <div class="border border-indigo-200 rounded-lg p-4 mb-4 bg-indigo-50/30">
+          <h3 class="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <app-icon class="text-indigo-700" [icon]="'edit'" />
+            {{ editingTemplate.id && prefs.examTemplates.length > 0 ? 'Editar plantilla' : 'Nueva plantilla' }}
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-slate-600 mb-1">
+                Nombre de la plantilla <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: San Martín – 7° básico – Matemática"
+                [(ngModel)]="editingTemplate.name"
+                name="tplName"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Institución</label>
+              <input
+                type="text"
+                placeholder="Colegio San Martín"
+                [(ngModel)]="editingTemplate.institution"
+                name="tplInst"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Título</label>
+              <input
+                type="text"
+                placeholder="Evaluación – Unidad 3"
+                [(ngModel)]="editingTemplate.title"
+                name="tplTitle"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Lugar</label>
+              <input
+                type="text"
+                placeholder="Av. Siempreviva 742, Springfield"
+                [(ngModel)]="editingTemplate.place"
+                name="tplPlace"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Subtítulo</label>
+              <input
+                type="text"
+                placeholder="Período 2026 – Prof. López"
+                [(ngModel)]="editingTemplate.subtitle"
+                name="tplSub"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Grado por defecto</label>
+              <input
+                type="text"
+                list="tpl-grades"
+                placeholder="7° básico"
+                [(ngModel)]="editingTemplate.grade"
+                name="tplGrade"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              />
+              <datalist id="tpl-grades">
+                @for (g of prefs.grades; track g) {
+                  <option [value]="g"></option>
+                }
+              </datalist>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Disposición</label>
+              <select
+                [(ngModel)]="editingTemplate.layout"
+                name="tplLayout"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+              >
+                <option value="1col">1 columna</option>
+                <option value="2col">2 columnas (ahorra papel)</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-indigo-200">
+            <button
+              type="button"
+              (click)="cancelTemplate()"
+              class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="saveTemplate()"
+              class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition"
+              style="background-color: #4338ca;"
+            >
+              <app-icon [icon]="'save'" />
+              Guardar
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Lista de plantillas existentes -->
+      @if (prefs.examTemplates.length > 0) {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          @for (t of prefs.examTemplates; track t.id) {
+            <div class="eh-card p-3 group flex flex-col">
+              <div class="flex items-start gap-3 flex-1">
+                <div class="shrink-0 w-9 h-9 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                  <app-icon [icon]="'description'" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-slate-900 truncate text-sm">{{ t.name }}</h3>
+                  <p class="text-xs text-slate-500 truncate">
+                    {{ t.institution || '—' }}
+                    @if (t.title) { · {{ t.title }} }
+                  </p>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    @if (t.grade) {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                        {{ t.grade }}
+                      </span>
+                    }
+                    @if (t.layout === '2col') {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                        2 columnas
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 pt-2 border-t border-slate-100 flex justify-end gap-1">
+                <button
+                  (click)="editTemplate(t)"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                  title="Editar plantilla"
+                >
+                  <app-icon [icon]="'create'" />
+                </button>
+                <button
+                  (click)="removeTemplate(t.id)"
+                  class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                  title="Eliminar plantilla"
+                >
+                  <app-icon [icon]="'delete_outline'" />
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (!editingTemplate) {
+        <div class="eh-empty py-8">
+          <p class="text-sm text-slate-500 mb-3">
+            Todavía no creaste plantillas. Creá la primera para no re-escribir el header de tus exámenes.
+          </p>
+          <button
+            (click)="startNewTemplate()"
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition"
+            style="background-color: #4338ca;"
+          >
+            <app-icon [icon]="'add'" />
+            Crear primera plantilla
+          </button>
+        </div>
+      }
+    </section>
+  }
+</main>

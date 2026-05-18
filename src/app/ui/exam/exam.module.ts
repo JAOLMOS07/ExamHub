@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { RouterOutlet } from "@angular/router";
+import { RouterModule } from "@angular/router";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { SharedModule } from "../shared/shared.module";
 import { ExamComponent } from "./exam.component";
@@ -19,12 +19,11 @@ import { QuestionsListSelectedComponent } from "./questions-list-selected/questi
   ],
   imports: [
     CommonModule,
-    RouterOutlet,
+    RouterModule,
     ExamsRoutingModule,
     FormsModule,
     ReactiveFormsModule,
     SharedModule,
-    RouterOutlet,
   ],
   providers: [PDFService, ReactiveFormsModule, FormsModule],
 })

@@ -31,6 +31,14 @@ const routes: Routes = [
           import("../exam/exam.module").then((m) => m.ExamModule),
       },
       {
+        path: "preferences",
+        loadComponent: () =>
+          import("../preferences/preferences.component").then(
+            (m) => m.PreferencesComponent
+          ),
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+      },
+      {
         path: "",
         redirectTo: `${PRINCIPAL.HOME}`,
         pathMatch: "prefix",

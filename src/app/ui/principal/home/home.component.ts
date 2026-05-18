@@ -8,6 +8,7 @@ import { CreateFolderComponent } from "./components/create-folder/create-folder.
 import { CommonModule } from "@angular/common";
 import { CreateQuestionDialogComponent } from "../../exam/create-question-dialog/create-question.component";
 import { CreatePassageDialogComponent } from "./components/create-passage/create-passage.component";
+import { ImportBankDialogComponent } from "./components/import-bank/import-bank-dialog.component";
 import { QuestionService } from "../../../core/services/questionService.service";
 import { PrincipalModule } from "../principal.module";
 import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/generate-exam-dialog.component";
@@ -16,6 +17,7 @@ import { UserService } from "../../../core/services/UserService.service";
 import { NgToastService } from "ng-angular-popup";
 import { filter, take } from "rxjs/operators";
 import { firstValueFrom } from "rxjs";
+import { PreferencesService } from "../../../core/services/preferences.service";
 import {
   SweetAlert2LoaderService,
   SweetAlert2Module,
@@ -112,6 +114,37 @@ export class HomeComponent {
     return Array.from(set).sort();
   }
 
+  /** Sugerencias combinadas: preferencias del usuario + valores ya usados en el banco.
+   *  Estas son las que aparecen en los selects del dropdown de filtros y como
+   *  autocompletar en los formularios. */
+  get suggestionSubjects(): string[] {
+    const set = new Set<string>([...this.prefSubjects, ...this.availableSubjects]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }
+  get suggestionGrades(): string[] {
+    // Para grados respetamos el orden de las preferencias (ej: "1°, 2°, 3°...")
+    // y agregamos al final los del banco que no estén.
+    const fromPrefs = [...this.prefGrades];
+    const fromBank = this.availableGrades.filter(
+      (g) => !fromPrefs.includes(g)
+    );
+    return [...fromPrefs, ...fromBank];
+  }
+
+  /** Cantidad de filtros estructurados activos (no cuenta el buscador). */
+  get activeFilterCount(): number {
+    let n = 0;
+    if (this.filterSubject) n++;
+    if (this.filterGrade) n++;
+    if (this.filterDifficulty) n++;
+    return n;
+  }
+
+  /** ¿Hay algún filtro estructurado (no buscador) activo? */
+  get hasActiveStructuredFilters(): boolean {
+    return this.activeFilterCount > 0;
+  }
+
   /** Documents filtrados según searchQuery + filtros activos. */
   get filteredDocuments(): Document[] {
     if (!this.hasActiveFilters) return this.documents;
@@ -167,11 +200,16 @@ export class HomeComponent {
     this.filterDifficulty = null;
   }
 
+  /** Preferencias del usuario (materias y grados predefinidos). */
+  prefSubjects: string[] = [];
+  prefGrades: string[] = [];
+
   constructor(
     public dialog: MatDialog,
     private questionService: QuestionService,
     private examService: ExamService,
     private userService: UserService,
+    private preferencesService: PreferencesService,
     private toast: NgToastService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
@@ -188,6 +226,12 @@ export class HomeComponent {
         take(1)
       )
       .subscribe(() => this.loadDocuments());
+
+    // Suscribirse a las preferencias para enriquecer sugerencias.
+    this.preferencesService.preferences$.subscribe((p) => {
+      this.prefSubjects = p.subjects;
+      this.prefGrades = p.grades;
+    });
   }
   loadDocuments(): void {
     this.isLoading = true;
@@ -238,6 +282,24 @@ export class HomeComponent {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.addFolder(result);
+      }
+    });
+  }
+
+  /**
+   * Abre el diálogo de importación: el profe pega un JSON generado
+   * por SU IA (ChatGPT/Claude/Gemini) y se importa al banco. Cero
+   * costo de IA para nosotros, cero backend.
+   */
+  openImportDialog(): void {
+    const ref = this.dialog.open(ImportBankDialogComponent, {
+      width: "680px",
+      maxWidth: "95vw",
+      data: { path: this.currentPath },
+    });
+    ref.afterClosed().subscribe((result) => {
+      if (result?.imported) {
+        this.loadDocuments();
       }
     });
   }
@@ -493,8 +555,11 @@ export class HomeComponent {
   createQuestionDialog(): void {
     const dialogRef = this.dialog.open(CreateQuestionDialogComponent, {
       data: {
-        subjectSuggestions: this.availableSubjects,
-        gradeSuggestions: this.availableGrades,
+        // Combinamos las preferencias del usuario con los valores
+        // ya usados en el banco — así el profe puede elegir entre
+        // sus opciones predefinidas o las que ya tiene en uso.
+        subjectSuggestions: this.suggestionSubjects,
+        gradeSuggestions: this.suggestionGrades,
       },
     });
 

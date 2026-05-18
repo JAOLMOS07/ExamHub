@@ -13,6 +13,8 @@ import { objectType } from "../../../core/models/objectType.enum";
 import { QuestionKind } from "../../../core/models/questionKind.enum";
 import { NgToastService } from "ng-angular-popup";
 import { textToPdfNode } from "../../shared/math/math-pdf.helper";
+import { PreferencesService } from "../../../core/services/preferences.service";
+import { ExamTemplate } from "../../../core/models/preferences.model";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -26,12 +28,19 @@ export class GenerateExamDialogComponent implements OnInit {
   amount: number = 1;
   amountQuestions: number = 1;
   greaterAmount: number = 0;
+
+  /** Plantillas guardadas en preferencias del usuario. */
+  templates: ExamTemplate[] = [];
+  /** Plantilla actualmente seleccionada (id) o null si ninguna. */
+  selectedTemplateId: string | null = null;
+
   constructor(
     private formBuilder: FormBuilder,
     private dialogRef: MatDialogRef<GenerateExamDialogComponent>,
     private pdfService: PDFService,
     private questionService: QuestionService,
     private toast: NgToastService,
+    private preferencesService: PreferencesService,
     @Inject(MAT_DIALOG_DATA) public data: { exam: Question[] }
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
@@ -88,9 +97,49 @@ export class GenerateExamDialogComponent implements OnInit {
       layout: ["1col", Validators.required],
       /** Espaciado vertical entre preguntas en pt. */
       questionSpacing: [10],
+      /**
+       * Cantidad de preguntas por columna (solo aplica a layout 2col).
+       * Determina el flujo: cada página tiene questionsPerColumn × 2
+       * preguntas. Default 7 (= 14 por página) que aprovecha bien el
+       * alto cuando son preguntas MCQ cortas. El profe baja a 4-5 si
+       * tiene lecturas largas o muchas opciones; sube a 8-10 si son
+       * preguntas tipo V/F muy cortas.
+       *
+       * LIMITACIÓN: este valor es por count, no por altura real (PDFmake
+       * no permite medir antes de renderizar). Si entran más de las
+       * indicadas, la columna queda con espacio en blanco; si entran
+       * menos, se desbordan a la siguiente página.
+       */
+      questionsPerColumn: [7],
     });
 
     this.amountQuestions = this.exam.length;
+
+    // Cargar plantillas del usuario
+    this.preferencesService.preferences$.subscribe((p) => {
+      this.templates = p.examTemplates ?? [];
+    });
+  }
+
+  /**
+   * Aplica una plantilla al formulario: pre-llena los campos con los
+   * valores guardados. El profe puede después editar lo que sea antes
+   * de generar.
+   */
+  applyTemplate(templateId: string | null): void {
+    this.selectedTemplateId = templateId;
+    if (!templateId) return;
+    const t = this.templates.find((x) => x.id === templateId);
+    if (!t) return;
+    this.examConfigForm.patchValue({
+      institution: t.institution ?? "",
+      title: t.title ?? "",
+      place: t.place ?? "",
+      subtitle: t.subtitle ?? "",
+      grade: t.grade ?? "",
+      layout: t.layout ?? "1col",
+    });
+    this.toast.success(`Plantilla "${t.name}" aplicada.`, "ExamHub", 2000);
   }
 
   cancel(): void {
@@ -292,22 +341,32 @@ export class GenerateExamDialogComponent implements OnInit {
                     ],
                   };
                 } else if (kind === QuestionKind.NUMERIC) {
+                  // Numérica: dejamos el espacio para que el alumno
+                  // anote el resultado también en la hoja de respuestas.
+                  // La respuesta es corta y exacta, así que es más
+                  // cómodo corregir comparando ambas hojas (alumno vs
+                  // maestro) que ir a buscar en el cuerpo del examen.
                   answerCell = {
                     width: "*",
                     text: "Respuesta: ______________________",
                     margin: [10, 5, 10, 5],
                   };
-                } else {
-                  // OPEN: dos renglones en blanco compactos
+                } else if (kind === QuestionKind.OPEN) {
+                  // Respuesta abierta: la pregunta ya tiene varias
+                  // líneas en el cuerpo del examen. Replicarlas acá
+                  // duplica espacio sin valor. Texto informativo.
                   answerCell = {
                     width: "*",
-                    stack: [
-                      { text: "_____________________________________________" },
-                      {
-                        text: "_____________________________________________",
-                        margin: [0, 4, 0, 0],
-                      },
-                    ],
+                    text: "(se responde en el espacio de la pregunta)",
+                    italics: true,
+                    color: "#666",
+                    margin: [10, 5, 10, 5],
+                  };
+                } else {
+                  // Fallback defensivo para tipos no esperados
+                  answerCell = {
+                    width: "*",
+                    text: "",
                     margin: [10, 5, 10, 5],
                   };
                 }
@@ -492,7 +551,12 @@ export class GenerateExamDialogComponent implements OnInit {
     const numberColWidth = is2Col ? 16 : 22;
     const optionLetterWidth = is2Col ? 12 : 16;
 
-    const blocks: any[] = [];
+    // weightedBlocks: cada bloque viene con un "peso" estimado en
+    // unidades equivalentes a una pregunta MCQ simple (~1). Lo usamos
+    // al final para hacer greedy packing en 2 columnas (sin medir
+    // píxeles reales, pero compensando que las lecturas y abiertas
+    // ocupan mucho más que un MCQ corto).
+    const weightedBlocks: { node: any; weight: number }[] = [];
     let qNumber = 0;
 
     for (const item of exam) {
@@ -510,7 +574,7 @@ export class GenerateExamDialogComponent implements OnInit {
           passageBody.fontSize = enuncFontSize;
           passageBody.alignment = "justify";
         }
-        blocks.push({
+        const node = {
           stack: [
             {
               text: item.name,
@@ -522,11 +586,12 @@ export class GenerateExamDialogComponent implements OnInit {
             passageBody,
           ],
           margin: [0, 8, 0, 6],
-          // Barra de color al lado de la lectura
           fillColor: "#fffbeb",
-          // pdfmake no soporta border-left directo en stack, pero
-          // emulamos el efecto con un columnas hack si lo necesitamos.
-        });
+        };
+        // Peso de la lectura: simple, cuenta como 1 item igual que
+        // una pregunta. El profe ajusta `questionsPerColumn` si tiene
+        // lecturas largas que necesitan más holgura.
+        weightedBlocks.push({ node, weight: 1 });
         continue;
       }
 
@@ -584,10 +649,14 @@ export class GenerateExamDialogComponent implements OnInit {
           });
         }
       } else if (kind === QuestionKind.OPEN) {
-        const lineCount = is2Col ? 6 : 9;
+        // Menos líneas en 2cols (espacio más comprimido) para
+        // evitar que la pregunta desborde la columna y genere
+        // páginas fantasma. Si necesitan más espacio, el profe
+        // puede agregar varias preguntas abiertas o usar 1 columna.
+        const lineCount = is2Col ? 4 : 6;
         const dash = is2Col
-          ? "_____________________________________"
-          : "______________________________________________________________________________";
+          ? "_____________________________________________________"
+          : "_______________________________________________________________________________________________";
         for (let i = 0; i < lineCount; i++) {
           subBlocks.push({
             text: dash,
@@ -604,7 +673,7 @@ export class GenerateExamDialogComponent implements OnInit {
       }
 
       // Componer la pregunta: número a la izquierda, contenido a la derecha
-      blocks.push({
+      const node = {
         columns: [
           {
             text: `${qNumber}.`,
@@ -619,27 +688,89 @@ export class GenerateExamDialogComponent implements OnInit {
         ],
         columnGap: 4,
         margin: [0, 0, 0, config.questionSpacing ?? 10],
-      });
+      };
+
+      // Peso simple para el chunking por columnas:
+      //   - OPEN (4-6 líneas en blanco): cuenta como 2 (ocupa el espacio de 2 preguntas normales).
+      //   - Todo lo demás: cuenta como 1.
+      // Es deliberadamente simple — un cálculo más fino dejaba más
+      // espacios en blanco que este enfoque pragmático.
+      const weight = kind === QuestionKind.OPEN ? 2 : 1;
+      weightedBlocks.push({ node, weight });
     }
 
     // 1 columna: stack vertical normal
     if (!is2Col) {
-      return { stack: blocks };
+      return { stack: weightedBlocks.map((b) => b.node) };
     }
 
-    // 2 columnas: dividir por cantidad de bloques (aproximado).
-    // No partimos bloques de lectura — los mantenemos completos.
-    const half = Math.ceil(blocks.length / 2);
-    const leftBlocks = blocks.slice(0, half);
-    const rightBlocks = blocks.slice(half);
+    // 2 columnas: chunks por PESO acumulado.
+    //
+    // Cada bloque tiene un peso (1 normalmente, 2 para preguntas
+    // abiertas porque ocupan ~doble por las líneas en blanco).
+    // Vamos llenando chunks hasta alcanzar `perPage` unidades de peso,
+    // y cerramos página. Esto evita el caso donde una pregunta abierta
+    // al final desborda la columna y genera una página fantasma con
+    // solo unas líneas.
+    //
+    // Dentro de cada chunk, dividimos por mitad de PESO (no de count)
+    // para que la columna izquierda y derecha queden parejas aunque
+    // haya una abierta entre medio.
+    const perColumn = Math.max(1, Number(config.questionsPerColumn) || 7);
+    const perPage = perColumn * 2;
+    const pages: any[] = [];
 
-    return {
-      columns: [
-        { stack: leftBlocks, width: "*" },
-        { stack: rightBlocks, width: "*" },
-      ],
-      columnGap: 20,
-    };
+    // Agrupar weightedBlocks en chunks por peso acumulado
+    const chunks: { node: any; weight: number }[][] = [];
+    let currentChunk: { node: any; weight: number }[] = [];
+    let currentChunkWeight = 0;
+
+    for (const wb of weightedBlocks) {
+      if (
+        currentChunkWeight + wb.weight > perPage &&
+        currentChunk.length > 0
+      ) {
+        chunks.push(currentChunk);
+        currentChunk = [];
+        currentChunkWeight = 0;
+      }
+      currentChunk.push(wb);
+      currentChunkWeight += wb.weight;
+    }
+    if (currentChunk.length > 0) chunks.push(currentChunk);
+
+    // Render de cada chunk como una página de 2 columnas
+    chunks.forEach((chunk, idx) => {
+      const totalWeight = chunk.reduce((sum, b) => sum + b.weight, 0);
+      const halfWeight = totalWeight / 2;
+
+      // Buscar el split point que mejor reparte peso entre izq y der
+      const leftBlocks: any[] = [];
+      const rightBlocks: any[] = [];
+      let leftSum = 0;
+      for (const wb of chunk) {
+        if (leftSum + wb.weight / 2 <= halfWeight) {
+          leftBlocks.push(wb.node);
+          leftSum += wb.weight;
+        } else {
+          rightBlocks.push(wb.node);
+        }
+      }
+
+      pages.push({
+        columns: [
+          { stack: leftBlocks, width: "*" },
+          { stack: rightBlocks, width: "*" },
+        ],
+        columnGap: 20,
+      });
+
+      if (idx < chunks.length - 1) {
+        pages.push({ text: "", pageBreak: "after" });
+      }
+    });
+
+    return { stack: pages };
   }
 
   /**

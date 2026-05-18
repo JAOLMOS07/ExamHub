@@ -53,6 +53,12 @@
               {{ user.email }}
             </li>
             <li class="border-t border-slate-100 mt-1 pt-1">
+              <a routerLink="/preferences" class="hover:bg-slate-100">
+                <app-icon [icon]="'tune'" />
+                Preferencias
+              </a>
+            </li>
+            <li>
               <a (click)="logout()" class="text-red-600 hover:bg-red-50">
                 <app-icon [icon]="'logout'" />
                 Cerrar sesión

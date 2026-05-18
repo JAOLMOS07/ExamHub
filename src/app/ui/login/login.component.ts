@@ -28,9 +28,9 @@ const FIREBASE_AUTH_ERRORS: Record<string, string> = {
   "auth/invalid-credential": "Correo o contraseña incorrectos.",
   "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
   "auth/too-many-requests":
-    "Demasiados intentos fallidos. Esperá unos minutos y volvé a intentar.",
+    "Demasiados intentos fallidos. Espera unos minutos y vuelve a intentar.",
   "auth/network-request-failed":
-    "No se pudo conectar. Revisá tu conexión a internet.",
+    "No se pudo conectar. Revisa tu conexión a internet.",
   "auth/email-already-in-use": "Ya existe una cuenta con ese correo.",
   "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
 };
