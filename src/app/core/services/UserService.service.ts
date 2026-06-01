@@ -1,12 +1,15 @@
 import { Injectable } from "@angular/core";
 import {
   Auth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  updatePassword,
   User,
 } from "@angular/fire/auth";
 import { signOut } from "firebase/auth";
-import { BehaviorSubject, of } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 
 @Injectable({ providedIn: "root" })
 export class UserService {
@@ -36,14 +39,42 @@ export class UserService {
   public getCurrentUser(): User | null {
     return this.currentUserSubject.value;
   }
-  public sendPasswordResetEmail(email: string) {
-    return sendPasswordResetEmail(this.auth, email)
-      .then(() => {
-        console.log("Correo de restablecimiento enviado.");
-      })
-      .catch((error) => {
-        console.error("Error al enviar el correo de restablecimiento:", error);
-        return of(error);
-      });
+
+  /**
+   * Envía un correo de restablecimiento de contraseña al email indicado.
+   *
+   * Importante: deja que el error se propague (no lo silencia) para que
+   * el componente que llama pueda mostrar el toast/mensaje adecuado.
+   */
+  public sendPasswordResetEmail(email: string): Promise<void> {
+    return sendPasswordResetEmail(this.auth, email);
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado.
+   *
+   * Firebase exige autenticación reciente para operaciones sensibles,
+   * por eso primero hacemos `reauthenticateWithCredential` con la
+   * contraseña actual y luego `updatePassword`.
+   *
+   * @param currentPassword Contraseña actual (para reautenticación).
+   * @param newPassword     Nueva contraseña deseada.
+   */
+  public async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user || !user.email) {
+      // Usamos el mismo shape de error que Firebase para que el mapper
+      // amigable lo reconozca como "no hay sesión".
+      throw { code: "auth/no-current-user" };
+    }
+    const credential = EmailAuthProvider.credential(
+      user.email,
+      currentPassword
+    );
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
   }
 }

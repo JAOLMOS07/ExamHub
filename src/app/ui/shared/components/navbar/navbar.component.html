@@ -6,10 +6,28 @@
         <eh-logo [size]="30" />
       </a>
 
-      <!-- Espacio central reservado para breadcrumbs / search en el futuro -->
-      <div class="hidden md:flex flex-1 items-center justify-center text-sm text-slate-400">
-        <!-- Reservado para barra de búsqueda global / breadcrumbs globales -->
-      </div>
+      <!-- Acceso rápido a las secciones principales -->
+      <nav class="hidden md:flex flex-1 items-center justify-center gap-1">
+        <a
+          routerLink="/home"
+          routerLinkActive="bg-slate-100 text-slate-900"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
+        >
+          Banco
+        </a>
+        <a
+          routerLink="/grade"
+          routerLinkActive="bg-slate-100 text-slate-900"
+          class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition inline-flex items-center gap-1.5"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l3-3h4l2-2h4l2 2h4l3 3v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <circle cx="12" cy="14" r="4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Calificar
+        </a>
+      </nav>
 
       <!-- Usuario -->
       @if (user) {
@@ -59,6 +77,12 @@
               </a>
             </li>
             <li>
+              <a (click)="openChangePassword()" class="hover:bg-slate-100 cursor-pointer">
+                <app-icon [icon]="'lock'" />
+                Cambiar contraseña
+              </a>
+            </li>
+            <li>
               <a (click)="logout()" class="text-red-600 hover:bg-red-50">
                 <app-icon [icon]="'logout'" />
                 Cerrar sesión
@@ -70,3 +94,9 @@
     </div>
   </div>
 </header>
+
+<!-- Modal de cambio de contraseña (controlado desde el dropdown) -->
+<app-change-password
+  *ngIf="showChangePassword"
+  (close)="closeChangePassword()"
+></app-change-password>

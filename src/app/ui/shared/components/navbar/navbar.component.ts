@@ -17,8 +17,20 @@ import { User } from "@angular/fire/auth";
 })
 export class NavbarComponent implements OnInit {
   user: User | null = null;
+  /** Controla la visibilidad del modal de cambio de contraseña. */
+  showChangePassword = false;
 
   constructor(private userService: UserService, private router: Router) {}
+
+  /** Abre el modal de cambio de contraseña desde el dropdown de usuario. */
+  openChangePassword(): void {
+    this.showChangePassword = true;
+  }
+
+  /** Cierra el modal de cambio de contraseña (cancelado o exitoso). */
+  closeChangePassword(): void {
+    this.showChangePassword = false;
+  }
 
   ngOnInit(): void {
     this.userService.currentUser$.subscribe((user) => {

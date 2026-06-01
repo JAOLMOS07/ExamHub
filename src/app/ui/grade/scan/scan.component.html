@@ -1,0 +1,101 @@
+<app-navbar />
+
+<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
+  <header class="mb-4">
+    <a
+      routerLink="/grade"
+      class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 mb-2 transition"
+    >
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Volver a Calificar
+    </a>
+    <h1 class="text-xl font-bold text-slate-900">Escanear hoja de respuestas</h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Apuntá la cámara al QR de la hoja del alumno. Detectamos automáticamente
+      el examen y abrimos la pantalla de calificación.
+    </p>
+  </header>
+
+  <!-- Estado: idle (sin permiso aún) -->
+  <ng-container *ngIf="status === 'idle'">
+    <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-card">
+      <svg class="mx-auto w-12 h-12 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l3-3h4l2-2h4l2 2h4l3 3v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+        <circle cx="12" cy="14" r="4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <p class="text-sm text-slate-600 mb-4">
+        Vamos a usar la cámara del dispositivo para detectar el QR.
+      </p>
+      <button
+        type="button"
+        (click)="startCamera()"
+        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-white font-semibold shadow-sm hover:shadow-md transition"
+        style="background-color: #4338ca;"
+      >
+        Activar cámara
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- Estado: starting o scanning -->
+  <ng-container *ngIf="status === 'starting' || status === 'scanning'">
+    <div class="relative bg-black rounded-2xl overflow-hidden shadow-card">
+      <video
+        #videoEl
+        class="w-full h-auto block"
+        playsinline
+        muted
+      ></video>
+      <!-- Overlay de mira -->
+      <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div class="w-3/4 max-w-sm aspect-square border-2 border-white/80 rounded-2xl"></div>
+      </div>
+      <div *ngIf="status === 'starting'" class="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-sm">
+        Activando cámara…
+      </div>
+    </div>
+    <div class="flex justify-center mt-4">
+      <button
+        type="button"
+        (click)="stopScanning()"
+        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition"
+      >
+        Detener
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- Estado: error -->
+  <ng-container *ngIf="status === 'error'">
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+      <p class="text-sm text-red-700 mb-3">{{ errorMessage }}</p>
+      <button
+        type="button"
+        (click)="startCamera()"
+        class="px-4 py-2 rounded-lg text-sm font-medium text-red-700 bg-white border border-red-200 hover:bg-red-100 transition"
+      >
+        Reintentar
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- Fallback siempre disponible: subir foto -->
+  <div class="mt-6">
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">
+        ¿No tenés cámara o querés subir una foto?
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        (change)="onFileSelected($event)"
+        class="mt-2 block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+      />
+    </label>
+  </div>
+
+  <!-- Canvas oculto donde dibujamos los frames para jsQR -->
+  <canvas #canvasEl class="hidden"></canvas>
+</div>

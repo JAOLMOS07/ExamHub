@@ -11,6 +11,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatRadioModule } from "@angular/material/radio";
 import { UserService } from "../../core/services/UserService.service";
 import { LogoComponent } from "./brand/logo.component";
+import { ChangePasswordComponent } from "../change-password/change-password.component";
 
 @NgModule({
   declarations: [IconComponent, NavbarComponent],
@@ -23,6 +24,7 @@ import { LogoComponent } from "./brand/logo.component";
     MatFormFieldModule,
     MatRadioModule,
     LogoComponent,
+    ChangePasswordComponent,
   ],
   exports: [
     IconComponent,

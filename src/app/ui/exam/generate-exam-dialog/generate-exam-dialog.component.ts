@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { v4 as uuidv4 } from "uuid";
 import { Question } from "../../../core/models/question.model";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { QuestionService } from "../../../core/services/questionService.service";
@@ -15,6 +16,26 @@ import { NgToastService } from "ng-angular-popup";
 import { textToPdfNode } from "../../shared/math/math-pdf.helper";
 import { PreferencesService } from "../../../core/services/preferences.service";
 import { ExamTemplate } from "../../../core/models/preferences.model";
+import { GradingService } from "../../../core/services/grading.service";
+import {
+  AnswerKey,
+  AnswerLetter,
+  GradedExam,
+} from "../../../core/models/gradedExam.model";
+import { ALPHABET } from "../../../core/utils/alphabet.const";
+import { encodeQrPayload } from "../../../core/utils/qrPayload.util";
+import {
+  BUBBLE_RADIUS_PT,
+  FIDUCIAL_POSITIONS,
+  FIDUCIAL_SIZE_PT,
+  PAGE_W_PT,
+  QR_LAYOUT,
+  STUDENT_INFO_Y_PT,
+  TITLE_Y_PT,
+  bubbleCenter,
+  numberLabelX,
+  rowLabelY,
+} from "../../../core/utils/omrLayout.const";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -41,6 +62,7 @@ export class GenerateExamDialogComponent implements OnInit {
     private questionService: QuestionService,
     private toast: NgToastService,
     private preferencesService: PreferencesService,
+    private gradingService: GradingService,
     @Inject(MAT_DIALOG_DATA) public data: { exam: Question[] }
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
@@ -213,6 +235,18 @@ export class GenerateExamDialogComponent implements OnInit {
     // en la segunda generación de la sesión.
     this.greaterAmount = 0;
 
+    // -----------------------------------------------------------------
+    //  Feature de calificación automática
+    // -----------------------------------------------------------------
+    //  Generamos UN solo `examId` para esta tanda (todas las versiones
+    //  comparten id; las distinguimos por `versionId`). Vamos llenando
+    //  `versionsForFirestore` mientras armamos cada PDF, y al final
+    //  persistimos el GradedExam en `/exams/{examId}` para que el
+    //  scanner pueda recuperarlo por QR.
+    // -----------------------------------------------------------------
+    const examId = uuidv4();
+    const versionsForFirestore: AnswerKey[] = [];
+
     let header;
     if (config.headerType === "image") {
       header = {
@@ -275,6 +309,22 @@ export class GenerateExamDialogComponent implements OnInit {
         (d) => d.type === objectType.QUESTION
       );
 
+      // ---- Feature de calificación: armar AnswerKey + QR de esta versión ----
+      const versionId = `v${index + 1}`;
+      const versionLabel = this.getExamCode(index + 1);
+      const answerKey = this.buildAnswerKeyForVersion(
+        versionId,
+        versionLabel,
+        answerQuestions
+      );
+      versionsForFirestore.push(answerKey);
+      const qrPayloadText = encodeQrPayload({
+        examId,
+        versionId,
+        page: 1,
+        totalPages: 1,
+      });
+
       let docDefinition: any = {
         margin: 10,
         pageMargins: [40, 130, 40, 60],
@@ -292,206 +342,30 @@ export class GenerateExamDialogComponent implements OnInit {
           },
           await this.buildExamBody(examToGenerate, config),
           { text: "", pageBreak: "before" },
-          {
-            text: `Hoja de respuestas examen: ${this.getExamCode(index + 1)}`,
-            alignment: "center",
-            margin: [0, 0, 0, 10],
-          },
-          {
-            stack: await Promise.all(
-              answerQuestions.map(async (question, $index): Promise<any> => {
-                const kind = getQuestionKind(question);
-                const numberLabel =
-                  answerQuestions.length > 9
-                    ? $index > 8
-                      ? `${$index + 1}.`
-                      : `0${$index + 1}.`
-                    : `${$index + 1}.`;
-
-                let answerCell: any;
-                if (
-                  kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
-                  kind === QuestionKind.TRUE_FALSE
-                ) {
-                  const bubbleCount =
-                    kind === QuestionKind.TRUE_FALSE
-                      ? 2
-                      : this.greaterAmount;
-                  answerCell = {
-                    width: "auto",
-                    stack: [
-                      {
-                        columns: await Promise.all(
-                          Array(bubbleCount)
-                            .fill(null)
-                            .map(async (_, $b): Promise<any> => [
-                              {
-                                image: await this.getBase64ImageFromURL(
-                                  `assets/op${this.getAlphabetLetter(
-                                    $b + 1
-                                  )}.png`
-                                ),
-                                width: 15,
-                                margin: [10, 0, 10, 0],
-                              },
-                            ])
-                        ),
-                        margin: [10, 5, 10, 5],
-                      },
-                    ],
-                  };
-                } else if (kind === QuestionKind.NUMERIC) {
-                  // Numérica: dejamos el espacio para que el alumno
-                  // anote el resultado también en la hoja de respuestas.
-                  // La respuesta es corta y exacta, así que es más
-                  // cómodo corregir comparando ambas hojas (alumno vs
-                  // maestro) que ir a buscar en el cuerpo del examen.
-                  answerCell = {
-                    width: "*",
-                    text: "Respuesta: ______________________",
-                    margin: [10, 5, 10, 5],
-                  };
-                } else if (kind === QuestionKind.OPEN) {
-                  // Respuesta abierta: la pregunta ya tiene varias
-                  // líneas en el cuerpo del examen. Replicarlas acá
-                  // duplica espacio sin valor. Texto informativo.
-                  answerCell = {
-                    width: "*",
-                    text: "(se responde en el espacio de la pregunta)",
-                    italics: true,
-                    color: "#666",
-                    margin: [10, 5, 10, 5],
-                  };
-                } else {
-                  // Fallback defensivo para tipos no esperados
-                  answerCell = {
-                    width: "*",
-                    text: "",
-                    margin: [10, 5, 10, 5],
-                  };
-                }
-
-                return [
-                  {
-                    columns: [
-                      {
-                        text: numberLabel,
-                        width: "auto",
-                        margin: [10, 5, 10, 5],
-                      },
-                      answerCell,
-                    ],
-                  },
-                ];
-              })
-            ),
-            margin: [10, 0, 0, 0],
-            alignment: "left",
-          },
+          // ============== HOJA DE RESPUESTAS DEL ALUMNO ================
+          // Layout OMR-friendly (posiciones absolutas conocidas).
+          // El motor OMR usa las mismas constantes (`omrLayout.const.ts`)
+          // para muestrear, así que el alineamiento es exacto.
+          // -------------------------------------------------------------
+          ...(await this.buildOmrAnswerSheet(
+            answerQuestions,
+            this.getExamCode(index + 1),
+            qrPayloadText,
+            false
+          )),
           { text: "", pageBreak: "before" },
-          {
-            text: `Hoja de respuestas del maestro examen: ${this.getExamCode(
-              index + 1
-            )}`,
-            alignment: "center",
-            margin: [0, 0, 0, 10],
-          },
-          {
-            stack: await Promise.all(
-              answerQuestions.map(async (question, $index): Promise<any> => {
-                const kind = getQuestionKind(question);
-                const numberLabel =
-                  answerQuestions.length > 9
-                    ? $index > 8
-                      ? `${$index + 1}.`
-                      : `0${$index + 1}.`
-                    : `${$index + 1}.`;
-
-                let answerCell: any;
-                if (
-                  (kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
-                    kind === QuestionKind.TRUE_FALSE) &&
-                  question.options
-                ) {
-                  answerCell = {
-                    width: "auto",
-                    stack: [
-                      {
-                        columns: await Promise.all(
-                          question.options.map(
-                            async (item, $b): Promise<any> => {
-                              if (item.correct) {
-                                return [
-                                  {
-                                    image: await this.getBase64ImageFromURL(
-                                      "assets/relleno.png"
-                                    ),
-                                    width: 15,
-                                    margin: [10, 0, 10, 0],
-                                  },
-                                ];
-                              }
-                              return [
-                                {
-                                  image: await this.getBase64ImageFromURL(
-                                    `assets/op${this.getAlphabetLetter(
-                                      $b + 1
-                                    )}.png`
-                                  ),
-                                  width: 15,
-                                  margin: [10, 0, 10, 0],
-                                },
-                              ];
-                            }
-                          )
-                        ),
-                        margin: [10, 5, 10, 5],
-                      },
-                    ],
-                  };
-                } else if (kind === QuestionKind.NUMERIC) {
-                  const ans =
-                    question.numericAnswer !== undefined
-                      ? `${question.numericAnswer}`
-                      : "—";
-                  const tol =
-                    question.numericTolerance && question.numericTolerance > 0
-                      ? ` (± ${question.numericTolerance})`
-                      : "";
-                  answerCell = {
-                    width: "*",
-                    text: `Respuesta: ${ans}${tol}`,
-                    bold: true,
-                    margin: [10, 5, 10, 5],
-                  };
-                } else {
-                  // OPEN: el maestro corrige a mano
-                  answerCell = {
-                    width: "*",
-                    text: "(respuesta abierta — corregir a mano)",
-                    italics: true,
-                    color: "#666",
-                    margin: [10, 5, 10, 5],
-                  };
-                }
-
-                return [
-                  {
-                    columns: [
-                      {
-                        text: numberLabel,
-                        width: "auto",
-                        margin: [10, 5, 10, 5],
-                      },
-                      answerCell,
-                    ],
-                  },
-                ];
-              })
-            ),
-            margin: [10, 0, 0, 0],
-            alignment: "left",
-          },
+          // ============== HOJA DE RESPUESTAS DEL MAESTRO ===============
+          // Mismo layout exacto que la del alumno — solo cambia que la
+          // burbuja correcta de cada pregunta aparece rellena con
+          // `assets/relleno.png`. Así el maestro corrige a ojo en el
+          // mismo formato visual que ve el alumno.
+          // -------------------------------------------------------------
+          ...(await this.buildOmrAnswerSheet(
+            answerQuestions,
+            this.getExamCode(index + 1),
+            qrPayloadText,
+            true
+          )),
         ],
 
         styles: {
@@ -523,6 +397,101 @@ export class GenerateExamDialogComponent implements OnInit {
         date.toLocaleDateString() + "_" + date.toLocaleTimeString() + "_exams"
       );
     }
+
+    // -----------------------------------------------------------------
+    //  Persistir el examen calificable en Firestore.
+    //
+    //  Es un fire-and-forget: no bloqueamos el cierre del diálogo si
+    //  Firestore se demora. Si falla, mostramos toast pero el PDF ya
+    //  está generado (no se pierde trabajo). El profe podrá re-generar
+    //  para reintentar el guardado.
+    //
+    //  TODO: cuando integremos Remote Config para planes, pasar el
+    //  plan real del usuario. Por ahora "free" como default conservador.
+    // -----------------------------------------------------------------
+    if (versionsForFirestore.length > 0) {
+      const totalQuestions = versionsForFirestore[0].answers.length;
+      const gradedExam: Omit<
+        GradedExam,
+        "ownerId" | "createdAt" | "expiresAt"
+      > = {
+        id: examId,
+        title: config.title || "Examen sin título",
+        subject: config.subtitle || undefined,
+        grade: config.grade || undefined,
+        totalQuestions,
+        letters: this.buildLetterSet(),
+        versions: versionsForFirestore,
+        planAtCreation: "free",
+      };
+      this.gradingService
+        .saveExam(gradedExam, "free")
+        .then(() => {
+          // Silencioso en éxito: ya estamos mostrando el PDF.
+          // El profe lo verá en /grade cuando vaya a calificar.
+        })
+        .catch((err) => {
+          console.error("No se pudo guardar el examen calificable:", err);
+          this.toast.danger(
+            "El PDF se generó pero no pudimos guardar el examen para calificar. Reintentá generar.",
+            "ExamHub",
+            5000
+          );
+        });
+    }
+  }
+
+  /**
+   * Construye el set de letras válidas para este examen.
+   * Usa el `greaterAmount` que se va calculando durante el render del
+   * cuerpo (es el máximo número de opciones que vimos en alguna
+   * pregunta MCQ). Mínimo 2 (V/F).
+   */
+  private buildLetterSet(): AnswerLetter[] {
+    const count = Math.max(2, this.greaterAmount || 4);
+    return ALPHABET.slice(0, count);
+  }
+
+  /**
+   * Calcula el AnswerKey de una versión a partir de las preguntas
+   * YA BARAJADAS en el orden en que se imprimieron. Para cada pregunta:
+   *
+   *   - MCQ / V-F: la letra de la opción con `correct: true`.
+   *   - NUMERIC : `null` (lo calificaremos con regex contra la
+   *               respuesta esperada en una iteración futura — para
+   *               la primera versión del OMR solo MCQ).
+   *   - OPEN    : `null` (se corrige a mano, no se puede automatizar).
+   *
+   *  Si una MCQ no tiene opción correcta (mala configuración del
+   *  banco), devolvemos `null` y dejamos un warning. La pregunta no
+   *  se cuenta para calificar.
+   */
+  private buildAnswerKeyForVersion(
+    versionId: string,
+    label: string,
+    answerQuestions: Document[]
+  ): AnswerKey {
+    const answers: (AnswerLetter | null)[] = answerQuestions.map(
+      (q, qIndex) => {
+        const kind = getQuestionKind(q);
+        if (
+          kind !== QuestionKind.MULTIPLE_CHOICE_SINGLE &&
+          kind !== QuestionKind.TRUE_FALSE
+        ) {
+          return null;
+        }
+        const opts = q.options ?? [];
+        const correctIdx = opts.findIndex((o: Option) => o.correct === true);
+        if (correctIdx < 0) {
+          console.warn(
+            `Pregunta ${qIndex + 1} (${q.name}) no tiene opción correcta marcada.`
+          );
+          return null;
+        }
+        return ALPHABET[correctIdx];
+      }
+    );
+    return { versionId, label, answers };
   }
 
   /**
@@ -906,6 +875,194 @@ export class GenerateExamDialogComponent implements OnInit {
       [result[i], result[j]] = [result[j], result[i]];
     }
     return result;
+  }
+
+  /**
+   * Construye TODOS los nodos pdfmake que forman la hoja de respuestas
+   * OMR-friendly: 4 fiduciales + QR + título + datos del alumno + grid
+   * fijo de burbujas.
+   *
+   * Esta función produce **dos versiones** según `forTeacher`:
+   *   - false (alumno): todas las burbujas vacías.
+   *   - true  (maestro): la burbuja correcta de cada pregunta aparece
+   *                       rellena (con `assets/relleno.png`).
+   *
+   * Ambas versiones comparten layout EXACTO — solo cambia el contenido
+   * y el título. Eso garantiza que el maestro y el alumno tengan el
+   * mismo formato visual.
+   *
+   * Las posiciones (fiduciales, burbujas, etc) vienen de
+   * `omrLayout.const.ts`, que también consume el motor OMR. Así se
+   * mantiene un único origen de verdad del layout.
+   *
+   * Importante: usamos los PNG existentes (`assets/op[A-Z].png` y
+   * `assets/relleno.png`) en vez de dibujar círculo + letra con
+   * canvas. Esto da alineamiento pixel-perfecto entre el círculo y
+   * su letra, sin las inconsistencias típicas de centrar texto sobre
+   * canvas con métricas variables del font.
+   */
+  private async buildOmrAnswerSheet(
+    answerQuestions: Document[],
+    examCode: string,
+    qrPayload: string,
+    forTeacher: boolean
+  ): Promise<any[]> {
+    const nodes: any[] = [];
+    const total = answerQuestions.length;
+
+    // Pre-cargamos las imágenes UNA vez para reutilizarlas en todas
+    // las posiciones. Mucho más rápido que await en cada bubble.
+    const letterImages: Record<string, any> = {};
+    const lettersNeeded = Math.max(2, this.greaterAmount);
+    for (let j = 0; j < lettersNeeded; j++) {
+      const letter = ALPHABET[j];
+      letterImages[letter] = await this.getBase64ImageFromURL(
+        `assets/op${letter}.png`
+      );
+    }
+    const filledImage = forTeacher
+      ? await this.getBase64ImageFromURL("assets/relleno.png")
+      : null;
+
+    // --- 4 fiduciales (cuadrados negros sólidos, lejos del contenido) ---
+    for (const pos of [
+      FIDUCIAL_POSITIONS.tl,
+      FIDUCIAL_POSITIONS.tr,
+      FIDUCIAL_POSITIONS.bl,
+      FIDUCIAL_POSITIONS.br,
+    ]) {
+      nodes.push({
+        canvas: [
+          {
+            type: "rect",
+            x: 0,
+            y: 0,
+            w: FIDUCIAL_SIZE_PT,
+            h: FIDUCIAL_SIZE_PT,
+            color: "#000000",
+          },
+        ],
+        absolutePosition: { x: pos.x, y: pos.y },
+      });
+    }
+
+    // --- Título centrado en la página ---
+    nodes.push({
+      text: forTeacher
+        ? `Hoja de respuestas del maestro — Examen ${examCode}`
+        : `Hoja de respuestas — Examen ${examCode}`,
+      bold: true,
+      fontSize: 13,
+      alignment: "center",
+      width: PAGE_W_PT,
+      absolutePosition: { x: 0, y: TITLE_Y_PT },
+    });
+
+    // --- QR en zona dedicada (también en la del maestro, para visual
+    //     consistency — el maestro lo ignora). ---
+    nodes.push({
+      qr: qrPayload,
+      fit: QR_LAYOUT.fit,
+      eccLevel: "M",
+      absolutePosition: { x: QR_LAYOUT.x, y: QR_LAYOUT.y },
+    });
+
+    // --- Datos del alumno (la del maestro tiene el espacio igual,
+    //     se usa para anotaciones) ---
+    nodes.push({
+      text: forTeacher
+        ? "Clave de respuestas — usar para corrección manual o referencia"
+        : "Nombre: ______________________________________   Código: __________",
+      fontSize: 10,
+      italics: forTeacher,
+      color: forTeacher ? "#666666" : undefined,
+      absolutePosition: { x: 50, y: STUDENT_INFO_Y_PT },
+    });
+
+    // --- Línea separadora ---
+    nodes.push({
+      canvas: [
+        {
+          type: "line",
+          x1: 0,
+          y1: 0,
+          x2: 495,
+          y2: 0,
+          lineWidth: 0.5,
+          lineColor: "#cccccc",
+        },
+      ],
+      absolutePosition: { x: 50, y: STUDENT_INFO_Y_PT + 20 },
+    });
+
+    // --- Grid de burbujas ---
+    for (let i = 0; i < total; i++) {
+      const q = answerQuestions[i];
+      const kind = getQuestionKind(q);
+      const numLabel = (i + 1).toString().padStart(2, "0") + ".";
+      const labelX = numberLabelX(i, total);
+      const labelY = rowLabelY(i, total);
+
+      // Número de pregunta
+      nodes.push({
+        text: numLabel,
+        fontSize: 10,
+        bold: forTeacher,
+        absolutePosition: { x: labelX, y: labelY },
+      });
+
+      if (
+        kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
+        kind === QuestionKind.TRUE_FALSE
+      ) {
+        const letterCount =
+          kind === QuestionKind.TRUE_FALSE ? 2 : this.greaterAmount;
+        for (let j = 0; j < letterCount; j++) {
+          const center = bubbleCenter(i, j, total);
+          // ¿En la versión del maestro, esta es la correcta?
+          const isCorrect =
+            forTeacher && q.options && q.options[j]?.correct === true;
+          const img = isCorrect ? filledImage : letterImages[ALPHABET[j]];
+          nodes.push({
+            image: img,
+            width: BUBBLE_RADIUS_PT * 2,
+            absolutePosition: {
+              x: center.x - BUBBLE_RADIUS_PT,
+              y: center.y - BUBBLE_RADIUS_PT,
+            },
+          });
+        }
+      } else if (kind === QuestionKind.NUMERIC) {
+        // No es OMR-able. En la del maestro mostramos la respuesta esperada.
+        const txt = forTeacher
+          ? `Respuesta: ${q.numericAnswer ?? "—"}${
+              q.numericTolerance && q.numericTolerance > 0
+                ? ` (± ${q.numericTolerance})`
+                : ""
+            }`
+          : "Respuesta: ____________________";
+        nodes.push({
+          text: txt,
+          fontSize: 9,
+          italics: !forTeacher,
+          bold: forTeacher,
+          color: forTeacher ? "#000000" : "#666666",
+          absolutePosition: { x: labelX + 30, y: labelY },
+        });
+      } else if (kind === QuestionKind.OPEN) {
+        nodes.push({
+          text: forTeacher
+            ? "(respuesta abierta — corregir a mano)"
+            : "(en el espacio de la pregunta)",
+          fontSize: 9,
+          italics: true,
+          color: "#666666",
+          absolutePosition: { x: labelX + 30, y: labelY },
+        });
+      }
+    }
+
+    return nodes;
   }
 
   /**

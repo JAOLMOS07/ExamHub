@@ -27,12 +27,16 @@ const FIREBASE_AUTH_ERRORS: Record<string, string> = {
   "auth/wrong-password": "La contraseña es incorrecta.",
   "auth/invalid-credential": "Correo o contraseña incorrectos.",
   "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
+  "auth/missing-email": "Escribí tu correo para continuar.",
   "auth/too-many-requests":
     "Demasiados intentos fallidos. Espera unos minutos y vuelve a intentar.",
   "auth/network-request-failed":
     "No se pudo conectar. Revisa tu conexión a internet.",
   "auth/email-already-in-use": "Ya existe una cuenta con ese correo.",
   "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+  "auth/requires-recent-login":
+    "Por seguridad, cerrá sesión y volvé a iniciarla para continuar.",
+  "auth/no-current-user": "Tu sesión expiró. Iniciá sesión de nuevo.",
 };
 
 function getFriendlyAuthError(error: any): string {
@@ -56,6 +60,10 @@ export class LoginComponent {
   errorMessage: string = "";
   /** Año actual para el footer del hero. */
   year: number = new Date().getFullYear();
+  /** Flag de loading para deshabilitar el botón mientras enviamos login. */
+  isSubmitting = false;
+  /** Flag de loading para el link de "Olvidé mi contraseña". */
+  isSendingReset = false;
 
   constructor(
     private userService: UserService,
@@ -78,8 +86,11 @@ export class LoginComponent {
   }
 
   resetPassword() {
-    const email = this.loginForm.value.email;
-    if (!email || this.loginForm.get("email")?.invalid) {
+    if (this.isSendingReset) return;
+    const emailCtrl = this.loginForm.get("email");
+    const email = (this.loginForm.value.email ?? "").trim();
+    if (!email || emailCtrl?.invalid) {
+      emailCtrl?.markAsTouched();
       this.toast.warning(
         "Escribí tu correo arriba y volvé a apretar 'Olvidé mi contraseña'.",
         "ExamHub",
@@ -87,26 +98,33 @@ export class LoginComponent {
       );
       return;
     }
+    this.isSendingReset = true;
     this.userService
       .sendPasswordResetEmail(email)
       .then(() => {
         this.toast.success(
-          "Te enviamos un correo para restablecer tu contraseña.",
+          "Te enviamos un correo para restablecer tu contraseña. Revisá tu bandeja (y la carpeta de spam).",
           "ExamHub",
-          3500
+          4500
         );
       })
       .catch((error) => {
-        this.toast.danger(getFriendlyAuthError(error), "ExamHub", 3500);
+        console.error("Reset password error:", error);
+        this.toast.danger(getFriendlyAuthError(error), "ExamHub", 4000);
+      })
+      .finally(() => {
+        this.isSendingReset = false;
       });
   }
 
   onSubmit() {
+    if (this.isSubmitting) return;
     if (this.loginForm.invalid) {
       this.errorMessage = "Completá correo y contraseña.";
       return;
     }
     this.errorMessage = "";
+    this.isSubmitting = true;
     const { email, password } = this.loginForm.value;
     this.userService
       .login(email, password)
@@ -116,6 +134,9 @@ export class LoginComponent {
       .catch((error) => {
         this.errorMessage = getFriendlyAuthError(error);
         console.error("Login error:", error);
+      })
+      .finally(() => {
+        this.isSubmitting = false;
       });
   }
 }

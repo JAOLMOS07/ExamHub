@@ -120,10 +120,12 @@
               </label>
               <a
                 (click)="resetPassword()"
+                [class.pointer-events-none]="isSendingReset"
+                [class.opacity-50]="isSendingReset"
                 class="text-xs text-brand-700 hover:text-brand-800 hover:underline cursor-pointer"
                 style="color: #4338ca;"
               >
-                ¿La olvidaste?
+                {{ isSendingReset ? "Enviando…" : "¿La olvidaste?" }}
               </a>
             </div>
             <input
@@ -149,10 +151,10 @@
             style="background-color: #4338ca;"
             onmouseover="this.style.backgroundColor='#3730a3'"
             onmouseout="this.style.backgroundColor='#4338ca'"
-            [disabled]="loginForm.invalid"
+            [disabled]="loginForm.invalid || isSubmitting"
           >
-            Iniciar sesión
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            {{ isSubmitting ? "Iniciando sesión…" : "Iniciar sesión" }}
+            <svg *ngIf="!isSubmitting" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </button>

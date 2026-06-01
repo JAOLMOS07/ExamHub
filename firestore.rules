@@ -1,0 +1,93 @@
+rules_version = '2';
+
+// ============================================================================
+// ExamHub — Firestore Security Rules
+// ----------------------------------------------------------------------------
+// Cubren las colecciones del feature de calificación. Si tu proyecto ya tiene
+// reglas para otras colecciones (banco de preguntas, preferencias, etc.),
+// fusionalas con este archivo: las regiones se identifican con comentarios
+// "MATCH:" para que sea fácil ubicar dónde ir.
+//
+// Deploy:
+//   firebase deploy --only firestore:rules
+//
+// Mientras no las despliegues, Firestore puede estar en "test mode" que
+// permite todo. Conviene hacerlo cuanto antes — sobre todo ahora que
+// vamos a guardar nombres de estudiantes (datos personales).
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------- Helpers --------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ownerField) {
+      return isSignedIn() && request.auth.uid == ownerField;
+    }
+
+    // ========================================================================
+    // MATCH:  /exams/{examId}
+    //   Documento principal del examen calificable. El campo `ownerId` define
+    //   al docente dueño. Solo el dueño puede leerlo, modificarlo o borrarlo.
+    //
+    //   IMPORTANTE: el scanner del propio docente lee el examen desde acá tras
+    //   decodificar el QR. Como el scanner ya está logueado como el dueño,
+    //   no hace falta abrir lectura pública.
+    //
+    //   Si en el futuro quisiéramos permitir que un asistente del colegio
+    //   escanee exámenes del docente, habría que agregar un campo `editors:
+    //   [uid, uid]` y chequearlo en `allow read`.
+    // ========================================================================
+    match /exams/{examId} {
+
+      allow read: if isOwner(resource.data.ownerId);
+
+      // Al crear, el dueño DEBE ser el usuario autenticado y los campos
+      // críticos no se pueden mentir.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.id == examId
+        && request.resource.data.totalQuestions is int
+        && request.resource.data.totalQuestions > 0
+        && request.resource.data.totalQuestions <= 200
+        && request.resource.data.versions.size() >= 1
+        && request.resource.data.versions.size() <= 30;
+
+      // En update, el ownerId no se puede cambiar. El resto sí.
+      allow update: if isOwner(resource.data.ownerId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      allow delete: if isOwner(resource.data.ownerId);
+
+      // ----------------------------------------------------------------------
+      // MATCH:  /exams/{examId}/results/{resultId}
+      //   Resultados individuales de estudiantes. Heredan dueño del examen
+      //   padre. Como la regla no puede leer el padre directamente sin
+      //   `get(/...)`, usamos exists+get para validar.
+      // ----------------------------------------------------------------------
+      match /results/{resultId} {
+
+        function parentExam() {
+          return get(/databases/$(database)/documents/exams/$(examId)).data;
+        }
+
+        function isExamOwner() {
+          return isSignedIn() && parentExam().ownerId == request.auth.uid;
+        }
+
+        allow read: if isExamOwner();
+
+        allow create: if isExamOwner()
+          && request.resource.data.examId == examId
+          && request.resource.data.answers is list
+          && request.resource.data.source in ['assisted', 'omr', 'mixed'];
+
+        allow update: if isExamOwner();
+        allow delete: if isExamOwner();
+      }
+    }
+  }
+}

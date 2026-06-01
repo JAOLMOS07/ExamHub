@@ -1,7 +1,7 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { PrincipalComponent } from "./principal.component";
-import { EXAM, PRINCIPAL } from "../routes.constants";
+import { EXAM, GRADE, PRINCIPAL } from "../routes.constants";
 import {
   canActivate,
   redirectLoggedInTo,
@@ -37,6 +37,41 @@ const routes: Routes = [
             (m) => m.PreferencesComponent
           ),
         ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+      },
+      // Feature de calificación: lista, scanner y pantalla de grading.
+      {
+        path: GRADE.NAME,
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+        children: [
+          {
+            path: "",
+            loadComponent: () =>
+              import("../grade/grade-list.component").then(
+                (m) => m.GradeListComponent
+              ),
+          },
+          {
+            path: GRADE.SCAN,
+            loadComponent: () =>
+              import("../grade/scan/scan.component").then(
+                (m) => m.ScanComponent
+              ),
+          },
+          {
+            path: `${GRADE.EXAM}/:examId`,
+            loadComponent: () =>
+              import("../grade/exam-detail/exam-detail.component").then(
+                (m) => m.ExamDetailComponent
+              ),
+          },
+          {
+            path: `${GRADE.EXAM}/:examId/${GRADE.GRADE_NEW}`,
+            loadComponent: () =>
+              import("../grade/grading/grading.component").then(
+                (m) => m.GradingComponent
+              ),
+          },
+        ],
       },
       {
         path: "",
