@@ -32,8 +32,7 @@
         </button>
         <button
           (click)="goToScan()"
-          class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition"
-          style="background-color: #4338ca;"
+          class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition bg-brand-700 hover:bg-brand-800"
         >
           Escanear otro
         </button>
@@ -120,8 +119,7 @@
                que el celular abra directamente la cámara trasera.
                En desktop cae al file picker. -->
           <label
-            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md cursor-pointer transition flex-shrink-0"
-            style="background-color: #4338ca;"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md cursor-pointer transition flex-shrink-0 bg-brand-700 hover:bg-brand-800"
             [class.opacity-50]="isOmrRunning"
             [class.pointer-events-none]="isOmrRunning"
           >
@@ -311,8 +309,7 @@
         type="button"
         (click)="save()"
         [disabled]="isSaving"
-        class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:shadow-md transition disabled:opacity-50"
-        style="background-color: #4338ca;"
+        class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:shadow-md transition disabled:opacity-50 bg-brand-700 hover:bg-brand-800"
       >
         {{ isSaving ? "Guardando…" : "Guardar calificación" }}
       </button>

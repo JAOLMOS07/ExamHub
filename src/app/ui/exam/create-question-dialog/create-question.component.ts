@@ -14,7 +14,7 @@ import {
   MatDialogRef,
 } from "@angular/material/dialog";
 import { FormBuilder } from "@angular/forms";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
 import { Document, getQuestionKind } from "../../../core/models/folder.model";
 import { objectType } from "../../../core/models/objectType.enum";
 import {
@@ -118,7 +118,7 @@ export class CreateQuestionDialogComponent {
   constructor(
     private formBuilder: FormBuilder,
     private dialogRef: MatDialogRef<CreateQuestionDialogComponent>,
-    private toast: NgToastService,
+    private toast: ToastService,
     private mathDialog: MatDialog,
     private imageUpload: ImageUploadService,
     @Inject(MAT_DIALOG_DATA)

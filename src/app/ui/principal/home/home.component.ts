@@ -14,15 +14,11 @@ import { PrincipalModule } from "../principal.module";
 import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/generate-exam-dialog.component";
 import { ExamService } from "../../../core/services/ExamService.service";
 import { UserService } from "../../../core/services/UserService.service";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
+import { ConfirmService } from "../../../core/services/confirm.service";
 import { filter, take } from "rxjs/operators";
 import { firstValueFrom } from "rxjs";
 import { PreferencesService } from "../../../core/services/preferences.service";
-import {
-  SweetAlert2LoaderService,
-  SweetAlert2Module,
-} from "@sweetalert2/ngx-sweetalert2";
-
 @Component({
   selector: "app-home",
   standalone: true,
@@ -31,7 +27,6 @@ import {
     SharedModule,
     CommonModule,
     PrincipalModule,
-    SweetAlert2Module,
   ],
   templateUrl: "./home.component.html",
   styleUrls: ["./home.component.css"],
@@ -210,7 +205,8 @@ export class HomeComponent {
     private examService: ExamService,
     private userService: UserService,
     private preferencesService: PreferencesService,
-    private toast: NgToastService
+    private toast: ToastService,
+    private confirm: ConfirmService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
@@ -616,6 +612,30 @@ export class HomeComponent {
 
   addFolderToPath(folder: Document): void {}
 
+  /**
+   * Pide confirmación (diálogo de marca) y elimina carpeta/lectura/pregunta.
+   * El texto se adapta al tipo de documento.
+   */
+  async confirmDeleteDocument(document: Document): Promise<void> {
+    const isFolder = document.type === objectType.FOLDER;
+    const isPassage = document.type === objectType.PASSAGE;
+    const confirmed = await this.confirm.ask({
+      title: isFolder
+        ? "¿Eliminar esta carpeta?"
+        : isPassage
+        ? "¿Eliminar esta lectura?"
+        : "¿Eliminar esta pregunta?",
+      message: isFolder
+        ? "Se borrará junto con todo su contenido."
+        : isPassage
+        ? "Se borrarán todas sus preguntas asociadas."
+        : "No se puede deshacer.",
+      confirmText: "Eliminar",
+      tone: "danger",
+    });
+    if (confirmed) this.deleteDocument(document);
+  }
+
   deleteDocument(document: Document): void {
     this.examService
       .deleteDocumentAndCollection(this.currentPath, document.id)
@@ -649,6 +669,17 @@ export class HomeComponent {
       width: "900px",
     });
   }
+  async confirmDiscardExam(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: "¿Descartar examen actual?",
+      message:
+        "Se quitarán todas las preguntas seleccionadas. Las preguntas siguen en tu banco.",
+      confirmText: "Sí, descartar",
+      icon: "question",
+    });
+    if (confirmed) this.discardExam();
+  }
+
   discardExam() {
     this.questionService.discardExam();
   }

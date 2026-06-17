@@ -264,8 +264,7 @@
       <button
         type="button"
         (click)="step = 2"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition"
-        style="background-color: #4338ca;"
+        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition bg-brand-700 hover:bg-brand-800"
       >
         Ya copié, siguiente
         <app-icon [icon]="'arrow_forward'" />
@@ -275,8 +274,7 @@
         type="button"
         (click)="validate()"
         [disabled]="!jsonText.trim()"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-        style="background-color: #4338ca;"
+        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-700 hover:bg-brand-800"
       >
         Validar y previsualizar
         <app-icon [icon]="'arrow_forward'" />
@@ -286,8 +284,7 @@
         type="button"
         (click)="confirmImport()"
         [disabled]="importing || totalToImport === 0"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-        style="background-color: #10b981;"
+        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500"
       >
         @if (importing) {
           <span class="loading loading-spinner loading-xs"></span>

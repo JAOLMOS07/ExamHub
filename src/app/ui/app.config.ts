@@ -1,9 +1,12 @@
 import { ApplicationConfig } from "@angular/core";
 import { provideRouter } from "@angular/router";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
-import { initializeApp, provideFirebaseApp } from "@angular/fire/app";
+import { getApp, initializeApp, provideFirebaseApp } from "@angular/fire/app";
 import { getAuth, provideAuth } from "@angular/fire/auth";
-import { getFirestore, provideFirestore } from "@angular/fire/firestore";
+import {
+  initializeFirestore,
+  provideFirestore,
+} from "@angular/fire/firestore";
 import { getStorage, provideStorage } from "@angular/fire/storage";
 
 import { routes } from "./app.routes";
@@ -15,7 +18,17 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()),
+    /**
+     * `ignoreUndefinedProperties: true` evita que Firestore lance
+     * "Unsupported field value: undefined" cuando un documento trae
+     * campos opcionales sin valor (ej: `manualScores` al calificar sin
+     * tocar las preguntas abiertas, o `subject`/`grade`/`studentCode`).
+     * Antes esto rompía el guardado; ahora esos campos simplemente se
+     * omiten del documento.
+     */
+    provideFirestore(() =>
+      initializeFirestore(getApp(), { ignoreUndefinedProperties: true })
+    ),
     /**
      * Firebase Storage para subir imágenes de preguntas.
      * Ruta de archivos: users/<uid>/questions/<questionId>/<filename>.

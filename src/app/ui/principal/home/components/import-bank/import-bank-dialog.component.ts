@@ -6,7 +6,7 @@ import {
   MatDialogModule,
   MatDialogRef,
 } from "@angular/material/dialog";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../../../core/services/toast.service";
 import { SharedModule } from "../../../../shared/shared.module";
 import {
   BankImportService,
@@ -50,7 +50,7 @@ export class ImportBankDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<ImportBankDialogComponent>,
     private importService: BankImportService,
-    private toast: NgToastService,
+    private toast: ToastService,
     @Inject(MAT_DIALOG_DATA) public data: { path: string[] }
   ) {}
 

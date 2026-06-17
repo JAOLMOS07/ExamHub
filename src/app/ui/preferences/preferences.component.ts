@@ -2,7 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { RouterModule } from "@angular/router";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../core/services/toast.service";
 import { SharedModule } from "../shared/shared.module";
 import { PreferencesService } from "../../core/services/preferences.service";
 import {
@@ -42,7 +42,7 @@ export class PreferencesComponent implements OnInit {
 
   constructor(
     private prefsService: PreferencesService,
-    private toast: NgToastService
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {

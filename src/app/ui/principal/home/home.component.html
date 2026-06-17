@@ -72,13 +72,13 @@
               </span>
             }
             @if (passageCount > 0) {
-              <span class="eh-tag" style="background:#fffbeb; color:#92400e; border-color:#fde68a;">
+              <span class="eh-tag bg-amber-50 text-amber-800 border-amber-200">
                 <app-icon [icon]="'menu_book'" />
                 {{ passageCount }} {{ passageCount === 1 ? 'lectura' : 'lecturas' }}
               </span>
             }
             @if (questionCount > 0) {
-              <span class="eh-tag" style="background:#eef2ff; color:#3730a3; border-color:#c7d2fe;">
+              <span class="eh-tag bg-brand-50 text-brand-800 border-brand-200">
                 <app-icon [icon]="'help_outline'" />
                 {{ questionCount }} {{ questionCount === 1 ? 'pregunta' : 'preguntas' }}
               </span>
@@ -92,10 +92,7 @@
         <div
           tabindex="0"
           role="button"
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium shadow-sm hover:shadow-md transition cursor-pointer"
-          style="background-color: #4338ca;"
-          onmouseover="this.style.backgroundColor='#3730a3'"
-          onmouseout="this.style.backgroundColor='#4338ca'"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium shadow-sm hover:shadow-md transition cursor-pointer bg-brand-700 hover:bg-brand-800"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7 7V5" />
@@ -195,8 +192,7 @@
             <span class="hidden sm:inline">Filtros</span>
             @if (activeFilterCount > 0) {
               <span
-                class="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-bold text-white"
-                style="background-color:#4338ca;"
+                class="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-bold text-white bg-brand-700 hover:bg-brand-800"
               >{{ activeFilterCount }}</span>
             }
           </div>
@@ -348,10 +344,33 @@
         'flex-1': !showCurrentExam
       }"
     >
-      <!-- Loading -->
+      <!-- Loading: skeletons que imitan el layout real (carpetas + preguntas) -->
       @if (isLoading) {
-        <div class="flex items-center justify-center py-20">
-          <span class="loading loading-ring loading-lg text-indigo-600"></span>
+        <div class="space-y-6" aria-busy="true" aria-label="Cargando contenido">
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="eh-card p-4 flex items-center gap-3">
+                <div class="eh-skeleton w-9 h-9 rounded-lg shrink-0"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="eh-skeleton h-3.5 w-3/4"></div>
+                  <div class="eh-skeleton h-2.5 w-1/2"></div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="space-y-3">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="eh-card p-5 space-y-3">
+                <div class="flex items-center gap-2">
+                  <div class="eh-skeleton h-5 w-16 rounded-full"></div>
+                  <div class="eh-skeleton h-5 w-20 rounded-full"></div>
+                </div>
+                <div class="eh-skeleton h-4 w-full"></div>
+                <div class="eh-skeleton h-4 w-5/6"></div>
+                <div class="eh-skeleton h-4 w-2/3"></div>
+              </div>
+            }
+          </div>
         </div>
       } @else if (isEmpty) {
         <!-- Empty state -->
@@ -379,10 +398,7 @@
           </p>
           <button
             (click)="createQuestionDialog()"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition shadow-sm hover:shadow-md"
-            style="background-color: #4338ca;"
-            onmouseover="this.style.backgroundColor='#3730a3'"
-            onmouseout="this.style.backgroundColor='#4338ca'"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition shadow-sm hover:shadow-md bg-brand-700 hover:bg-brand-800"
           >
             <app-icon [icon]="'note_add'" />
             Crear primera pregunta
@@ -471,16 +487,7 @@
                     </button>
                     <button
                       class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
-                      (click)="$event.stopPropagation()"
-                      [swal]="{
-                        title: '¿Eliminar esta carpeta?',
-                        text: 'Se borrará junto con todo su contenido.',
-                        showDenyButton: true,
-                        icon: 'warning',
-                        confirmButtonText: 'Eliminar',
-                        denyButtonText: 'Cancelar'
-                      }"
-                      (confirm)="deleteDocument(folder)"
+                      (click)="$event.stopPropagation(); confirmDeleteDocument(folder)"
                       title="Eliminar carpeta"
                       aria-label="Eliminar carpeta"
                     >
@@ -510,8 +517,7 @@
             >
               @for (passage of filteredDocuments; track passage.id) { @if (passage.type === objectType.PASSAGE) {
                 <article
-                  class="eh-card cursor-pointer p-4 group relative overflow-hidden h-full flex flex-col"
-                  style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #fde68a;"
+                  class="eh-card cursor-pointer p-4 group relative overflow-hidden h-full flex flex-col bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200"
                   (click)="navigateToFolder(passage)"
                 >
                   <!-- Barra lateral decorativa -->
@@ -556,16 +562,7 @@
                     </button>
                     <button
                       class="inline-flex items-center justify-center w-7 h-7 rounded-md text-amber-700/70 hover:bg-red-50 hover:text-red-600 transition"
-                      (click)="$event.stopPropagation()"
-                      [swal]="{
-                        title: '¿Eliminar esta lectura?',
-                        text: 'Se borrarán todas sus preguntas asociadas.',
-                        showDenyButton: true,
-                        icon: 'warning',
-                        confirmButtonText: 'Eliminar',
-                        denyButtonText: 'Cancelar'
-                      }"
-                      (confirm)="deleteDocument(passage)"
+                      (click)="$event.stopPropagation(); confirmDeleteDocument(passage)"
                       title="Eliminar lectura"
                       aria-label="Eliminar lectura"
                     >
@@ -624,8 +621,7 @@
         </svg>
         @if (!showCurrentExam && questionsSelected.length > 0) {
           <span
-            class="absolute -top-2 -right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
-            style="background-color:#d97706;"
+            class="absolute -top-2 -right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center bg-accent-600"
           >
             {{ questionsSelected.length }}
           </span>
@@ -675,14 +671,11 @@
 
 
         <!-- Acciones -->
-        <div class="flex gap-2 mb-4 ">
+        <div class="flex gap-2 mb-4">
           <button
             [disabled]="questionsSelected.length < 1"
             (click)="showModalGenerateExam()"
-            class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white font-medium text-sm transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            style="background-color: #4338ca;"
-            onmouseover="if(!this.disabled) this.style.backgroundColor='#3730a3'"
-            onmouseout="this.style.backgroundColor='#4338ca'"
+            class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white font-medium text-sm transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-brand-700 hover:bg-brand-800"
           >
             <app-icon [icon]="'picture_as_pdf'" />
             Generar examen
@@ -690,15 +683,14 @@
           <button
             [disabled]="questionsSelected.length < 1"
             class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 text-slate-500 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            [swal]="deleteSwal"
-            (confirm)="discardExam()"
+            (click)="confirmDiscardExam()"
             title="Descartar examen actual"
           >
             <app-icon [icon]="'delete_outline'" />
           </button>
         </div>
         <!-- Lista de preguntas -->
-        <div class=" pt-3 border-t border-slate-200" >
+        <div class="pt-3 border-t border-slate-200" >
           <question-list />
         </div>
 
@@ -717,15 +709,13 @@
     <button
       type="button"
       (click)="showCurrentExam = true"
-      class="lg:hidden fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 px-4 py-3 rounded-full text-white font-semibold shadow-lg hover:shadow-xl transition active:scale-95"
-      style="background-color: #4338ca;"
+      class="lg:hidden fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 px-4 py-3 rounded-full text-white font-semibold shadow-lg hover:shadow-xl transition active:scale-95 bg-brand-700 hover:bg-brand-800"
       aria-label="Abrir examen en curso"
     >
       <app-icon [icon]="'assignment'" />
       <span class="text-sm">Examen</span>
       <span
-        class="inline-flex items-center justify-center min-w-[1.4rem] h-[1.4rem] px-1.5 rounded-full text-[11px] font-bold"
-        style="background-color: #d97706; color: white;"
+        class="inline-flex items-center justify-center min-w-[1.4rem] h-[1.4rem] px-1.5 rounded-full text-[11px] font-bold bg-accent-600 text-white"
       >
         {{ questionsSelected.length }}
       </span>
@@ -733,12 +723,3 @@
   }
 </main>
 
-<swal
-  #deleteSwal
-  confirmButtonText="Sí, descartar"
-  cancelButtonText="Cancelar"
-  [showCancelButton]="true"
-  icon="question"
-  title="¿Descartar examen actual?"
-  text="Se quitarán todas las preguntas seleccionadas. Las preguntas siguen en tu banco."
-></swal>

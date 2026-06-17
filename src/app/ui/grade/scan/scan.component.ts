@@ -8,7 +8,7 @@ import {
 } from "@angular/core";
 import { Router, RouterModule } from "@angular/router";
 import jsQR from "jsqr";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
 import { decodeQrPayload, QrPayload } from "../../../core/utils/qrPayload.util";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
@@ -50,7 +50,7 @@ export class ScanComponent implements OnDestroy {
 
   constructor(
     private router: Router,
-    private toast: NgToastService,
+    private toast: ToastService,
     private zone: NgZone
   ) {}
 

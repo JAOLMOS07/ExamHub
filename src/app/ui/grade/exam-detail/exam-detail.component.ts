@@ -1,9 +1,9 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
 import { Subscription } from "rxjs";
-import Swal from "sweetalert2";
+import { ConfirmService } from "../../../core/services/confirm.service";
 import {
   ExamResult,
   GradedExam,
@@ -47,7 +47,8 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private gradingService: GradingService,
-    private toast: NgToastService
+    private toast: ToastService,
+    private confirm: ConfirmService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -147,16 +148,13 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
    */
   async deleteResult(result: ExamResult): Promise<void> {
     if (!this.exam) return;
-    const conf = await Swal.fire({
+    const confirmed = await this.confirm.ask({
       title: "¿Borrar esta calificación?",
-      text: `Vas a borrar la nota de ${result.studentName ?? "este alumno"}.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, borrar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#dc2626",
+      message: `Vas a borrar la nota de ${result.studentName ?? "este alumno"}.`,
+      confirmText: "Sí, borrar",
+      tone: "danger",
     });
-    if (!conf.isConfirmed) return;
+    if (!confirmed) return;
     try {
       await this.gradingService.deleteResult(this.exam.id, result.id);
       this.toast.success("Calificación eliminada.", "ExamHub", 2500);

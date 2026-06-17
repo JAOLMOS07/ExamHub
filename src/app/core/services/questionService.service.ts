@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable } from "rxjs";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "./toast.service";
 import { objectType } from "../models/objectType.enum";
 import { Document } from "../models/folder.model";
 
@@ -20,7 +20,7 @@ export class QuestionService {
   >([]);
   private questions: Document[] = [];
 
-  constructor(private toast: NgToastService) {}
+  constructor(private toast: ToastService) {}
 
   getQuestions(): Observable<Document[]> {
     return this.questionsSubject.asObservable();

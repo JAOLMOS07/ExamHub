@@ -29,6 +29,9 @@ const routes: Routes = [
         path: EXAM.NAME,
         loadChildren: () =>
           import("../exam/exam.module").then((m) => m.ExamModule),
+        // Seguridad: el módulo de exámenes opera sobre el banco del
+        // usuario; sin sesión no hay nada que mostrar.
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
       },
       {
         path: "preferences",
@@ -77,6 +80,12 @@ const routes: Routes = [
         path: "",
         redirectTo: `${PRINCIPAL.HOME}`,
         pathMatch: "prefix",
+      },
+      // Cualquier URL desconocida vuelve al home (o al login si no hay
+      // sesión, gracias al guard del home).
+      {
+        path: "**",
+        redirectTo: `${PRINCIPAL.HOME}`,
       },
     ],
   },

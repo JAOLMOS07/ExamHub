@@ -13,7 +13,6 @@ import { QuestionListComponent } from "./home/components/question-list/question-
 import { ItemListSelectedComponent } from "./home/components/item-list-selected/item-list-selected.component";
 import { UserService } from "../../core/services/UserService.service";
 import { ItemQuestionComponent } from "./home/components/item-question/item-question.component";
-import { SweetAlert2Module } from "@sweetalert2/ngx-sweetalert2";
 import { MathTextComponent } from "../shared/math/math-text.component";
 import { CreatePassageDialogComponent } from "./home/components/create-passage/create-passage.component";
 @NgModule({
@@ -32,7 +31,6 @@ import { CreatePassageDialogComponent } from "./home/components/create-passage/c
     FormsModule,
     SharedModule,
     RouterOutlet,
-    SweetAlert2Module.forRoot(),
     MathTextComponent,
     CreatePassageDialogComponent,
   ],

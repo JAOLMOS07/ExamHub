@@ -12,7 +12,7 @@ import {
 } from "../../../core/models/folder.model";
 import { objectType } from "../../../core/models/objectType.enum";
 import { QuestionKind } from "../../../core/models/questionKind.enum";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
 import { textToPdfNode } from "../../shared/math/math-pdf.helper";
 import { PreferencesService } from "../../../core/services/preferences.service";
 import { ExamTemplate } from "../../../core/models/preferences.model";
@@ -60,7 +60,7 @@ export class GenerateExamDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<GenerateExamDialogComponent>,
     private pdfService: PDFService,
     private questionService: QuestionService,
-    private toast: NgToastService,
+    private toast: ToastService,
     private preferencesService: PreferencesService,
     private gradingService: GradingService,
     @Inject(MAT_DIALOG_DATA) public data: { exam: Question[] }
@@ -133,6 +133,15 @@ export class GenerateExamDialogComponent implements OnInit {
        * menos, se desbordan a la siguiente página.
        */
       questionsPerColumn: [7],
+      /**
+       * Incluir o no la HOJA DE RESPUESTAS DEL MAESTRO (la clave con las
+       * burbujas correctas rellenas) al final del PDF.
+       *   true  — se imprime la clave del maestro (comportamiento previo).
+       *   false — solo va la hoja del alumno (vacía, con QR). La
+       *           calificación automática sigue funcionando porque el
+       *           escáner usa la hoja del alumno, no la del maestro.
+       */
+      includeTeacherKey: [true],
     });
 
     this.amountQuestions = this.exam.length;
@@ -353,19 +362,26 @@ export class GenerateExamDialogComponent implements OnInit {
             qrPayloadText,
             false
           )),
-          { text: "", pageBreak: "before" },
           // ============== HOJA DE RESPUESTAS DEL MAESTRO ===============
           // Mismo layout exacto que la del alumno — solo cambia que la
           // burbuja correcta de cada pregunta aparece rellena con
           // `assets/relleno.png`. Así el maestro corrige a ojo en el
           // mismo formato visual que ve el alumno.
+          //
+          // OPCIONAL: solo se incluye si el profe activó `includeTeacherKey`
+          // en el formulario. La hoja del alumno (arriba) siempre va.
           // -------------------------------------------------------------
-          ...(await this.buildOmrAnswerSheet(
-            answerQuestions,
-            this.getExamCode(index + 1),
-            qrPayloadText,
-            true
-          )),
+          ...(config.includeTeacherKey
+            ? [
+                { text: "", pageBreak: "before" },
+                ...(await this.buildOmrAnswerSheet(
+                  answerQuestions,
+                  this.getExamCode(index + 1),
+                  qrPayloadText,
+                  true
+                )),
+              ]
+            : []),
         ],
 
         styles: {

@@ -10,7 +10,7 @@ import {
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { ExamService } from "../../core/services/ExamService.service";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../core/services/toast.service";
 import { LogoComponent } from "../shared/brand/logo.component";
 
 /**
@@ -64,12 +64,14 @@ export class LoginComponent {
   isSubmitting = false;
   /** Flag de loading para el link de "Olvidé mi contraseña". */
   isSendingReset = false;
+  /** Mostrar/ocultar contraseña en el input. */
+  showPassword = false;
 
   constructor(
     private userService: UserService,
     private formBuilder: FormBuilder,
     private router: Router,
-    private toast: NgToastService
+    private toast: ToastService
   ) {
     this.loginForm = this.formBuilder.group({
       email: ["", [Validators.required, Validators.email]],

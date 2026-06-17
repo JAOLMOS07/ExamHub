@@ -3,17 +3,12 @@ rules_version = '2';
 // ============================================================================
 // ExamHub — Firestore Security Rules
 // ----------------------------------------------------------------------------
-// Cubren las colecciones del feature de calificación. Si tu proyecto ya tiene
-// reglas para otras colecciones (banco de preguntas, preferencias, etc.),
-// fusionalas con este archivo: las regiones se identifican con comentarios
-// "MATCH:" para que sea fácil ubicar dónde ir.
+// Cubren TODAS las colecciones de la app: banco de preguntas, preferencias
+// y el feature de calificación. Default deny: lo que no matchea acá,
+// Firestore lo rechaza.
 //
 // Deploy:
 //   firebase deploy --only firestore:rules
-//
-// Mientras no las despliegues, Firestore puede estar en "test mode" que
-// permite todo. Conviene hacerlo cuanto antes — sobre todo ahora que
-// vamos a guardar nombres de estudiantes (datos personales).
 // ============================================================================
 
 service cloud.firestore {
@@ -26,6 +21,32 @@ service cloud.firestore {
 
     function isOwner(ownerField) {
       return isSignedIn() && request.auth.uid == ownerField;
+    }
+
+    // ========================================================================
+    // MATCH:  /{uid}/{document=**}  — BANCO DE PREGUNTAS
+    //   El banco usa el UID del docente como nombre de la colección raíz:
+    //     /{uid}/{folderId}/content/{docId}/content/... (recursivo)
+    //   Solo el dueño (auth.uid == uid) puede leer/escribir su árbol.
+    //
+    //   Nota: este match con comodín NO abre /exams ni /users, porque la
+    //   condición exige que el nombre de la colección raíz sea exactamente
+    //   el uid del usuario autenticado, y además los excluimos explícito.
+    // ========================================================================
+    match /{uid}/{document=**} {
+      allow read, write: if isSignedIn()
+        && request.auth.uid == uid
+        && uid != 'exams'
+        && uid != 'users';
+    }
+
+    // ========================================================================
+    // MATCH:  /users/{uid}/preferences/{docId}
+    //   Preferencias del docente (firmas, encabezados de examen, etc.).
+    //   Solo el dueño puede leer/escribir.
+    // ========================================================================
+    match /users/{uid}/preferences/{docId} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
     // ========================================================================

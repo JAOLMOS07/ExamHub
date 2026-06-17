@@ -7,8 +7,7 @@
   <!-- Header compacto: tipo (ícono pequeño con tooltip) + estado en examen -->
   <div class="flex items-center justify-between mb-2">
     <span
-      class="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px]"
-      style="background:#eef2ff; color:#3730a3;"
+      class="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px] bg-brand-50 text-brand-800"
       [title]="kindLabel"
     >
       <app-icon [icon]="kindIcon" />
@@ -130,15 +129,7 @@
     <!-- Eliminar -->
     <button
       class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
-      [swal]="{
-        title: '¿Eliminar esta pregunta?',
-        text: 'No se puede deshacer.',
-        showDenyButton: true,
-        icon: 'warning',
-        confirmButtonText: 'Eliminar',
-        denyButtonText: 'Cancelar'
-      }"
-      (confirm)="deleteDocument()"
+      (click)="confirmDelete()"
       title="Eliminar pregunta"
       aria-label="Eliminar pregunta"
     >

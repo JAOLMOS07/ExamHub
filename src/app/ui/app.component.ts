@@ -1,16 +1,22 @@
 import { Component } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { PrincipalModule } from "./principal/principal.module";
-import { NgToastModule, ToasterPosition } from "ng-angular-popup";
+import { ToastContainerComponent } from "./shared/feedback/toast-container.component";
+import { ConfirmDialogComponent } from "./shared/feedback/confirm-dialog.component";
+
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [PrincipalModule, RouterOutlet, NgToastModule],
+  imports: [
+    PrincipalModule,
+    RouterOutlet,
+    ToastContainerComponent,
+    ConfirmDialogComponent,
+  ],
   providers: [],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
 export class AppComponent {
   title = "examhub";
-  ToasterPosition = ToasterPosition;
 }

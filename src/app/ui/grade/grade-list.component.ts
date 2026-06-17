@@ -1,9 +1,9 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
 import { Router, RouterModule } from "@angular/router";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../core/services/toast.service";
 import { Observable } from "rxjs";
-import Swal from "sweetalert2";
+import { ConfirmService } from "../../core/services/confirm.service";
 import { GradedExam } from "../../core/models/gradedExam.model";
 import { GradingService } from "../../core/services/grading.service";
 import { MODULES } from "../routes.constants";
@@ -30,7 +30,8 @@ export class GradeListComponent implements OnInit {
   constructor(
     private gradingService: GradingService,
     private router: Router,
-    private toast: NgToastService
+    private toast: ToastService,
+    private confirm: ConfirmService
   ) {}
 
   ngOnInit(): void {
@@ -49,17 +50,13 @@ export class GradeListComponent implements OnInit {
   async deleteExam(event: Event, exam: GradedExam): Promise<void> {
     // Importantísimo: evitar que el click burbujee y nos lleve al detalle
     event.stopPropagation();
-    const conf = await Swal.fire({
+    const confirmed = await this.confirm.ask({
       title: "¿Borrar este examen?",
-      html: `Vas a borrar <b>${exam.title}</b> y todas las calificaciones asociadas. <br/><br/>Esta acción no se puede deshacer.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, borrar todo",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#dc2626",
-      reverseButtons: true,
+      message: `Vas a borrar "${exam.title}" y todas las calificaciones asociadas. Esta acción no se puede deshacer.`,
+      confirmText: "Sí, borrar todo",
+      tone: "danger",
     });
-    if (!conf.isConfirmed) return;
+    if (!confirmed) return;
     try {
       await this.gradingService.deleteExam(exam.id);
       this.toast.success("Examen eliminado.", "ExamHub", 2500);

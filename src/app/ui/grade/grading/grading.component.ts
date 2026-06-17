@@ -3,7 +3,7 @@ import { Component, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { v4 as uuidv4 } from "uuid";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../core/services/toast.service";
 import { SharedModule } from "../../shared/shared.module";
 import {
   AnswerKey,
@@ -72,7 +72,7 @@ export class GradingComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private gradingService: GradingService,
-    private toast: NgToastService,
+    private toast: ToastService,
     private omrService: OmrService
   ) {}
 

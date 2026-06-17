@@ -13,7 +13,7 @@ import {
   ValidationErrors,
   Validators,
 } from "@angular/forms";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../core/services/toast.service";
 import { UserService } from "../../core/services/UserService.service";
 
 /**
@@ -90,7 +90,7 @@ export class ChangePasswordComponent {
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
-    private toast: NgToastService
+    private toast: ToastService
   ) {
     this.form = this.fb.group(
       {

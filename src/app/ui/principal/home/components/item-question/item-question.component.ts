@@ -16,7 +16,8 @@ import {
 import { QuestionService } from "../../../../../core/services/questionService.service";
 import { MatDialog } from "@angular/material/dialog";
 import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
-import { NgToastService } from "ng-angular-popup";
+import { ToastService } from "../../../../../core/services/toast.service";
+import { ConfirmService } from "../../../../../core/services/confirm.service";
 
 @Component({
   selector: "app-item-question",
@@ -29,7 +30,8 @@ export class ItemQuestionComponent {
   constructor(
     public dialog: MatDialog,
     private questionService: QuestionService,
-    private toast: NgToastService
+    private toast: ToastService,
+    private confirm: ConfirmService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
@@ -65,6 +67,16 @@ export class ItemQuestionComponent {
   get difficultyLabel(): string {
     if (!this.question.difficulty) return "";
     return DIFFICULTY_LABEL[this.question.difficulty as Difficulty] ?? "";
+  }
+
+  async confirmDelete(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: "¿Eliminar esta pregunta?",
+      message: "No se puede deshacer.",
+      confirmText: "Eliminar",
+      tone: "danger",
+    });
+    if (confirmed) this.deleteDocument();
   }
 
   deleteDocument(): void {
