@@ -3,6 +3,18 @@
 > Objetivo: pasar de "herramienta para un docente" a **plataforma institucional de evaluación tipo ICFES**
 > que se venda por colegio (y por redes/secretarías), con lógica más sólida y una capa de IA útil y controlada.
 
+## Estado de implementación (rama `v2/rediseno`)
+
+| Fase | Estado |
+|---|---|
+| 0. Fundaciones | ✅ Capa `core/domain/` pura con 34 tests (Jest). ⏳ Actualizar Angular y tests de reglas con emulador |
+| 1. Multi-tenant | ✅ Organizaciones, roles, invitaciones, grupos, estudiantes (CSV/SIMAT), banco plano, reglas, migración v1 |
+| 2. Simulacros ICFES | ✅ Taxonomía Saber 11, formas con semilla y snapshot, hoja multipágina con código, OMR generalizado, puntajes por prueba/competencia/global, reportes, boletines |
+| 3. IA | ✅ Generar, revisar y alinear ítems; informe pedagógico; créditos por organización (detrás del flag `enableAi`) |
+| 4. Analítica y expansión | ✅ Análisis de ítems por evaluación. ⏳ Evolución entre simulacros, portal de familias, modo online, Saber 3/5/9 |
+
+Despliegue: ver [DEPLOY-v2.md](DEPLOY-v2.md).
+
 ---
 
 ## 1. Diagnóstico del MVP actual
@@ -258,16 +270,19 @@ interface Response {
 
 Todas las llamadas pasan por **Cloud Functions** (la API key nunca va al cliente), con cuota de créditos por organización según el plan y registro de uso.
 
-| # | Funcionalidad | Entrada | Salida | Modelo sugerido |
-|---|---|---|---|---|
-| 1 | **Generador de ítems ICFES** | prueba + competencia + afirmación + evidencia + grado + (estímulo opcional) | ítem con estímulo, 4 opciones, clave y justificación de cada distractor; entra como `draft` | Sonnet (calidad) |
-| 2 | **Generador de estímulos** | tema, tipo de texto (continuo/discontinuo), longitud | lectura/tabla/gráfico descrito + 3–5 ítems asociados | Sonnet |
-| 3 | **Auto-etiquetado** | ítem existente/importado | alineación (competencia, afirmación), grado, dificultad estimada | Haiku (barato, masivo) |
-| 4 | **Revisor de calidad** | ítem | alertas: ambigüedad, más de una correcta, pistas gramaticales, opciones de longitud desigual, "todas las anteriores", sesgo | Haiku / Sonnet |
-| 5 | **Digitalizar exámenes** | PDF o foto de un examen viejo | ítems estructurados listos para el banco | Sonnet (visión) |
-| 6 | **Variantes isomorfas** | ítem aprobado | ítems paralelos (mismo constructo, otros datos) para formas distintas | Sonnet |
-| 7 | **Informes en lenguaje natural** | agregados por estudiante/grupo | fortalezas, debilidades por competencia y plan de refuerzo (para docente y familias) | Sonnet |
-| 8 | **Calificación asistida de abiertas** | respuesta transcrita + rúbrica | puntaje sugerido + justificación; el docente confirma | Sonnet |
+Modelo: **Claude Opus 5.5** (`claude-opus-5-5`, configurable con `CLAUDE_MODEL`), con el nivel de esfuerzo
+ajustado por tarea en lugar de cambiar de modelo.
+
+| # | Funcionalidad | Entrada | Salida | Esfuerzo | Estado |
+|---|---|---|---|---|---|
+| 1 | **Generador de ítems ICFES** | prueba + competencia + grado + tema | ítems con 4 opciones, clave y justificación de cada distractor; entran "sin revisar" | alto | ✅ |
+| 2 | **Generador de estímulos** | tema | contexto común + ítems asociados | alto | ✅ (opción del generador) |
+| 3 | **Auto-etiquetado** | ítems sin alinear | prueba, competencia, dificultad | bajo | ✅ |
+| 4 | **Revisor de calidad** | ítem | puntaje de calidad, alertas y alineación sugerida | medio | ✅ |
+| 5 | **Digitalizar exámenes** | PDF o foto de un examen viejo | ítems estructurados | — | ⏳ |
+| 6 | **Variantes isomorfas** | ítem aprobado | ítems paralelos | — | ⏳ |
+| 7 | **Informes en lenguaje natural** | agregados de una evaluación/grupo | fortalezas, debilidades y acciones | medio | ✅ |
+| 8 | **Calificación asistida de abiertas** | respuesta + rúbrica | puntaje sugerido | — | ⏳ |
 
 Reglas de diseño:
 - **Humano en el ciclo**: nada generado por IA entra a un examen sin `status: approved` y `reviewedBy`.

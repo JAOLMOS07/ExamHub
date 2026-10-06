@@ -1,27 +1,31 @@
-# examhub
+# ExamHub
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.2.2.
+Plataforma de evaluación tipo ICFES para colegios: banco institucional de preguntas,
+simulacros impresos con hoja de respuestas de lectura óptica, calificación con la
+cámara del celular y reportes por prueba, competencia y pregunta.
 
-## Development server
+- **Rediseño v2 (producto y arquitectura):** [docs/REDISENO-v2.md](docs/REDISENO-v2.md)
+- **Despliegue:** [docs/DEPLOY-v2.md](docs/DEPLOY-v2.md)
+- **Entorno local desde cero:** [src/SETUP.md](src/SETUP.md)
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## Comandos
 
-## Code scaffolding
+```bash
+npm start              # servidor de desarrollo en http://localhost:4200
+npm run build          # build de producción
+npm run test:domain    # tests de la capa de dominio (Jest)
+npm --prefix functions run build   # compila las Cloud Functions de IA
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## Estructura
 
-## Build
-
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+```
+src/app/core/domain/     lógica pura y testeada: formas, puntajes, psicometría,
+                         layout de la hoja OMR, taxonomía Saber 11, CSV
+src/app/core/models/     modelos (org.model, assessment.model, folder.model…)
+src/app/core/services/   acceso a Firebase por organización (TenantService,
+                         ExamService, GradingService, OrgService, OmrService, AiService)
+src/app/ui/              pantallas Angular
+functions/               Cloud Functions de IA (Claude)
+firestore.rules          permisos por organización y rol
+```
