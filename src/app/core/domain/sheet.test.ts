@@ -1,0 +1,92 @@
+import { computeSheetLayout, legacySheetPage, SHEET_V2 } from "./answerSheetLayout";
+import { parseStudentsCsv } from "./studentsCsv";
+import { decodeQrPayload, encodeQrPayload } from "../utils/qrPayload.util";
+import { FIDUCIAL_POSITIONS } from "../utils/omrLayout.const";
+
+describe("computeSheetLayout", () => {
+  it("reparte un simulacro de 130 preguntas en varias páginas", () => {
+    const layout = computeSheetLayout({
+      questionLetters: new Array(130).fill(4),
+      letterCount: 4,
+      codeDigits: 6,
+    });
+    const perPage = layout.rowsPerColumn * layout.columns;
+    expect(perPage).toBeGreaterThanOrEqual(100);
+    expect(layout.pages.length).toBe(Math.ceil(130 / perPage));
+    const all = layout.pages.flatMap((p) => p.questions.map((q) => q.index));
+    expect(all).toEqual(Array.from({ length: 130 }, (_, i) => i));
+  });
+
+  it("todas las burbujas quedan dentro del área entre fiduciales", () => {
+    const layout = computeSheetLayout({
+      questionLetters: new Array(200).fill(5),
+      letterCount: 5,
+      codeDigits: 10,
+    });
+    const minX = FIDUCIAL_POSITIONS.tl.x + SHEET_V2.fiducialSize;
+    const maxX = FIDUCIAL_POSITIONS.tr.x;
+    const minY = FIDUCIAL_POSITIONS.tl.y + SHEET_V2.fiducialSize;
+    const maxY = FIDUCIAL_POSITIONS.bl.y;
+    for (const page of layout.pages) {
+      const points = [
+        ...page.questions.flatMap((q) => q.bubbles),
+        ...page.codeColumns.flat(),
+      ];
+      for (const b of points) {
+        expect(b.x - SHEET_V2.bubbleR).toBeGreaterThan(minX);
+        expect(b.x + SHEET_V2.bubbleR).toBeLessThan(maxX);
+        expect(b.y - SHEET_V2.bubbleR).toBeGreaterThan(minY);
+        expect(b.y + SHEET_V2.bubbleR).toBeLessThan(maxY);
+      }
+    }
+  });
+
+  it("sin código del estudiante caben más preguntas por página", () => {
+    const withCode = computeSheetLayout({ questionLetters: [], letterCount: 4, codeDigits: 6 });
+    const noCode = computeSheetLayout({ questionLetters: [], letterCount: 4, codeDigits: 0 });
+    expect(noCode.rowsPerColumn).toBeGreaterThan(withCode.rowsPerColumn);
+  });
+
+  it("las preguntas abiertas reservan fila pero no tienen burbujas", () => {
+    const layout = computeSheetLayout({ questionLetters: [4, 0, 4], letterCount: 4, codeDigits: 0 });
+    expect(layout.pages[0].questions[1].bubbles).toHaveLength(0);
+  });
+
+  it("el layout legacy reproduce la hoja v1", () => {
+    const page = legacySheetPage(10, 4);
+    expect(page.questions).toHaveLength(10);
+    expect(page.questions[0].bubbles[0]).toEqual({ x: 95, y: 295 });
+  });
+});
+
+describe("QR", () => {
+  it("v2 incluye la organización y se valida la firma", () => {
+    const raw = encodeQrPayload({ orgId: "org1", examId: "ex", versionId: "v3", page: 2, totalPages: 3 });
+    expect(raw.startsWith("EH|2|org1|")).toBe(true);
+    expect(decodeQrPayload(raw)).toEqual({ orgId: "org1", examId: "ex", versionId: "v3", page: 2, totalPages: 3 });
+    expect(decodeQrPayload(raw.replace("v3", "v4"))).toBeNull();
+  });
+
+  it("sigue leyendo QR v1", () => {
+    const raw = encodeQrPayload({ examId: "a1b2", versionId: "v2", page: 1, totalPages: 1 });
+    expect(raw.startsWith("EH|1|a1b2|")).toBe(true);
+    expect(decodeQrPayload(raw)).toEqual({ examId: "a1b2", versionId: "v2", page: 1, totalPages: 1 });
+  });
+});
+
+describe("parseStudentsCsv", () => {
+  it("detecta encabezado y separador", () => {
+    const r = parseStudentsCsv("Nombre;Código;Grupo\nAna Pérez;1001;11-A\nLuis Gómez;1002;11-B");
+    expect(r.errors).toEqual([]);
+    expect(r.rows).toEqual([
+      { code: "1001", fullName: "Ana Pérez", group: "11-A" },
+      { code: "1002", fullName: "Luis Gómez", group: "11-B" },
+    ]);
+  });
+
+  it("sin encabezado asume código, nombre, grupo y reporta errores", () => {
+    const r = parseStudentsCsv("1001,Ana\nabc,Luis\n1001,Repetido");
+    expect(r.rows).toEqual([{ code: "1001", fullName: "Ana" }]);
+    expect(r.errors).toHaveLength(2);
+  });
+});

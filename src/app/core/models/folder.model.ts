@@ -81,6 +81,23 @@ export class Document {
    *  como número para facilitar filtros y ordenamientos. */
   difficulty?: number;
 
+  /** Alineación ICFES: prueba (ver taxonomy/saber11.ts). */
+  test?: string;
+  /** Alineación ICFES: competencia dentro de la prueba. */
+  competency?: string;
+  /** Componente temático opcional (ej. ciencias: biológico). */
+  component?: string;
+  /** Explicación de la respuesta / por qué fallan los distractores. */
+  rationale?: string;
+  /** Origen del ítem. Los generados por IA requieren revisión. */
+  source?: "manual" | "import" | "ai" | "catalog" | "legacy";
+  /** false mientras un ítem generado por IA no fue revisado. */
+  reviewed?: boolean;
+  /** Carpeta que contiene el nodo (null = raíz). Solo lectura en UI. */
+  folderId?: string | null;
+  createdBy?: string;
+  updatedAt?: number;
+
   constructor(
     id: string,
     name: string,
@@ -167,12 +184,22 @@ export class Document {
     if (doc.difficulty !== undefined && doc.difficulty !== null) {
       plainObject.difficulty = doc.difficulty;
     }
+    for (const key of [
+      "test",
+      "competency",
+      "component",
+      "rationale",
+      "source",
+    ] as const) {
+      if (doc[key]) plainObject[key] = doc[key];
+    }
+    if (doc.reviewed !== undefined) plainObject.reviewed = doc.reviewed;
 
     return plainObject;
   }
 
   static fromPlainObject(obj: any): Document {
-    return new Document(
+    const doc = new Document(
       obj.id,
       obj.name,
       obj.type,
@@ -194,6 +221,16 @@ export class Document {
       obj.grade,
       obj.difficulty
     );
+    doc.test = obj.test;
+    doc.competency = obj.competency;
+    doc.component = obj.component;
+    doc.rationale = obj.rationale;
+    doc.source = obj.source;
+    doc.reviewed = obj.reviewed;
+    doc.folderId = obj.folderId;
+    doc.createdBy = obj.createdBy;
+    doc.updatedAt = obj.updatedAt;
+    return doc;
   }
 }
 
