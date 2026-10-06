@@ -1,0 +1,123 @@
+<mat-dialog-content class="!p-6">
+  <h2 class="text-xl font-bold text-slate-900 mb-1">Generar preguntas con IA</h2>
+  <p class="text-sm text-slate-500 mb-4">
+    Preguntas tipo ICFES alineadas a una prueba y competencia. Las revisas antes de guardarlas y quedan
+    marcadas "sin revisar" hasta que un docente las edite.
+  </p>
+
+  @if (!result) {
+    <form class="grid grid-cols-1 md:grid-cols-2 gap-3" (ngSubmit)="generate()">
+      <label class="text-sm">
+        <span class="font-medium text-slate-700">Prueba</span>
+        <select class="eh-input mt-1" name="test" [ngModel]="test" (ngModelChange)="onTestChange($event)">
+          @for (t of tests; track t.id) {
+            <option [value]="t.id">{{ t.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="font-medium text-slate-700">Competencia</span>
+        <select class="eh-input mt-1" name="competency" [(ngModel)]="competency">
+          <option value="">Varias</option>
+          @for (c of selectedTest?.competencies ?? []; track c.id) {
+            <option [value]="c.id">{{ c.label }}</option>
+          }
+        </select>
+      </label>
+      @if (selectedTest?.components?.length) {
+        <label class="text-sm">
+          <span class="font-medium text-slate-700">Componente</span>
+          <select class="eh-input mt-1" name="component" [(ngModel)]="component">
+            <option value="">Cualquiera</option>
+            @for (c of selectedTest?.components ?? []; track c.id) {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label class="text-sm">
+        <span class="font-medium text-slate-700">Grado</span>
+        <select class="eh-input mt-1" name="grade" [(ngModel)]="grade">
+          @for (g of ["3", "5", "7", "9", "10", "11"]; track g) {
+            <option [value]="g">{{ g }}°</option>
+          }
+        </select>
+      </label>
+      <label class="text-sm md:col-span-2">
+        <span class="font-medium text-slate-700">Tema o contenido (opcional)</span>
+        <input class="eh-input mt-1" name="topic" maxlength="300" [(ngModel)]="topic" placeholder="Ej. proporcionalidad y porcentajes en situaciones de compra" />
+      </label>
+      <label class="text-sm">
+        <span class="font-medium text-slate-700">Cantidad</span>
+        <input class="eh-input mt-1" type="number" min="1" max="10" name="count" [(ngModel)]="count" />
+      </label>
+      <label class="text-sm">
+        <span class="font-medium text-slate-700">Dificultad</span>
+        <select class="eh-input mt-1" name="difficulty" [(ngModel)]="difficulty">
+          <option [ngValue]="null">Mezclada</option>
+          <option [ngValue]="1">Fácil</option>
+          <option [ngValue]="2">Media</option>
+          <option [ngValue]="3">Difícil</option>
+        </select>
+      </label>
+      <label class="md:col-span-2 flex items-center gap-2 text-sm cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm" name="withStimulus" [(ngModel)]="withStimulus" />
+        Con un contexto común (lectura, situación o tabla) para todas las preguntas
+      </label>
+      <div class="md:col-span-2 flex justify-end gap-2 mt-2">
+        <button type="button" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100" (click)="close()">Cancelar</button>
+        <button type="submit" [disabled]="isGenerating" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
+          {{ isGenerating ? "Generando… (puede tardar hasta un minuto)" : "Generar" }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    @if (result.stimulus) {
+      <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 mb-3">
+        <p class="font-semibold text-amber-900 text-sm mb-1">{{ result.stimulus.title }}</p>
+        <math-text class="text-sm text-slate-800 whitespace-pre-line" [content]="result.stimulus.text"></math-text>
+      </div>
+    }
+    <div class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+      @for (it of result.items; track i; let i = $index) {
+        <div class="rounded-lg border p-3" [class.border-violet-300]="keep.has(i)" [class.opacity-50]="!keep.has(i)">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" class="checkbox checkbox-sm mt-1" [checked]="keep.has(i)" (change)="toggleKeep(i)" />
+            <div class="flex-1 text-sm">
+              <math-text class="font-medium text-slate-900" [content]="it.stem"></math-text>
+              <ol class="mt-2 space-y-1">
+                @for (opt of it.options; track k; let k = $index) {
+                  <li class="flex gap-2" [class.text-emerald-700]="k === it.correctIndex" [class.font-semibold]="k === it.correctIndex">
+                    <span>{{ ALPHABET[k] }}.</span>
+                    <math-text [content]="opt"></math-text>
+                  </li>
+                }
+              </ol>
+              <p class="text-xs text-slate-500 mt-2">
+                @if (it.competency) {
+                  {{ getCompetency(result.test, it.competency)?.label }} ·
+                }
+                Dificultad {{ it.difficulty }}
+              </p>
+              <details class="mt-1">
+                <summary class="text-xs text-violet-700 cursor-pointer">Justificación</summary>
+                <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">{{ it.rationale }}</p>
+              </details>
+            </div>
+          </label>
+        </div>
+      }
+    </div>
+    <div class="flex justify-between gap-2 mt-4">
+      <button type="button" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100" (click)="result = null">
+        Volver a generar
+      </button>
+      <div class="flex gap-2">
+        <button type="button" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100" (click)="close()">Cancelar</button>
+        <button type="button" [disabled]="isSaving || keep.size === 0" (click)="save()" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+          {{ isSaving ? "Guardando…" : "Agregar " + keep.size + " al banco" }}
+        </button>
+      </div>
+    </div>
+  }
+</mat-dialog-content>

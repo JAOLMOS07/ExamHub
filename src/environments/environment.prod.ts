@@ -24,5 +24,11 @@ export const environment = {
     /** Ver descripción en environment.ts. Activar cuando el plan
      *  contemple Firebase Storage. */
     enableImages: false,
+    /**
+     * Asistente de IA (Claude) — requiere desplegar `functions/` y
+     * configurar el secreto ANTHROPIC_API_KEY (ver docs/DEPLOY-v2.md).
+     * Mientras esté en false, los botones de IA no aparecen.
+     */
+    enableAi: false,
   },
 };

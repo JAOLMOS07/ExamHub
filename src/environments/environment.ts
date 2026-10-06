@@ -53,5 +53,11 @@ export const environment = {
      * publicar las reglas de Storage. Sin más cambios.
      */
     enableImages: false,
+    /**
+     * Asistente de IA (Claude) — requiere desplegar `functions/` y
+     * configurar el secreto ANTHROPIC_API_KEY (ver docs/DEPLOY-v2.md).
+     * Mientras esté en false, los botones de IA no aparecen.
+     */
+    enableAi: false,
   },
 };

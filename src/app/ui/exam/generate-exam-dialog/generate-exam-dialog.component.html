@@ -227,6 +227,63 @@
           </span>
         </label>
       </div>
+
+      <!-- Evaluación institucional -->
+      <div class="flex flex-col gap-3 col-span-1 md:col-span-2 border-t border-gray-200 pt-3">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" formControlName="simulacro" class="toggle toggle-primary mt-0.5" />
+          <span class="flex flex-col">
+            <span class="text-sm font-medium">Simulacro tipo ICFES</span>
+            <span class="text-xs text-gray-500">
+              Ordena las preguntas por prueba (Lectura Crítica, Matemáticas, Sociales, Ciencias, Inglés),
+              baraja dentro de cada prueba y reporta puntaje por prueba y global estimado.
+            </span>
+          </span>
+        </label>
+        @if (examConfigForm.value.simulacro && unalignedCount > 0) {
+          <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+            {{ unalignedCount }} pregunta(s) no tienen prueba ICFES asignada: irán al final y no
+            contarán en el puntaje por prueba.
+          </p>
+        }
+        @if (unreviewedAiCount > 0) {
+          <p class="text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-md p-2">
+            {{ unreviewedAiCount }} pregunta(s) generadas con IA aún no fueron revisadas por un docente.
+          </p>
+        }
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label class="text-sm">
+            <span class="font-medium">Dígitos del código del estudiante</span>
+            <input type="number" min="0" max="10" formControlName="codeDigits" class="input input-sm input-bordered w-full mt-1" />
+            <span class="text-xs text-gray-500">
+              El estudiante rellena su código y se identifica solo al calificar. Caben
+              {{ sheetCapacity }} preguntas por hoja de respuestas.
+            </span>
+          </label>
+          <label class="text-sm">
+            <span class="font-medium">Nota máxima</span>
+            <input type="number" min="1" max="100" step="0.5" formControlName="maxScore" class="input input-sm input-bordered w-full mt-1" />
+          </label>
+        </div>
+        @if (groups.length > 0) {
+          <div class="text-sm">
+            <span class="font-medium">Grupos que la presentan</span>
+            <div class="flex flex-wrap gap-2 mt-1">
+              @for (g of groups; track g.id) {
+                <label class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-xs"
+                    [checked]="(examConfigForm.value.groupIds ?? []).includes(g.id)"
+                    (change)="toggleGroup(g.id, $any($event.target).checked)"
+                  />
+                  {{ g.name }}
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
     </form>
   </div>
   <div
@@ -252,7 +309,7 @@
         <button
           class="btn no-animation btn-sm text-gray-500 hover:text-gray-700 join-item"
         >
-          Examenes diferentes:
+          Formas diferentes:
         </button>
         <input
           id="amount"
@@ -281,9 +338,10 @@
           this.examConfigForm.value.headerType === 'text'
         "
         class="btn btn-sm join-item btn-secondary"
+        [class.btn-disabled]="isGenerating"
         (click)="generate()"
       >
-        Generar
+        {{ isGenerating ? "Generando…" : "Generar" }}
       </button>
       <button class="btn btn-sm join-item btn-error" (click)="cancel()">
         Cancelar

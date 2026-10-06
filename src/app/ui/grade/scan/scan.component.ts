@@ -12,6 +12,8 @@ import { ToastService } from "../../../core/services/toast.service";
 import { decodeQrPayload, QrPayload } from "../../../core/utils/qrPayload.util";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
+import { TenantService } from "../../../core/services/tenant.service";
+import { firstValueFrom } from "rxjs";
 
 /**
  * Pantalla del scanner de QR.
@@ -51,7 +53,8 @@ export class ScanComponent implements OnDestroy {
   constructor(
     private router: Router,
     private toast: ToastService,
-    private zone: NgZone
+    private zone: NgZone,
+    private tenant: TenantService
   ) {}
 
   ngOnDestroy(): void {
@@ -212,12 +215,29 @@ export class ScanComponent implements OnDestroy {
     });
   }
 
-  private onPayloadDetected(payload: QrPayload): void {
+  /**
+   * QR v2 trae la organización: si no es la activa y el docente
+   * pertenece a ella, cambiamos de organización antes de abrir.
+   */
+  private async onPayloadDetected(payload: QrPayload): Promise<void> {
     this.stopScanning();
-    this.toast.success("QR detectado.", "ExamHub", 1500);
-    // Vamos directo a la pantalla de calificar (no al detalle).
+    if (payload.orgId && payload.orgId !== this.tenant.orgId) {
+      const profile = await firstValueFrom(this.tenant.profile$);
+      if (!profile?.orgs?.[payload.orgId]) {
+        this.toast.warning(
+          "Esta hoja es de una institución a la que no perteneces.",
+          "ExamHub",
+          4000
+        );
+        return;
+      }
+      await this.tenant.switchOrg(payload.orgId);
+      this.toast.info(`Cambiaste a ${profile.orgs[payload.orgId].name}.`, "ExamHub", 2500);
+    } else {
+      this.toast.success("QR detectado.", "ExamHub", 1500);
+    }
     this.router.navigate([MODULES.GRADE.EXAM_GRADE(payload.examId)], {
-      queryParams: { versionId: payload.versionId },
+      queryParams: { versionId: payload.versionId, page: payload.page },
     });
   }
 }

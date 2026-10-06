@@ -1,3 +1,4 @@
+import { pickMarked } from "./markDetection";
 import { computeSheetLayout, legacySheetPage, SHEET_V2 } from "./answerSheetLayout";
 import { parseStudentsCsv } from "./studentsCsv";
 import { decodeQrPayload, encodeQrPayload } from "../utils/qrPayload.util";
@@ -88,5 +89,20 @@ describe("parseStudentsCsv", () => {
     const r = parseStudentsCsv("1001,Ana\nabc,Luis\n1001,Repetido");
     expect(r.rows).toEqual([{ code: "1001", fullName: "Ana" }]);
     expect(r.errors).toHaveLength(2);
+  });
+});
+
+describe("pickMarked", () => {
+  it("elige la única burbuja rellena", () => {
+    expect(pickMarked([230, 60, 225, 228])).toBe(1);
+  });
+  it("devuelve null si todas están vacías", () => {
+    expect(pickMarked([230, 228, 225, 231])).toBeNull();
+  });
+  it("detecta doble marca", () => {
+    expect(pickMarked([70, 65, 225, 228])).toBe("MULTI");
+  });
+  it("tolera una marca clara junto a un borrón leve", () => {
+    expect(pickMarked([40, 120, 225, 228])).toBe(0);
   });
 });

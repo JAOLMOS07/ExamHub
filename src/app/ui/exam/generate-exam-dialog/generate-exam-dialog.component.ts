@@ -1,15 +1,12 @@
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { Subscription } from "rxjs";
 import { v4 as uuidv4 } from "uuid";
 import { Question } from "../../../core/models/question.model";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { QuestionService } from "../../../core/services/questionService.service";
-import {
-  Document,
-  Option,
-  getQuestionKind,
-} from "../../../core/models/folder.model";
+import { Document, getQuestionKind } from "../../../core/models/folder.model";
 import { objectType } from "../../../core/models/objectType.enum";
 import { QuestionKind } from "../../../core/models/questionKind.enum";
 import { ToastService } from "../../../core/services/toast.service";
@@ -17,32 +14,24 @@ import { textToPdfNode } from "../../shared/math/math-pdf.helper";
 import { PreferencesService } from "../../../core/services/preferences.service";
 import { ExamTemplate } from "../../../core/models/preferences.model";
 import { GradingService } from "../../../core/services/grading.service";
-import {
-  AnswerKey,
-  AnswerLetter,
-  GradedExam,
-} from "../../../core/models/gradedExam.model";
+import { TenantService } from "../../../core/services/tenant.service";
+import { OrgService } from "../../../core/services/org.service";
+import { FormDef } from "../../../core/models/assessment.model";
+import { DEFAULT_ORG_SETTINGS, Group } from "../../../core/models/org.model";
 import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { encodeQrPayload } from "../../../core/utils/qrPayload.util";
-import {
-  BUBBLE_RADIUS_PT,
-  FIDUCIAL_POSITIONS,
-  FIDUCIAL_SIZE_PT,
-  PAGE_W_PT,
-  QR_LAYOUT,
-  STUDENT_INFO_Y_PT,
-  TITLE_Y_PT,
-  bubbleCenter,
-  numberLabelX,
-  rowLabelY,
-} from "../../../core/utils/omrLayout.const";
+import { randomSeed } from "../../../core/domain/rng";
+import { BuiltForm, buildForm, formLabel, hasBubbles } from "../../../core/domain/formBuilder";
+import { computeSheetLayout, questionsPerPage } from "../../../core/domain/answerSheetLayout";
+import { getTest } from "../../../core/domain/taxonomy/saber11";
+import { buildAnswerSheetPage } from "./answer-sheet.pdf";
 
 @Component({
   selector: "app-generate-exam-dialog",
   templateUrl: "./generate-exam-dialog.component.html",
   styleUrls: ["./generate-exam-dialog.component.css"],
 })
-export class GenerateExamDialogComponent implements OnInit {
+export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   examConfigForm!: FormGroup;
   logoBase64: string | ArrayBuffer | null = null;
   exam: Document[] = [];
@@ -55,6 +44,11 @@ export class GenerateExamDialogComponent implements OnInit {
   /** Plantilla actualmente seleccionada (id) o null si ninguna. */
   selectedTemplateId: string | null = null;
 
+  /** Grupos del año (para asociar la evaluación y filtrar reportes). */
+  groups: Group[] = [];
+  isGenerating = false;
+  private subs: Subscription[] = [];
+
   constructor(
     private formBuilder: FormBuilder,
     private dialogRef: MatDialogRef<GenerateExamDialogComponent>,
@@ -63,6 +57,8 @@ export class GenerateExamDialogComponent implements OnInit {
     private toast: ToastService,
     private preferencesService: PreferencesService,
     private gradingService: GradingService,
+    private tenant: TenantService,
+    private orgService: OrgService,
     @Inject(MAT_DIALOG_DATA) public data: { exam: Question[] }
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
@@ -142,7 +138,26 @@ export class GenerateExamDialogComponent implements OnInit {
        *           escáner usa la hoja del alumno, no la del maestro.
        */
       includeTeacherKey: [true],
+      /** Simulacro: agrupa por prueba ICFES y reporta puntaje global. */
+      simulacro: [false],
+      /** Dígitos del código del estudiante en burbujas (0 = sin código). */
+      codeDigits: [DEFAULT_ORG_SETTINGS.studentCodeDigits],
+      /** Grupos a los que se aplica. */
+      groupIds: [[] as string[]],
+      maxScore: [DEFAULT_ORG_SETTINGS.maxScore],
     });
+
+    const year = new Date().getFullYear();
+    this.subs.push(
+      this.tenant.org$.subscribe((org) => {
+        if (!org?.settings) return;
+        this.examConfigForm.patchValue({
+          codeDigits: org.settings.studentCodeDigits,
+          maxScore: org.settings.maxScore,
+        });
+      }),
+      this.orgService.groups$().subscribe((g) => (this.groups = g.filter((x) => x.year === year)))
+    );
 
     this.amountQuestions = this.exam.length;
 
@@ -173,6 +188,32 @@ export class GenerateExamDialogComponent implements OnInit {
     this.toast.success(`Plantilla "${t.name}" aplicada.`, "ExamHub", 2000);
   }
 
+  ngOnDestroy(): void {
+    this.subs.forEach((x) => x.unsubscribe());
+  }
+
+  toggleGroup(groupId: string, checked: boolean): void {
+    const current: string[] = this.examConfigForm.value.groupIds ?? [];
+    const next = checked ? [...new Set([...current, groupId])] : current.filter((g) => g !== groupId);
+    this.examConfigForm.patchValue({ groupIds: next });
+  }
+
+  /** ¿Cuántas preguntas por hoja de respuestas con la configuración actual? */
+  get sheetCapacity(): number {
+    const letters = this.letterCountFor(this.exam);
+    return questionsPerPage(letters, Number(this.examConfigForm?.value?.codeDigits) || 0);
+  }
+
+  /** Preguntas seleccionadas sin alinear a prueba ICFES (aviso en simulacros). */
+  get unalignedCount(): number {
+    return this.exam.filter((d) => d.type === objectType.QUESTION && !d.test).length;
+  }
+
+  /** Ítems de IA aún no revisados por un docente. */
+  get unreviewedAiCount(): number {
+    return this.exam.filter((d) => d.source === "ai" && d.reviewed === false).length;
+  }
+
   cancel(): void {
     this.dialogRef.close();
   }
@@ -183,9 +224,8 @@ export class GenerateExamDialogComponent implements OnInit {
       this.examConfigForm.value.headerType === "image"
     ) {
       const config = this.examConfigForm.value;
-      await this.generatePDF(config, this.amount).then(() => {
-        this.dialogRef.close();
-      });
+      const ok = await this.generatePDF(config, this.amount, true);
+      if (ok) this.dialogRef.close();
     } else {
       this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
     }
@@ -196,7 +236,7 @@ export class GenerateExamDialogComponent implements OnInit {
       this.examConfigForm.value.headerType === "image"
     ) {
       const config = this.examConfigForm.value;
-      await this.generatePDF(config, 1);
+      await this.generatePDF(config, 1, false);
     } else {
       this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
     }
@@ -238,276 +278,200 @@ export class GenerateExamDialogComponent implements OnInit {
     }
   }
 
-  async generatePDF(config: any, amount: number) {
-    // Reseteamos el conteo máximo de opciones — antes acumulaba entre
-    // llamadas y la hoja de respuestas terminaba con burbujas de más
-    // en la segunda generación de la sesión.
-    this.greaterAmount = 0;
+  /**
+   * Genera las formas, guarda la evaluación (si `persist`) y produce
+   * los PDF. La evaluación se guarda ANTES de entregar los PDF: así
+   * ningún QR impreso apunta a una evaluación inexistente.
+   *
+   * Devuelve false si no se pudo completar.
+   */
+  async generatePDF(config: any, amount: number, persist: boolean): Promise<boolean> {
+    if (this.isGenerating) return false;
+    const questions = this.exam.filter((d) => d.type === objectType.QUESTION);
+    if (questions.length === 0) {
+      this.toast.warning("El examen no tiene preguntas.", "ExamHub", 3000);
+      return false;
+    }
+    this.isGenerating = true;
+    try {
+      const orgId = await this.tenant.requireOrgId();
+      const assessmentId = uuidv4();
+      const versions = Math.max(1, Math.min(30, Math.floor(Number(amount) || 1)));
+      const letterCount = this.letterCountFor(this.exam);
+      const codeDigits = Math.min(10, Math.max(0, Math.floor(Number(config.codeDigits) || 0)));
+      const title = config.title || "Evaluación";
+      const header = await this.buildHeader(config);
 
-    // -----------------------------------------------------------------
-    //  Feature de calificación automática
-    // -----------------------------------------------------------------
-    //  Generamos UN solo `examId` para esta tanda (todas las versiones
-    //  comparten id; las distinguimos por `versionId`). Vamos llenando
-    //  `versionsForFirestore` mientras armamos cada PDF, y al final
-    //  persistimos el GradedExam en `/exams/{examId}` para que el
-    //  scanner pueda recuperarlo por QR.
-    // -----------------------------------------------------------------
-    const examId = uuidv4();
-    const versionsForFirestore: AnswerKey[] = [];
+      const built: { form: BuiltForm; def: FormDef }[] = [];
+      for (let i = 0; i < versions; i++) {
+        const seed = randomSeed();
+        const form = buildForm(this.exam, {
+          seed,
+          maxQuestions: this.amountQuestions,
+          groupByTest: !!config.simulacro,
+        });
+        built.push({
+          form,
+          def: { id: `v${i + 1}`, label: formLabel(i + 1), seed, key: form.key },
+        });
+      }
+      const layouts = built.map(({ form }) =>
+        computeSheetLayout({
+          questionLetters: form.questions.map((q) => this.lettersFor(q)),
+          letterCount,
+          codeDigits,
+        })
+      );
+      const totalPages = Math.max(...layouts.map((l) => l.pages.length));
 
-    let header;
+      if (persist) {
+        try {
+          await this.gradingService.saveAssessment(
+            {
+              id: assessmentId,
+              title,
+              type: config.simulacro ? "simulacro" : "quiz",
+              taxonomyId: "saber11",
+              groupIds: config.groupIds ?? [],
+              totalQuestions: Math.max(...built.map((b) => b.def.key.length)),
+              letters: ALPHABET.slice(0, letterCount),
+              sheet: { version: 2, letterCount, codeDigits, totalPages },
+              forms: built.map((b) => b.def),
+              maxScore: Number(config.maxScore) || DEFAULT_ORG_SETTINGS.maxScore,
+              ...(config.subtitle ? { subject: config.subtitle } : {}),
+              ...(config.grade ? { grade: config.grade } : {}),
+            },
+            questions
+          );
+        } catch (err) {
+          console.error("No se pudo guardar la evaluación:", err);
+          this.toast.danger(
+            "No pudimos guardar la evaluación para calificarla. Revisa tu conexión y reintenta.",
+            "ExamHub",
+            5000
+          );
+          return false;
+        }
+      }
+
+      const pdfDefs: { def: any; name: string }[] = [];
+      for (let i = 0; i < built.length; i++) {
+        const { form, def } = built[i];
+        const layout = layouts[i];
+        const sheetNodes = (key?: typeof def.key) =>
+          layout.pages.flatMap((page) => [
+            { text: "", pageBreak: "before" },
+            ...buildAnswerSheetPage(page, {
+              title,
+              formLabel: def.label,
+              key,
+              qrPayload: encodeQrPayload({
+                orgId,
+                examId: assessmentId,
+                versionId: def.id,
+                page: page.page,
+                totalPages: page.totalPages,
+              }),
+            }),
+          ]);
+
+        const docDefinition: any = {
+          margin: 10,
+          pageMargins: [40, 130, 40, 60],
+          header,
+          content: [
+            {
+              text: `Nombre: _________________________________    Fecha: ${
+                config.date ? config.date.toLocaleDateString() : " _________ "
+              }   Grado:${config.grade !== "" ? config.grade : " ___ "}   Forma: ${def.label}`,
+              style: "subtitle",
+              alignment: "center",
+              margin: [0, 0, 0, 10],
+            },
+            await this.buildExamBody(form.sequence, config),
+            ...sheetNodes(),
+            ...(config.includeTeacherKey ? sheetNodes(def.key) : []),
+          ],
+          styles: {
+            questionHeader: { fontSize: 12, bold: true },
+            questionAnswer: { margin: [5, 2, 10, 20] },
+          },
+        };
+        if (versions > 1) {
+          const prefix = config.grade !== "" ? config.grade : "examen";
+          pdfDefs.push({ def: docDefinition, name: `${prefix}-forma-${def.label}` });
+        } else {
+          this.pdfService.open(docDefinition);
+        }
+      }
+      if (versions > 1) {
+        const date = new Date();
+        this.pdfService.downloadZip(
+          pdfDefs,
+          date.toLocaleDateString() + "_" + date.toLocaleTimeString() + "_exams"
+        );
+      }
+      if (persist) {
+        this.toast.success(
+          "Evaluación guardada. Ya puedes calificarla desde Calificar.",
+          "ExamHub",
+          3500
+        );
+      }
+      return true;
+    } catch (err) {
+      console.error("Error generando el examen:", err);
+      this.toast.danger("No pudimos generar el examen.", "ExamHub", 4000);
+      return false;
+    } finally {
+      this.isGenerating = false;
+    }
+  }
+
+  /** Burbujas de una pregunta en la hoja (0 = sin burbujas). */
+  private lettersFor(q: Document): number {
+    if (!hasBubbles(q)) return 0;
+    return getQuestionKind(q) === QuestionKind.TRUE_FALSE ? 2 : q.options?.length ?? 0;
+  }
+
+  /** Letras del examen = máximo de opciones entre preguntas con burbujas. */
+  private letterCountFor(items: Document[]): number {
+    return Math.min(
+      ALPHABET.length,
+      Math.max(
+        2,
+        ...items
+          .filter((d) => d.type === objectType.QUESTION)
+          .map((q) => this.lettersFor(q))
+      )
+    );
+  }
+
+  private async buildHeader(config: any): Promise<any> {
     if (config.headerType === "image") {
-      header = {
-        image: await this.getBase64ImageFromURL(
-          this.logoBase64 ?? "assets/headerexamhub.webp"
-        ),
+      return {
+        image: await this.getBase64ImageFromURL(this.logoBase64 ?? "assets/headerexamhub.webp"),
         opacity: 1,
         width: 580,
         alignment: "center",
       };
-    } else {
-      header = {
-        margin: 10,
-        columns: [
-          {
-            image: await this.getBase64ImageFromURL(
-              this.logoBase64 ?? "assets/logoexamhub.webp"
-            ),
-            opacity: 0.5,
-            width: 80,
-          },
-          [
-            {
-              text: config.institution,
-              alignment: "center",
-              fontSize: 18,
-              bold: true,
-            },
-            {
-              text: config.title,
-              alignment: "center",
-              fontSize: 16,
-              bold: true,
-            },
-            {
-              text: config.place,
-              alignment: "center",
-              fontSize: 12,
-              bold: false,
-            },
-            {
-              text: config.subtitle,
-              style: "subtitle",
-              alignment: "center",
-              fontSize: 11,
-              bold: false,
-            },
-          ],
-        ],
-      };
     }
-    const pdfDefs = [];
-    for (let index = 0; index < amount; index++) {
-      var examToGenerate: Document[] = this.shuffleExam(this.exam);
-      // Para las hojas de respuestas necesitamos SOLO las preguntas
-      // (sin las lecturas), porque las lecturas no se contestan. Si
-      // las dejábamos, se numeraban como pregunta extra y rompían el
-      // alineamiento de las burbujas.
-      const answerQuestions = examToGenerate.filter(
-        (d) => d.type === objectType.QUESTION
-      );
-
-      // ---- Feature de calificación: armar AnswerKey + QR de esta versión ----
-      const versionId = `v${index + 1}`;
-      const versionLabel = this.getExamCode(index + 1);
-      const answerKey = this.buildAnswerKeyForVersion(
-        versionId,
-        versionLabel,
-        answerQuestions
-      );
-      versionsForFirestore.push(answerKey);
-      const qrPayloadText = encodeQrPayload({
-        examId,
-        versionId,
-        page: 1,
-        totalPages: 1,
-      });
-
-      let docDefinition: any = {
-        margin: 10,
-        pageMargins: [40, 130, 40, 60],
-        header: header,
-        content: [
-          {
-            text: `Nombre: _________________________________    Fecha: ${
-              config.date ? config.date.toLocaleDateString() : " _________ "
-            }   Grado:${
-              config.grade !== "" ? config.grade : " ___ "
-            }   Examen: ${this.getExamCode(index + 1)}`,
-            style: "subtitle",
-            alignment: "center",
-            margin: [0, 0, 0, 10],
-          },
-          await this.buildExamBody(examToGenerate, config),
-          { text: "", pageBreak: "before" },
-          // ============== HOJA DE RESPUESTAS DEL ALUMNO ================
-          // Layout OMR-friendly (posiciones absolutas conocidas).
-          // El motor OMR usa las mismas constantes (`omrLayout.const.ts`)
-          // para muestrear, así que el alineamiento es exacto.
-          // -------------------------------------------------------------
-          ...(await this.buildOmrAnswerSheet(
-            answerQuestions,
-            this.getExamCode(index + 1),
-            qrPayloadText,
-            false
-          )),
-          // ============== HOJA DE RESPUESTAS DEL MAESTRO ===============
-          // Mismo layout exacto que la del alumno — solo cambia que la
-          // burbuja correcta de cada pregunta aparece rellena con
-          // `assets/relleno.png`. Así el maestro corrige a ojo en el
-          // mismo formato visual que ve el alumno.
-          //
-          // OPCIONAL: solo se incluye si el profe activó `includeTeacherKey`
-          // en el formulario. La hoja del alumno (arriba) siempre va.
-          // -------------------------------------------------------------
-          ...(config.includeTeacherKey
-            ? [
-                { text: "", pageBreak: "before" },
-                ...(await this.buildOmrAnswerSheet(
-                  answerQuestions,
-                  this.getExamCode(index + 1),
-                  qrPayloadText,
-                  true
-                )),
-              ]
-            : []),
-        ],
-
-        styles: {
-          questionHeader: {
-            fontSize: 12,
-            bold: true,
-          },
-          questionAnswer: {
-            margin: [5, 2, 10, 20],
-          },
+    return {
+      margin: 10,
+      columns: [
+        {
+          image: await this.getBase64ImageFromURL(this.logoBase64 ?? "assets/logoexamhub.webp"),
+          opacity: 0.5,
+          width: 80,
         },
-      };
-      if (amount > 1) {
-        let name;
-        if (config.grade !== "") {
-          name = config.grade + "-" + (index + 1);
-        } else {
-          name = "exam " + "-" + (index + 1);
-        }
-        pdfDefs.push({ def: docDefinition, name: name });
-      } else {
-        this.pdfService.open(docDefinition);
-      }
-    }
-    if (amount > 1) {
-      let date = new Date();
-      this.pdfService.downloadZip(
-        pdfDefs,
-        date.toLocaleDateString() + "_" + date.toLocaleTimeString() + "_exams"
-      );
-    }
-
-    // -----------------------------------------------------------------
-    //  Persistir el examen calificable en Firestore.
-    //
-    //  Es un fire-and-forget: no bloqueamos el cierre del diálogo si
-    //  Firestore se demora. Si falla, mostramos toast pero el PDF ya
-    //  está generado (no se pierde trabajo). El profe podrá re-generar
-    //  para reintentar el guardado.
-    //
-    //  TODO: cuando integremos Remote Config para planes, pasar el
-    //  plan real del usuario. Por ahora "free" como default conservador.
-    // -----------------------------------------------------------------
-    if (versionsForFirestore.length > 0) {
-      const totalQuestions = versionsForFirestore[0].answers.length;
-      const gradedExam: Omit<
-        GradedExam,
-        "ownerId" | "createdAt" | "expiresAt"
-      > = {
-        id: examId,
-        title: config.title || "Examen sin título",
-        subject: config.subtitle || undefined,
-        grade: config.grade || undefined,
-        totalQuestions,
-        letters: this.buildLetterSet(),
-        versions: versionsForFirestore,
-        planAtCreation: "free",
-      };
-      this.gradingService
-        .saveExam(gradedExam, "free")
-        .then(() => {
-          // Silencioso en éxito: ya estamos mostrando el PDF.
-          // El profe lo verá en /grade cuando vaya a calificar.
-        })
-        .catch((err) => {
-          console.error("No se pudo guardar el examen calificable:", err);
-          this.toast.danger(
-            "El PDF se generó pero no pudimos guardar el examen para calificar. Reintentá generar.",
-            "ExamHub",
-            5000
-          );
-        });
-    }
-  }
-
-  /**
-   * Construye el set de letras válidas para este examen.
-   * Usa el `greaterAmount` que se va calculando durante el render del
-   * cuerpo (es el máximo número de opciones que vimos en alguna
-   * pregunta MCQ). Mínimo 2 (V/F).
-   */
-  private buildLetterSet(): AnswerLetter[] {
-    const count = Math.max(2, this.greaterAmount || 4);
-    return ALPHABET.slice(0, count);
-  }
-
-  /**
-   * Calcula el AnswerKey de una versión a partir de las preguntas
-   * YA BARAJADAS en el orden en que se imprimieron. Para cada pregunta:
-   *
-   *   - MCQ / V-F: la letra de la opción con `correct: true`.
-   *   - NUMERIC : `null` (lo calificaremos con regex contra la
-   *               respuesta esperada en una iteración futura — para
-   *               la primera versión del OMR solo MCQ).
-   *   - OPEN    : `null` (se corrige a mano, no se puede automatizar).
-   *
-   *  Si una MCQ no tiene opción correcta (mala configuración del
-   *  banco), devolvemos `null` y dejamos un warning. La pregunta no
-   *  se cuenta para calificar.
-   */
-  private buildAnswerKeyForVersion(
-    versionId: string,
-    label: string,
-    answerQuestions: Document[]
-  ): AnswerKey {
-    const answers: (AnswerLetter | null)[] = answerQuestions.map(
-      (q, qIndex) => {
-        const kind = getQuestionKind(q);
-        if (
-          kind !== QuestionKind.MULTIPLE_CHOICE_SINGLE &&
-          kind !== QuestionKind.TRUE_FALSE
-        ) {
-          return null;
-        }
-        const opts = q.options ?? [];
-        const correctIdx = opts.findIndex((o: Option) => o.correct === true);
-        if (correctIdx < 0) {
-          console.warn(
-            `Pregunta ${qIndex + 1} (${q.name}) no tiene opción correcta marcada.`
-          );
-          return null;
-        }
-        return ALPHABET[correctIdx];
-      }
-    );
-    return { versionId, label, answers };
+        [
+          { text: config.institution, alignment: "center", fontSize: 18, bold: true },
+          { text: config.title, alignment: "center", fontSize: 16, bold: true },
+          { text: config.place, alignment: "center", fontSize: 12, bold: false },
+          { text: config.subtitle, style: "subtitle", alignment: "center", fontSize: 11, bold: false },
+        ],
+      ],
+    };
   }
 
   /**
@@ -543,6 +507,7 @@ export class GenerateExamDialogComponent implements OnInit {
     // ocupan mucho más que un MCQ corto).
     const weightedBlocks: { node: any; weight: number }[] = [];
     let qNumber = 0;
+    let currentTest: string | undefined;
 
     for (const item of exam) {
       if (item.type === objectType.PASSAGE) {
@@ -581,6 +546,20 @@ export class GenerateExamDialogComponent implements OnInit {
       }
 
       // ----- ES PREGUNTA -----
+      // Simulacro: encabezado de sección cada vez que cambia la prueba.
+      if (config.simulacro && item.test && item.test !== currentTest) {
+        currentTest = item.test;
+        weightedBlocks.push({
+          node: {
+            text: (getTest(item.test)?.label ?? item.test).toUpperCase(),
+            bold: true,
+            fontSize: enuncFontSize + 1,
+            color: "#3730a3",
+            margin: [0, 6, 0, 6],
+          },
+          weight: 1,
+        });
+      }
       qNumber++;
       const kind = getQuestionKind(item);
       const hasOptions =
@@ -756,359 +735,5 @@ export class GenerateExamDialogComponent implements OnInit {
     });
 
     return { stack: pages };
-  }
-
-  /**
-   * Baraja el examen respetando los grupos lectura↔preguntas.
-   *
-   * Reglas:
-   *   1. Las preguntas con el mismo `passageId` forman un grupo
-   *      indivisible: siempre van juntas, siempre debajo de su
-   *      lectura, nunca con otras preguntas en el medio.
-   *   2. Las preguntas sueltas (sin passageId) son cada una su propio
-   *      grupo de tamaño 1, así pueden barajarse libremente entre sí.
-   *   3. Los grupos se barajan entre ellos.
-   *   4. Dentro de cada grupo de lectura, las preguntas se barajan
-   *      libremente. La lectura siempre va primero.
-   *   5. Las opciones de cada pregunta también se barajan.
-   *   6. Si una lectura no está como Document explícito pero alguna
-   *      pregunta tiene `passageContext`, se sintetiza el bloque de
-   *      lectura desde ese texto denormalizado.
-   *   7. Se respeta `amountQuestions` contando solo QUESTION (las
-   *      lecturas no consumen cupo). Los grupos se incluyen completos
-   *      o no se incluyen (no se parte una lectura por la mitad).
-   */
-  shuffleExam(exam: Document[]): Document[] {
-    // 1. Indexar lecturas explícitas y agrupar preguntas por passageId
-    const explicitPassages = new Map<string, Document>();
-    const groups = new Map<string, Document[]>();
-    const LOOSE = "__loose__";
-
-    for (const item of exam) {
-      if (item.type === objectType.PASSAGE) {
-        explicitPassages.set(item.id, item);
-        continue;
-      }
-      if (item.type !== objectType.QUESTION) continue;
-
-      const key = item.passageId ?? LOOSE;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(item);
-    }
-
-    // 2. Construir chunks: cada chunk es indivisible
-    const chunks: Document[][] = [];
-
-    // 2a. Preguntas sueltas: cada una un chunk individual
-    const loose = groups.get(LOOSE) ?? [];
-    for (const q of loose) {
-      chunks.push([this.cloneAndShuffleOptions(q)]);
-    }
-
-    // 2b. Grupos lectura↔preguntas
-    for (const [key, questions] of groups.entries()) {
-      if (key === LOOSE) continue;
-      const passageId = key;
-
-      // Barajar las preguntas internas y sus opciones
-      const shuffledQs = this.shuffleArray(questions).map((q) =>
-        this.cloneAndShuffleOptions(q)
-      );
-
-      // ¿Tenemos la lectura como Document explícito? Si no, la
-      // sintetizamos a partir del passageContext denormalizado en la
-      // primera pregunta del grupo.
-      let passageDoc: Document | undefined = explicitPassages.get(passageId);
-      if (!passageDoc) {
-        const ctx = shuffledQs[0]?.passageContext;
-        if (ctx) {
-          passageDoc = {
-            id: passageId,
-            name: "Lectura",
-            type: objectType.PASSAGE,
-            passageText: ctx,
-          } as Document;
-        }
-      }
-
-      const chunk: Document[] = [];
-      if (passageDoc) chunk.push({ ...passageDoc } as Document);
-      chunk.push(...shuffledQs);
-      chunks.push(chunk);
-    }
-
-    // 2c. Lecturas explícitas que no tienen preguntas (raro, pero
-    //     puede pasar si el profe agregó solo la lectura). Las
-    //     incluimos sueltas.
-    for (const [pid, passage] of explicitPassages.entries()) {
-      if (!groups.has(pid)) {
-        chunks.push([{ ...passage } as Document]);
-      }
-    }
-
-    // 3. Barajar los chunks entre sí
-    const shuffledChunks = this.shuffleArray(chunks);
-
-    // 4. Aplanar respetando el límite de cantidad de preguntas
-    const result: Document[] = [];
-    let count = 0;
-    for (const chunk of shuffledChunks) {
-      if (count >= this.amountQuestions) break;
-      const qInChunk = chunk.filter(
-        (d) => d.type === objectType.QUESTION
-      ).length;
-      // No partimos chunks de lectura: si la lectura excede el cupo,
-      // saltamos al siguiente chunk en busca de uno que entre.
-      if (
-        count + qInChunk > this.amountQuestions &&
-        chunk.some((d) => d.type === objectType.PASSAGE)
-      ) {
-        continue;
-      }
-      result.push(...chunk);
-      count += qInChunk;
-    }
-
-    return result;
-  }
-
-  /** Helper: clona la pregunta y baraja sus opciones (si tiene). */
-  private cloneAndShuffleOptions(q: Document): Document {
-    if (q.options && q.options.length > 0) {
-      return { ...q, options: this.shuffleArray(q.options) } as Document;
-    }
-    return { ...q } as Document;
-  }
-
-  /**
-   * Fisher-Yates: cada permutación tiene la misma probabilidad.
-   * No muta el arreglo de entrada.
-   */
-  shuffleArray<T>(array: T[]): T[] {
-    const result = array.slice();
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
-    }
-    return result;
-  }
-
-  /**
-   * Construye TODOS los nodos pdfmake que forman la hoja de respuestas
-   * OMR-friendly: 4 fiduciales + QR + título + datos del alumno + grid
-   * fijo de burbujas.
-   *
-   * Esta función produce **dos versiones** según `forTeacher`:
-   *   - false (alumno): todas las burbujas vacías.
-   *   - true  (maestro): la burbuja correcta de cada pregunta aparece
-   *                       rellena (con `assets/relleno.png`).
-   *
-   * Ambas versiones comparten layout EXACTO — solo cambia el contenido
-   * y el título. Eso garantiza que el maestro y el alumno tengan el
-   * mismo formato visual.
-   *
-   * Las posiciones (fiduciales, burbujas, etc) vienen de
-   * `omrLayout.const.ts`, que también consume el motor OMR. Así se
-   * mantiene un único origen de verdad del layout.
-   *
-   * Importante: usamos los PNG existentes (`assets/op[A-Z].png` y
-   * `assets/relleno.png`) en vez de dibujar círculo + letra con
-   * canvas. Esto da alineamiento pixel-perfecto entre el círculo y
-   * su letra, sin las inconsistencias típicas de centrar texto sobre
-   * canvas con métricas variables del font.
-   */
-  private async buildOmrAnswerSheet(
-    answerQuestions: Document[],
-    examCode: string,
-    qrPayload: string,
-    forTeacher: boolean
-  ): Promise<any[]> {
-    const nodes: any[] = [];
-    const total = answerQuestions.length;
-
-    // Pre-cargamos las imágenes UNA vez para reutilizarlas en todas
-    // las posiciones. Mucho más rápido que await en cada bubble.
-    const letterImages: Record<string, any> = {};
-    const lettersNeeded = Math.max(2, this.greaterAmount);
-    for (let j = 0; j < lettersNeeded; j++) {
-      const letter = ALPHABET[j];
-      letterImages[letter] = await this.getBase64ImageFromURL(
-        `assets/op${letter}.png`
-      );
-    }
-    const filledImage = forTeacher
-      ? await this.getBase64ImageFromURL("assets/relleno.png")
-      : null;
-
-    // --- 4 fiduciales (cuadrados negros sólidos, lejos del contenido) ---
-    for (const pos of [
-      FIDUCIAL_POSITIONS.tl,
-      FIDUCIAL_POSITIONS.tr,
-      FIDUCIAL_POSITIONS.bl,
-      FIDUCIAL_POSITIONS.br,
-    ]) {
-      nodes.push({
-        canvas: [
-          {
-            type: "rect",
-            x: 0,
-            y: 0,
-            w: FIDUCIAL_SIZE_PT,
-            h: FIDUCIAL_SIZE_PT,
-            color: "#000000",
-          },
-        ],
-        absolutePosition: { x: pos.x, y: pos.y },
-      });
-    }
-
-    // --- Título centrado en la página ---
-    nodes.push({
-      text: forTeacher
-        ? `Hoja de respuestas del maestro — Examen ${examCode}`
-        : `Hoja de respuestas — Examen ${examCode}`,
-      bold: true,
-      fontSize: 13,
-      alignment: "center",
-      width: PAGE_W_PT,
-      absolutePosition: { x: 0, y: TITLE_Y_PT },
-    });
-
-    // --- QR en zona dedicada (también en la del maestro, para visual
-    //     consistency — el maestro lo ignora). ---
-    nodes.push({
-      qr: qrPayload,
-      fit: QR_LAYOUT.fit,
-      eccLevel: "M",
-      absolutePosition: { x: QR_LAYOUT.x, y: QR_LAYOUT.y },
-    });
-
-    // --- Datos del alumno (la del maestro tiene el espacio igual,
-    //     se usa para anotaciones) ---
-    nodes.push({
-      text: forTeacher
-        ? "Clave de respuestas — usar para corrección manual o referencia"
-        : "Nombre: ______________________________________   Código: __________",
-      fontSize: 10,
-      italics: forTeacher,
-      color: forTeacher ? "#666666" : undefined,
-      absolutePosition: { x: 50, y: STUDENT_INFO_Y_PT },
-    });
-
-    // --- Línea separadora ---
-    nodes.push({
-      canvas: [
-        {
-          type: "line",
-          x1: 0,
-          y1: 0,
-          x2: 495,
-          y2: 0,
-          lineWidth: 0.5,
-          lineColor: "#cccccc",
-        },
-      ],
-      absolutePosition: { x: 50, y: STUDENT_INFO_Y_PT + 20 },
-    });
-
-    // --- Grid de burbujas ---
-    for (let i = 0; i < total; i++) {
-      const q = answerQuestions[i];
-      const kind = getQuestionKind(q);
-      const numLabel = (i + 1).toString().padStart(2, "0") + ".";
-      const labelX = numberLabelX(i, total);
-      const labelY = rowLabelY(i, total);
-
-      // Número de pregunta
-      nodes.push({
-        text: numLabel,
-        fontSize: 10,
-        bold: forTeacher,
-        absolutePosition: { x: labelX, y: labelY },
-      });
-
-      if (
-        kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
-        kind === QuestionKind.TRUE_FALSE
-      ) {
-        const letterCount =
-          kind === QuestionKind.TRUE_FALSE ? 2 : this.greaterAmount;
-        for (let j = 0; j < letterCount; j++) {
-          const center = bubbleCenter(i, j, total);
-          // ¿En la versión del maestro, esta es la correcta?
-          const isCorrect =
-            forTeacher && q.options && q.options[j]?.correct === true;
-          const img = isCorrect ? filledImage : letterImages[ALPHABET[j]];
-          nodes.push({
-            image: img,
-            width: BUBBLE_RADIUS_PT * 2,
-            absolutePosition: {
-              x: center.x - BUBBLE_RADIUS_PT,
-              y: center.y - BUBBLE_RADIUS_PT,
-            },
-          });
-        }
-      } else if (kind === QuestionKind.NUMERIC) {
-        // No es OMR-able. En la del maestro mostramos la respuesta esperada.
-        const txt = forTeacher
-          ? `Respuesta: ${q.numericAnswer ?? "—"}${
-              q.numericTolerance && q.numericTolerance > 0
-                ? ` (± ${q.numericTolerance})`
-                : ""
-            }`
-          : "Respuesta: ____________________";
-        nodes.push({
-          text: txt,
-          fontSize: 9,
-          italics: !forTeacher,
-          bold: forTeacher,
-          color: forTeacher ? "#000000" : "#666666",
-          absolutePosition: { x: labelX + 30, y: labelY },
-        });
-      } else if (kind === QuestionKind.OPEN) {
-        nodes.push({
-          text: forTeacher
-            ? "(respuesta abierta — corregir a mano)"
-            : "(en el espacio de la pregunta)",
-          fontSize: 9,
-          italics: true,
-          color: "#666666",
-          absolutePosition: { x: labelX + 30, y: labelY },
-        });
-      }
-    }
-
-    return nodes;
-  }
-
-  /**
-   * Letra para opciones de respuesta (A–Z). Solo se usa para las
-   * burbujas, donde nunca hay más de 26 opciones por pregunta.
-   */
-  getAlphabetLetter(number: number): string {
-    if (number < 1 || number > 26) {
-      throw new Error("El número debe estar entre 1 y 26.");
-    }
-    return String.fromCharCode(65 + number - 1);
-  }
-
-  /**
-   * Código del examen estilo planilla: 1→A, 2→B, …, 26→Z, 27→AA,
-   * 28→AB, …, 702→ZZ, 703→AAA… Soporta cualquier cantidad de
-   * versiones sin tirar excepción (bug viejo: con >26 versiones
-   * la app crasheaba silenciosamente).
-   */
-  getExamCode(number: number): string {
-    if (number < 1) {
-      throw new Error("El código de examen debe ser >= 1.");
-    }
-    let n = number;
-    let code = "";
-    while (n > 0) {
-      n--;
-      code = String.fromCharCode(65 + (n % 26)) + code;
-      n = Math.floor(n / 26);
-    }
-    return code;
   }
 }

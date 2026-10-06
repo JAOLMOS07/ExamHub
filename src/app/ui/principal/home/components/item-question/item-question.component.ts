@@ -18,6 +18,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { CreateQuestionDialogComponent } from "../../../../exam/create-question-dialog/create-question.component";
 import { ToastService } from "../../../../../core/services/toast.service";
 import { ConfirmService } from "../../../../../core/services/confirm.service";
+import { getCompetency, getTest } from "../../../../../core/domain/taxonomy/saber11";
 
 @Component({
   selector: "app-item-question",
@@ -57,6 +58,18 @@ export class ItemQuestionComponent {
   /** Ícono Material asociado al tipo. */
   get kindIcon(): string {
     return QUESTION_KIND_ICON[getQuestionKind(this.question)];
+  }
+
+  /** Prueba ICFES abreviada (ej. "MAT"). */
+  get alignmentLabel(): string {
+    return getTest(this.question.test)?.shortLabel ?? "";
+  }
+
+  get alignmentTitle(): string {
+    const test = getTest(this.question.test);
+    if (!test) return "";
+    const comp = getCompetency(this.question.test, this.question.competency);
+    return comp ? `${test.label} · ${comp.label}` : test.label;
   }
 
   /** Color de fondo/texto/borde para el badge de dificultad. */

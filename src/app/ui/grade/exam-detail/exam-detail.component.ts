@@ -1,120 +1,244 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnDestroy, OnInit } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
+import { Subscription, combineLatest } from "rxjs";
 import { ToastService } from "../../../core/services/toast.service";
-import { Subscription } from "rxjs";
 import { ConfirmService } from "../../../core/services/confirm.service";
-import {
-  ExamResult,
-  GradedExam,
-} from "../../../core/models/gradedExam.model";
 import { GradingService } from "../../../core/services/grading.service";
+import { OrgService } from "../../../core/services/org.service";
+import { TenantService } from "../../../core/services/tenant.service";
+import { AiService, AssessmentReport } from "../../../core/services/ai.service";
+import { Assessment, ResponseDoc } from "../../../core/models/assessment.model";
+import { Document } from "../../../core/models/folder.model";
+import { Group } from "../../../core/models/org.model";
+import { ItemAnalysis, analyzeItems, itemFlags } from "../../../core/domain/psychometrics";
+import { SABER11_TESTS, getCompetency, getTest } from "../../../core/domain/taxonomy/saber11";
+import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
-import { exportResultsPdf } from "./results-pdf.util";
+import { exportResultsPdf, exportStudentReports } from "./results-pdf.util";
+
+type Tab = "results" | "competencies" | "items" | "ai";
+
+const FLAG_LABEL: Record<string, string> = {
+  muy_facil: "Muy fácil",
+  muy_dificil: "Muy difícil",
+  baja_discriminacion: "Discrimina poco",
+  distractor_atractivo: "Un distractor atrae más que la clave",
+};
 
 /**
- * Pantalla de detalle de un examen calificable.
+ * Detalle y reportes de una evaluación.
  *
  * Ruta: /grade/exam/:examId
- *
- * Muestra:
- *   - Info del examen (título, materia, versiones, fecha).
- *   - Lista de alumnos calificados con sus notas.
- *   - Promedio y métricas básicas del curso.
- *   - Botones para escanear nuevo / calificar manual / exportar PDF /
- *     borrar el examen entero.
  */
 @Component({
   selector: "app-exam-detail",
   standalone: true,
-  imports: [CommonModule, RouterModule, SharedModule],
+  imports: [CommonModule, FormsModule, RouterModule, SharedModule],
   templateUrl: "./exam-detail.component.html",
 })
 export class ExamDetailComponent implements OnInit, OnDestroy {
-  exam: GradedExam | null = null;
-  results: ExamResult[] = [];
+  readonly ALPHABET = ALPHABET;
+  readonly FLAG_LABEL = FLAG_LABEL;
+  readonly getTest = getTest;
+
+  exam: Assessment | null = null;
+  responses: ResponseDoc[] = [];
+  groups: Group[] = [];
+  snapshot = new Map<string, Document>();
+  institution = "";
+
+  tab: Tab = "results";
+  groupFilter: string = "all";
   isLoading = true;
   errorMessage = "";
   isExporting = false;
-  /** Escala default usada en la pantalla de calificación. Se podría
-   *  parametrizar por examen en una v2. */
-  maxScore = 5;
 
-  private resultsSub?: Subscription;
+  readonly aiEnabled: boolean;
+  aiReport: AssessmentReport | null = null;
+  isGeneratingReport = false;
+
+  private sub?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private gradingService: GradingService,
+    private orgService: OrgService,
+    private tenant: TenantService,
+    private ai: AiService,
     private toast: ToastService,
     private confirm: ConfirmService
-  ) {}
+  ) {
+    this.aiEnabled = ai.enabled;
+  }
 
   async ngOnInit(): Promise<void> {
     const examId = this.route.snapshot.paramMap.get("examId");
     if (!examId) {
-      this.errorMessage = "Falta el id del examen en la URL.";
+      this.errorMessage = "Falta el id de la evaluación en la URL.";
       this.isLoading = false;
       return;
     }
     try {
-      this.exam = await this.gradingService.getExamById(examId);
+      this.exam = await this.gradingService.getAssessment(examId);
       if (!this.exam) {
-        this.errorMessage = "No encontramos ese examen en tu cuenta.";
-        this.isLoading = false;
+        this.errorMessage = "No encontramos esa evaluación en tu organización.";
         return;
       }
-      // Suscribimos a results en vivo para que aparezcan calificaciones
-      // nuevas sin tener que refrescar.
-      this.resultsSub = this.gradingService
-        .listResults(examId)
-        .subscribe((rs) => {
-          this.results = rs;
-        });
+      this.sub = combineLatest([
+        this.gradingService.listResponses(examId),
+        this.orgService.groups$(),
+        this.tenant.org$,
+      ]).subscribe(([responses, groups, org]) => {
+        this.responses = responses;
+        this.groups = groups;
+        this.institution = org?.name ?? "";
+      });
+      this.gradingService
+        .getSnapshotItems(examId)
+        .then((items) => (this.snapshot = new Map(items.map((i) => [i.id, i]))))
+        .catch(() => undefined);
     } catch (err) {
-      console.error("Error cargando examen:", err);
-      this.errorMessage = "No pudimos cargar el examen.";
+      console.error("Error cargando la evaluación:", err);
+      this.errorMessage = "No pudimos cargar la evaluación.";
     } finally {
       this.isLoading = false;
     }
   }
 
   ngOnDestroy(): void {
-    this.resultsSub?.unsubscribe();
+    this.sub?.unsubscribe();
   }
 
-  // ---------- Métricas derivadas ----------
+  // ---------------------------------------------------------------------
+  //  Filtros y métricas
+  // ---------------------------------------------------------------------
 
-  /** Cantidad de alumnos calificados. */
-  get studentCount(): number {
-    return this.results.length;
+  get groupsWithResults(): Group[] {
+    const ids = new Set(this.responses.map((r) => r.groupId).filter(Boolean));
+    return this.groups.filter((g) => ids.has(g.id));
   }
 
-  /** Promedio de notas (0 si no hay resultados). */
+  get filtered(): ResponseDoc[] {
+    if (this.groupFilter === "all") return this.responses;
+    if (this.groupFilter === "none") return this.responses.filter((r) => !r.groupId);
+    return this.responses.filter((r) => r.groupId === this.groupFilter);
+  }
+
+  get sortedFiltered(): ResponseDoc[] {
+    return this.filtered
+      .slice()
+      .sort((a, b) => (a.studentName ?? "").localeCompare(b.studentName ?? "", "es"));
+  }
+
+  groupName = (groupId?: string): string =>
+    this.groups.find((g) => g.id === groupId)?.name ?? "";
+
+  formLabel(formId: string): string {
+    return this.exam?.forms.find((f) => f.id === formId)?.label ?? formId;
+  }
+
+  private avg(xs: number[], decimals = 1): number {
+    if (xs.length === 0) return 0;
+    const f = 10 ** decimals;
+    return Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * f) / f;
+  }
+
   get average(): number {
-    if (this.results.length === 0) return 0;
-    const sum = this.results.reduce((s, r) => s + (r.score ?? 0), 0);
-    return Math.round((sum / this.results.length) * 10) / 10;
+    return this.avg(this.filtered.map((r) => r.score ?? 0));
   }
 
-  /** Mejor nota del curso. */
   get bestScore(): number {
-    if (this.results.length === 0) return 0;
-    return Math.max(...this.results.map((r) => r.score ?? 0));
+    return this.filtered.length ? Math.max(...this.filtered.map((r) => r.score ?? 0)) : 0;
   }
 
-  /** Peor nota del curso. */
   get worstScore(): number {
-    if (this.results.length === 0) return 0;
-    return Math.min(...this.results.map((r) => r.score ?? 0));
+    return this.filtered.length ? Math.min(...this.filtered.map((r) => r.score ?? 0)) : 0;
   }
 
-  // ---------- Acciones ----------
+  get globalAverage(): number | null {
+    const g = this.filtered
+      .map((r) => r.breakdown?.global)
+      .filter((x): x is number => typeof x === "number");
+    return g.length ? Math.round(this.avg(g, 0)) : null;
+  }
+
+  get testsPresent(): string[] {
+    const present = new Set(this.filtered.flatMap((r) => Object.keys(r.breakdown?.byTest ?? {})));
+    return SABER11_TESTS.map((t) => t.id).filter((id) => present.has(id));
+  }
+
+  /** Promedio por prueba + distribución por nivel de desempeño. */
+  get testSummary(): { id: string; label: string; avg: number; levels: { label: string; count: number; pct: number }[] }[] {
+    return this.testsPresent.map((id) => {
+      const def = getTest(id)!;
+      const scores = this.filtered
+        .map((r) => r.breakdown?.byTest?.[id])
+        .filter((x): x is NonNullable<typeof x> => !!x);
+      const n = scores.length || 1;
+      return {
+        id,
+        label: def.label,
+        avg: Math.round(this.avg(scores.map((s) => s.score), 0)),
+        levels: def.levelLabels.map((label, li) => {
+          const count = scores.filter((s) => s.level === li).length;
+          return { label, count, pct: Math.round((count / n) * 100) };
+        }),
+      };
+    });
+  }
+
+  /** % de aciertos por competencia (sumando todos los estudiantes). */
+  get competencySummary(): { test: string; label: string; pct: number; total: number }[] {
+    const acc = new Map<string, { c: number; t: number }>();
+    for (const r of this.filtered) {
+      for (const [k, v] of Object.entries(r.breakdown?.byCompetency ?? {})) {
+        const a = acc.get(k) ?? { c: 0, t: 0 };
+        a.c += v.correct;
+        a.t += v.total;
+        acc.set(k, a);
+      }
+    }
+    return [...acc.entries()]
+      .map(([k, a]) => {
+        const [test, comp] = k.split(":");
+        return {
+          test,
+          label: getCompetency(test, comp)?.label ?? comp,
+          pct: a.t ? Math.round((a.c / a.t) * 100) : 0,
+          total: a.t,
+        };
+      })
+      .sort((x, y) => SABER11_TESTS.findIndex((t) => t.id === x.test) - SABER11_TESTS.findIndex((t) => t.id === y.test) || x.pct - y.pct);
+  }
+
+  get itemAnalysis(): ItemAnalysis[] {
+    if (!this.exam) return [];
+    return analyzeItems(this.exam.forms, this.filtered);
+  }
+
+  flagsOf(item: ItemAnalysis): string[] {
+    return itemFlags(item, 10);
+  }
+
+  stemOf(itemId: string): string {
+    const name = this.snapshot.get(itemId)?.name ?? "";
+    return name.length > 140 ? name.slice(0, 140) + "…" : name;
+  }
+
+  pct(x: number): number {
+    return Math.round(x * 100);
+  }
+
+  // ---------------------------------------------------------------------
+  //  Acciones
+  // ---------------------------------------------------------------------
 
   goToGrade(): void {
-    if (!this.exam) return;
-    this.router.navigateByUrl(MODULES.GRADE.EXAM_GRADE(this.exam.id));
+    if (this.exam) this.router.navigateByUrl(MODULES.GRADE.EXAM_GRADE(this.exam.id));
   }
 
   goToScan(): void {
@@ -126,72 +250,98 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDate(ts: number): string {
-    return new Date(ts).toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return new Date(ts).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
   }
 
   formatDateTime(ts: number): string {
-    return new Date(ts).toLocaleString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(ts).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
   }
 
-  /**
-   * Borra un resultado individual. Útil para corregir un escaneo
-   * incorrecto sin tener que borrar el examen entero.
-   */
-  async deleteResult(result: ExamResult): Promise<void> {
+  async deleteResult(result: ResponseDoc): Promise<void> {
     if (!this.exam) return;
-    const confirmed = await this.confirm.ask({
+    const ok = await this.confirm.ask({
       title: "¿Borrar esta calificación?",
-      message: `Vas a borrar la nota de ${result.studentName ?? "este alumno"}.`,
+      message: `Vas a borrar la nota de ${result.studentName ?? "este estudiante"}.`,
       confirmText: "Sí, borrar",
       tone: "danger",
     });
-    if (!confirmed) return;
+    if (!ok) return;
     try {
-      await this.gradingService.deleteResult(this.exam.id, result.id);
+      await this.gradingService.deleteResponse(this.exam.id, result.id);
       this.toast.success("Calificación eliminada.", "ExamHub", 2500);
     } catch (err) {
-      console.error("Error borrando resultado:", err);
-      this.toast.danger(
-        "No pudimos borrar la calificación.",
-        "ExamHub",
-        3500
-      );
+      console.error(err);
+      this.toast.danger("No pudimos borrar la calificación.", "ExamHub", 3500);
     }
   }
 
-  /**
-   * Exporta la lista de resultados a PDF imprimible.
-   */
-  async exportPdf(): Promise<void> {
-    if (!this.exam || this.results.length === 0) {
-      this.toast.warning(
-        "Todavía no hay resultados para exportar.",
-        "ExamHub",
-        3000
-      );
+  private get filterLabel(): string | undefined {
+    if (this.groupFilter === "all") return undefined;
+    if (this.groupFilter === "none") return "Sin grupo";
+    return this.groupName(this.groupFilter);
+  }
+
+  async exportPdf(kind: "planilla" | "boletines"): Promise<void> {
+    if (!this.exam || this.filtered.length === 0) {
+      this.toast.warning("Todavía no hay resultados para exportar.", "ExamHub", 3000);
       return;
     }
     this.isExporting = true;
     try {
-      await exportResultsPdf(this.exam, this.results, this.maxScore);
+      if (kind === "planilla") {
+        await exportResultsPdf(this.exam, this.filtered, this.groupName, this.filterLabel);
+      } else {
+        await exportStudentReports(this.exam, this.filtered, this.groupName, this.institution);
+      }
     } catch (err) {
       console.error("Error exportando PDF:", err);
-      this.toast.danger(
-        "No pudimos generar el PDF.",
-        "ExamHub",
-        3500
-      );
+      this.toast.danger("No pudimos generar el PDF.", "ExamHub", 3500);
     } finally {
       this.isExporting = false;
+    }
+  }
+
+  /** CSV (separador ;, compatible con Excel en español). */
+  exportCsv(): void {
+    if (!this.exam) return;
+    const tests = this.testsPresent;
+    const head = ["Estudiante", "Código", "Grupo", "Forma", "Aciertos", "Total", ...tests.map((t) => getTest(t)?.label ?? t), "Global", "Nota", "Fecha"];
+    const rows = this.sortedFiltered.map((r) => [
+      r.studentName ?? "",
+      r.studentCode ?? "",
+      this.groupName(r.groupId),
+      this.formLabel(r.formId),
+      r.breakdown?.correct ?? 0,
+      r.breakdown?.total ?? 0,
+      ...tests.map((t) => r.breakdown?.byTest?.[t]?.score ?? ""),
+      r.breakdown?.global ?? "",
+      String(r.score ?? 0).replace(".", ","),
+      new Date(r.scannedAt).toLocaleDateString("es-CO"),
+    ]);
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = "﻿" + [head, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Resultados - ${this.exam.title}.csv`.replace(/[/\\?%*:|"<>]/g, "-");
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async generateAiReport(): Promise<void> {
+    if (!this.exam || this.isGeneratingReport) return;
+    this.isGeneratingReport = true;
+    try {
+      const groupId =
+        this.groupFilter !== "all" && this.groupFilter !== "none" ? this.groupFilter : null;
+      this.aiReport = await this.ai.assessmentReport(this.exam.id, groupId);
+    } catch (err) {
+      this.toast.danger(this.ai.friendlyError(err), "ExamHub", 4500);
+    } finally {
+      this.isGeneratingReport = false;
     }
   }
 }

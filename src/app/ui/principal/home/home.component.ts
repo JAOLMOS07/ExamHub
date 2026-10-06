@@ -21,6 +21,8 @@ import { Subscription, firstValueFrom } from "rxjs";
 import { PreferencesService } from "../../../core/services/preferences.service";
 import { TenantService } from "../../../core/services/tenant.service";
 import { MigrationService } from "../../../core/services/migration.service";
+import { AiService } from "../../../core/services/ai.service";
+import { AiGenerateDialogComponent } from "../../exam/ai-generate-dialog/ai-generate-dialog.component";
 @Component({
   selector: "app-home",
   standalone: true,
@@ -204,6 +206,54 @@ export class HomeComponent implements OnDestroy {
 
   private documentsSub?: Subscription;
 
+  aiEnabled = false;
+  isAligning = false;
+
+  /** Preguntas del nivel actual sin prueba ICFES asignada. */
+  get unalignedHere(): Document[] {
+    return this.documents.filter((d) => d.type === objectType.QUESTION && !d.test);
+  }
+
+  openAiGenerateDialog(): void {
+    const ref = this.dialog.open(AiGenerateDialogComponent, {
+      width: "760px",
+      maxWidth: "95vw",
+      data: { path: this.currentPath },
+    });
+    ref.afterClosed().subscribe((r) => {
+      if (r?.imported) this.loadDocuments();
+    });
+  }
+
+  /** Clasifica con IA (prueba, competencia, dificultad) hasta 25 preguntas del nivel. */
+  async alignWithAi(): Promise<void> {
+    if (this.isAligning) return;
+    const batch = this.unalignedHere.slice(0, 25);
+    this.isAligning = true;
+    try {
+      const { tags } = await this.ai.tagItems(
+        batch.map((q) => ({ id: q.id, stem: q.name, options: q.options?.map((o) => o.content) }))
+      );
+      let updated = 0;
+      for (const tag of tags) {
+        const q = batch.find((x) => x.id === tag.id);
+        if (!q) continue;
+        await this.examService.updateDocument(this.currentPath, q.id, {
+          ...q,
+          test: tag.test,
+          competency: tag.competency,
+          difficulty: q.difficulty ?? tag.difficulty,
+        });
+        updated++;
+      }
+      this.toast.success(`${updated} pregunta(s) alineadas. Revisa la clasificación sugerida.`, "ExamHub", 4000);
+    } catch (err) {
+      this.toast.danger(this.ai.friendlyError(err), "ExamHub", 4500);
+    } finally {
+      this.isAligning = false;
+    }
+  }
+
   /** Preferencias del usuario (materias y grados predefinidos). */
   prefSubjects: string[] = [];
   prefGrades: string[] = [];
@@ -217,8 +267,10 @@ export class HomeComponent implements OnDestroy {
     private toast: ToastService,
     private confirm: ConfirmService,
     private tenant: TenantService,
-    private migration: MigrationService
+    private migration: MigrationService,
+    private ai: AiService
   ) {
+    this.aiEnabled = this.ai.enabled;
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
     });

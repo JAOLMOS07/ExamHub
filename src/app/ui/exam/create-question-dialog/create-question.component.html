@@ -143,6 +143,110 @@
             </div>
           </div>
         </div>
+
+        <!-- Alineación ICFES: habilita reportes por prueba y competencia -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+          <div>
+            <label for="test" class="block text-xs font-medium text-slate-600 mb-1">
+              Prueba ICFES
+            </label>
+            <select
+              id="test"
+              name="test"
+              class="select select-bordered select-sm w-full"
+              [ngModel]="test"
+              (ngModelChange)="onTestChange($event)"
+            >
+              <option value="">Sin alinear</option>
+              @for (t of tests; track t.id) {
+                <option [value]="t.id">{{ t.label }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="competency" class="block text-xs font-medium text-slate-600 mb-1">
+              Competencia
+            </label>
+            <select
+              id="competency"
+              name="competency"
+              class="select select-bordered select-sm w-full"
+              [(ngModel)]="competency"
+              [disabled]="!selectedTest"
+            >
+              <option value="">—</option>
+              @for (c of selectedTest?.competencies ?? []; track c.id) {
+                <option [value]="c.id">{{ c.label }}</option>
+              }
+            </select>
+          </div>
+          @if (selectedTest?.components?.length) {
+            <div>
+              <label for="component" class="block text-xs font-medium text-slate-600 mb-1">
+                Componente
+              </label>
+              <select
+                id="component"
+                name="component"
+                class="select select-bordered select-sm w-full"
+                [(ngModel)]="component"
+              >
+                <option value="">—</option>
+                @for (c of selectedTest?.components ?? []; track c.id) {
+                  <option [value]="c.id">{{ c.label }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+
+        <div class="mt-3">
+          <label for="rationale" class="block text-xs font-medium text-slate-600 mb-1">
+            Justificación de la respuesta
+            <span class="font-normal text-slate-400">(por qué es correcta y por qué fallan las demás; se usa en la retroalimentación)</span>
+          </label>
+          <textarea
+            id="rationale"
+            name="rationale"
+            rows="2"
+            maxlength="2000"
+            class="textarea textarea-bordered textarea-sm w-full"
+            [(ngModel)]="rationale"
+          ></textarea>
+        </div>
+
+        @if (aiAvailable) {
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="btn btn-xs btn-outline"
+              [disabled]="isReviewing"
+              (click)="reviewWithAi()"
+            >
+              <app-icon [icon]="'auto_awesome'" />
+              {{ isReviewing ? "Revisando…" : "Revisar con IA" }}
+            </button>
+            <span class="text-xs text-slate-500">Detecta ambigüedades, pistas y sugiere la competencia.</span>
+          </div>
+          @if (aiReview) {
+            <div class="mt-2 rounded-md border border-violet-200 bg-violet-50 p-3 text-sm">
+              <p class="font-medium text-violet-900 mb-1">
+                Calidad estimada: {{ aiReview.qualityScore }}/5
+              </p>
+              @for (issue of aiReview.issues; track $index) {
+                <p class="text-violet-900">
+                  <span class="font-semibold">{{ issue.severity === "alta" ? "(!)" : "-" }}</span>
+                  {{ issue.message }}
+                </p>
+              }
+              @if (aiReview.suggestedAlignment?.test) {
+                <button type="button" class="btn btn-xs mt-2" (click)="applySuggestedAlignment()">
+                  Usar alineación sugerida
+                </button>
+              }
+            </div>
+          }
+        }
       </div>
 
       <!-- Subida de imagen (opcional) -->

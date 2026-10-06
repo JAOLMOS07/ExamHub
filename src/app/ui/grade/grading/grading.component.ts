@@ -1,39 +1,53 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
+import { Subscription, combineLatest } from "rxjs";
 import { v4 as uuidv4 } from "uuid";
+import jsQR from "jsqr";
 import { ToastService } from "../../../core/services/toast.service";
+import { ConfirmService } from "../../../core/services/confirm.service";
 import { SharedModule } from "../../shared/shared.module";
+import { DetectedAnswer } from "../../../core/models/gradedExam.model";
 import {
-  AnswerKey,
-  computeBreakdown,
-  DetectedAnswer,
-  ExamResult,
-  GradedExam,
-  QuestionGradeBreakdown,
-} from "../../../core/models/gradedExam.model";
+  Assessment,
+  FormDef,
+  KeyEntry,
+  ResponseSource,
+  ScoreBreakdown,
+} from "../../../core/models/assessment.model";
+import { Group, Student } from "../../../core/models/org.model";
+import { QuestionKind } from "../../../core/models/questionKind.enum";
 import { GradingService } from "../../../core/services/grading.service";
+import { OrgService } from "../../../core/services/org.service";
 import { OmrError, OmrService } from "../../../core/services/omr.service";
+import { decodeQrPayload } from "../../../core/utils/qrPayload.util";
+import { computeSheetLayout } from "../../../core/domain/answerSheetLayout";
+import { isCorrectAnswer, scoreResponse, toScale } from "../../../core/domain/scoring";
+import { getCompetency, getTest } from "../../../core/domain/taxonomy/saber11";
 import { MODULES } from "../../routes.constants";
 
+interface Row {
+  index: number;
+  entry: KeyEntry;
+  letters: string[];
+  isCorrect: boolean;
+  isUngradable: boolean;
+}
+
 /**
- * Pantalla de calificación de una hoja de respuestas concreta.
+ * Calificación de una hoja de respuestas.
  *
- * Ruta: /grade/exam/:examId?versionId=v1
+ * Ruta: /grade/exam/:examId/grade?versionId=v1&page=1
  *
  * Flujo:
- *   1. Carga GradedExam por examId desde Firestore.
- *   2. Selecciona la versión (de queryParam o por dropdown).
- *   3. Muestra un grid táctil donde el profe toca la burbuja marcada
- *      por el alumno (modo asistido). Cada fila es una pregunta, las
- *      columnas son las letras del examen.
- *   4. Calcula nota en vivo conforme va marcando.
- *   5. Al guardar pide nombre del alumno y persiste ExamResult.
- *
- * En una fase siguiente, esta misma pantalla recibirá una imagen y
- * pre-llenará el grid con la salida del motor OMR; el profe seguiría
- * pudiendo corregir manualmente cualquier celda dudosa.
+ *   1. El docente toma o sube una o varias fotos (una por hoja).
+ *   2. De cada foto se lee el QR → forma y número de página; el OMR
+ *      llena las respuestas de esa página y el código del estudiante.
+ *   3. El estudiante se identifica por su código contra el listado del
+ *      colegio (o se elige a mano).
+ *   4. El docente revisa/corrige y guarda. El puntaje se calcula con la
+ *      capa de dominio: total, por prueba, por competencia y global.
  */
 @Component({
   selector: "app-grading",
@@ -41,303 +55,364 @@ import { MODULES } from "../../routes.constants";
   imports: [CommonModule, FormsModule, RouterModule, SharedModule],
   templateUrl: "./grading.component.html",
 })
-export class GradingComponent implements OnInit {
-  exam: GradedExam | null = null;
-  selectedVersion: AnswerKey | null = null;
-  /** Respuestas detectadas / marcadas por el profe. Mismo largo que
-   *  selectedVersion.answers. */
+export class GradingComponent implements OnInit, OnDestroy {
+  assessment: Assessment | null = null;
+  form: FormDef | null = null;
   detected: DetectedAnswer[] = [];
-  /** Puntaje manual asignado a preguntas NO MCQ (abiertas, numéricas).
-   *  Key: índice de pregunta. Valor: 0..1 (1 = perfecto, 0 = nada).
-   *  Si el profe no toca una pregunta abierta, queda en 0 (default). */
   manualScores: Record<number, number> = {};
+  pagesScanned = new Set<number>();
+  currentPage = 1;
 
+  students: Student[] = [];
+  groups: Group[] = [];
+  selectedStudentId: string | null = null;
   studentName = "";
-  studentCode = "";
+  readCode: string | null = null;
+  studentSearch = "";
+
   maxScore = 5;
   isLoading = true;
   isSaving = false;
   errorMessage = "";
 
-  // ----- OMR (auto-calificar con foto) -----
   isOmrRunning = false;
-  /** Mensaje mostrado durante el procesamiento OMR (loading, error, etc.). */
   omrStatus = "";
-  /** Preview de la imagen procesada con overlay de burbujas detectadas. */
   omrPreviewDataUrl: string | null = null;
-  /** Source del último cambio: si fue OMR marcamos así el ExamResult. */
-  private lastSource: "assisted" | "omr" | "mixed" = "assisted";
+  private lastSource: ResponseSource = "assisted";
+  private sub?: Subscription;
+
+  readonly getTest = getTest;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private gradingService: GradingService,
+    private orgService: OrgService,
     private toast: ToastService,
+    private confirm: ConfirmService,
     private omrService: OmrService
   ) {}
 
   async ngOnInit(): Promise<void> {
     const examId = this.route.snapshot.paramMap.get("examId");
     const versionId = this.route.snapshot.queryParamMap.get("versionId");
+    const page = Number(this.route.snapshot.queryParamMap.get("page")) || 1;
     if (!examId) {
       this.errorMessage = "Falta el id del examen en la URL.";
       this.isLoading = false;
       return;
     }
+    this.sub = combineLatest([this.orgService.students$(), this.orgService.groups$()]).subscribe(
+      ([students, groups]) => {
+        this.students = students.filter((s) => s.active);
+        this.groups = groups;
+      }
+    );
     try {
-      const exam = await this.gradingService.getExamById(examId);
-      if (!exam) {
+      const assessment = await this.gradingService.getAssessment(examId);
+      if (!assessment) {
         this.errorMessage =
-          "No encontramos ese examen. Puede que lo hayas borrado o que el QR no corresponda a tu cuenta.";
-        this.isLoading = false;
+          "No encontramos esa evaluación en tu organización. Verifica que estés en la institución correcta.";
         return;
       }
-      this.exam = exam;
-      // Si vino versionId, lo seleccionamos. Si no, el primero.
-      const v = exam.versions.find((x) => x.versionId === versionId);
-      this.selectVersion(v ?? exam.versions[0]);
+      this.assessment = assessment;
+      this.maxScore = assessment.maxScore ?? 5;
+      this.selectForm(assessment.forms.find((f) => f.id === versionId) ?? assessment.forms[0]);
+      this.currentPage = Math.min(page, this.totalPages);
     } catch (err) {
-      console.error("Error cargando examen:", err);
-      this.errorMessage = "No pudimos cargar el examen.";
+      console.error("Error cargando la evaluación:", err);
+      this.errorMessage = "No pudimos cargar la evaluación.";
     } finally {
       this.isLoading = false;
     }
   }
 
-  selectVersion(version: AnswerKey): void {
-    this.selectedVersion = version;
-    // Reseteamos las respuestas detectadas al tamaño correcto.
-    this.detected = new Array(version.answers.length).fill(null);
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
+  // ---------------------------------------------------------------------
+  //  Forma, páginas y filas
+  // ---------------------------------------------------------------------
+
+  get totalPages(): number {
+    return this.assessment?.sheet?.totalPages ?? 1;
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  selectForm(form: FormDef): void {
+    this.form = form;
+    this.resetAnswers();
+  }
+
+  selectFormById(id: string): void {
+    const f = this.assessment?.forms.find((x) => x.id === id);
+    if (f) this.selectForm(f);
+  }
+
+  private resetAnswers(): void {
+    this.detected = new Array(this.form?.key.length ?? 0).fill(null);
     this.manualScores = {};
+    this.pagesScanned = new Set();
+    this.lastSource = "assisted";
   }
 
-  /** True si la pregunta i no es calificable automáticamente
-   *  (abierta o numérica). */
-  isManualQuestion(i: number): boolean {
-    return this.selectedVersion?.answers[i] === null;
+  /** Burbujas impresas para la posición (debe coincidir con el generador). */
+  private bubbleCount(entry: KeyEntry): number {
+    if (entry.kind === QuestionKind.TRUE_FALSE) return 2;
+    if (entry.kind !== QuestionKind.MULTIPLE_CHOICE_SINGLE) return 0;
+    return entry.perm?.length ?? this.assessment?.sheet.letterCount ?? 4;
   }
 
-  /**
-   * Setter del puntaje manual con clamp a [0, 1].
-   * Lo usa el input del template. Si el profe pone algo fuera de
-   * rango, lo recortamos (más amigable que rechazar).
-   */
+  get rows(): Row[] {
+    if (!this.form || !this.assessment) return [];
+    const letters = this.assessment.letters;
+    const legacy = this.assessment.sheet.version === 1;
+    return this.form.key.map((entry, index) => ({
+      index,
+      entry,
+      letters: legacy ? letters : letters.slice(0, Math.max(2, this.bubbleCount(entry))),
+      isCorrect: isCorrectAnswer(entry, this.detected[index]),
+      isUngradable: entry.letter === null,
+    }));
+  }
+
+  get breakdown(): ScoreBreakdown | null {
+    if (!this.form) return null;
+    return scoreResponse(this.form.key, this.detected, this.manualScores);
+  }
+
+  get score(): number {
+    const b = this.breakdown;
+    return b ? toScale(b.correct, b.total, this.maxScore) : 0;
+  }
+
+  get testScores(): { id: string; label: string; score: number; correct: number; total: number }[] {
+    const b = this.breakdown;
+    if (!b) return [];
+    return Object.entries(b.byTest).map(([id, t]) => ({
+      id,
+      label: getTest(id)?.label ?? id,
+      ...t,
+    }));
+  }
+
+  competencyLabel(entry: KeyEntry): string {
+    return getCompetency(entry.test, entry.competency)?.label ?? "";
+  }
+
+  // ---------------------------------------------------------------------
+  //  Edición manual
+  // ---------------------------------------------------------------------
+
+  toggleAnswer(i: number, letter: string): void {
+    this.detected[i] = this.detected[i] === letter ? null : letter;
+    if (this.lastSource === "omr") this.lastSource = "mixed";
+  }
+
+  markMulti(i: number): void {
+    this.detected[i] = this.detected[i] === "MULTI" ? null : "MULTI";
+    if (this.lastSource === "omr") this.lastSource = "mixed";
+  }
+
   setManualScore(i: number, value: number | string): void {
     let v = typeof value === "string" ? parseFloat(value) : value;
     if (!Number.isFinite(v)) v = 0;
-    if (v < 0) v = 0;
-    if (v > 1) v = 1;
-    this.manualScores[i] = v;
+    this.manualScores[i] = Math.min(1, Math.max(0, v));
   }
 
-  /**
-   * Wrapper amigable para el template: busca la versión por id y la
-   * selecciona. Lo necesitamos porque el parser de templates de Angular
-   * no acepta arrow functions inline (no podemos hacer
-   * `versions.find(v => v.versionId === id)` desde el HTML).
-   */
-  selectVersionById(versionId: string): void {
-    if (!this.exam) return;
-    const v = this.exam.versions.find((x) => x.versionId === versionId);
-    if (v) this.selectVersion(v);
+  // ---------------------------------------------------------------------
+  //  Estudiante
+  // ---------------------------------------------------------------------
+
+  get selectedStudent(): Student | null {
+    return this.students.find((s) => s.id === this.selectedStudentId) ?? null;
   }
 
-  /**
-   * Maneja el tap sobre una burbuja. Si ya estaba seleccionada esa
-   * letra, la deselecciona (toggle). Si había otra, la cambia.
-   */
-  toggleAnswer(questionIndex: number, letter: string): void {
-    const current = this.detected[questionIndex];
-    if (current === letter) {
-      this.detected[questionIndex] = null;
-    } else {
-      this.detected[questionIndex] = letter;
+  get studentOptions(): Student[] {
+    const q = this.studentSearch.trim().toLowerCase();
+    const inGroups = this.assessment?.groupIds?.length
+      ? this.students.filter((s) => s.groupId && this.assessment!.groupIds.includes(s.groupId))
+      : this.students;
+    const base = inGroups.length > 0 ? inGroups : this.students;
+    return (q ? base.filter((s) => s.fullName.toLowerCase().includes(q) || s.code.includes(q)) : base).slice(0, 50);
+  }
+
+  groupName(groupId: string | null): string {
+    return this.groups.find((g) => g.id === groupId)?.name ?? "";
+  }
+
+  private matchStudentByCode(code: string): void {
+    const norm = (c: string) => c.replace(/^0+/, "");
+    const found = this.students.find((s) => norm(s.code) === norm(code));
+    this.readCode = code;
+    if (found) {
+      this.selectedStudentId = found.id;
+      this.studentName = "";
     }
-    // Si veníamos de OMR puro y el profe edita, el resultado pasa a "mixed".
-    if (this.lastSource === "omr") this.lastSource = "mixed";
   }
 
-  /**
-   * Marca una pregunta como "doble marca / anulada". El profe lo usa
-   * cuando ve dos burbujas marcadas en la hoja física.
-   */
-  markMulti(questionIndex: number): void {
-    if (this.detected[questionIndex] === "MULTI") {
-      this.detected[questionIndex] = null;
-    } else {
-      this.detected[questionIndex] = "MULTI";
-    }
-    if (this.lastSource === "omr") this.lastSource = "mixed";
-  }
+  // ---------------------------------------------------------------------
+  //  Fotos + OMR
+  // ---------------------------------------------------------------------
 
-  /**
-   * Handler del input file de "Auto-calificar con foto".
-   * Pasa la imagen al OmrService, pre-llena el grid con las
-   * respuestas detectadas, y muestra el preview con overlay.
-   */
-  async onOmrFileSelected(event: Event): Promise<void> {
-    if (!this.exam || !this.selectedVersion) return;
+  async onPhotosSelected(event: Event): Promise<void> {
+    if (!this.assessment || !this.form) return;
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    // Reset del input para que el mismo archivo se pueda re-cargar
+    const files = Array.from(input.files ?? []);
     input.value = "";
+    if (files.length === 0) return;
 
     this.isOmrRunning = true;
-    this.omrStatus =
-      "Cargando motor de visión (la primera vez puede tardar 5–10s)…";
-    this.omrPreviewDataUrl = null;
-
+    this.omrStatus = "Cargando motor de visión (la primera vez puede tardar 5–10 s)…";
     try {
-      // Asegurar OpenCV cargado (puede tardar la primera vez ~5-10s)
       await this.omrService.ensureLoaded();
-      this.omrStatus = "Procesando la foto…";
-
-      const image = await this.loadImage(file);
-      const result = await this.omrService.detectAnswers(
-        image,
-        this.selectedVersion.answers,
-        this.exam.letters
-      );
-
-      this.detected = result.answers;
-      this.omrPreviewDataUrl = result.previewDataUrl;
-      this.lastSource = "omr";
-      this.omrStatus = `Detectadas ${result.detectedRows} filas. Revisá y corregí si hace falta.`;
-      this.toast.success(
-        "Foto procesada. Revisá las respuestas marcadas.",
-        "ExamHub",
-        3500
-      );
+      for (const [n, file] of files.entries()) {
+        this.omrStatus = `Procesando foto ${n + 1} de ${files.length}…`;
+        await this.processPhoto(file);
+      }
+      const missing = this.pages.filter((p) => !this.pagesScanned.has(p));
+      this.omrStatus =
+        missing.length > 0
+          ? `Faltan las hojas: ${missing.join(", ")}. Revisa y corrige lo detectado.`
+          : "Hojas procesadas. Revisa y corrige lo que haga falta antes de guardar.";
     } catch (err: any) {
       console.error("OMR error:", err);
-      if (err instanceof OmrError) {
-        this.omrStatus = err.message;
-        this.toast.warning(err.message, "ExamHub", 5000);
-      } else {
-        // Surfaceamos el mensaje real del error para debugging — pero
-        // truncado a algo legible para el profe.
-        const rawMsg =
-          (typeof err?.message === "string" && err.message) ||
-          (typeof err === "string" && err) ||
-          "error desconocido";
-        const short = rawMsg.length > 140 ? rawMsg.slice(0, 140) + "…" : rawMsg;
-        this.omrStatus = `No pudimos procesar la foto: ${short}`;
-        this.toast.danger(
-          "No pudimos procesar la foto. Revisá la consola para detalles.",
-          "ExamHub",
-          5000
-        );
-      }
+      const msg =
+        err instanceof OmrError
+          ? err.message
+          : `No pudimos procesar la foto: ${String(err?.message ?? err).slice(0, 140)}`;
+      this.omrStatus = msg;
+      this.toast.warning(msg, "ExamHub", 5000);
     } finally {
       this.isOmrRunning = false;
     }
   }
 
-  private loadImage(file: File): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = reader.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  private async processPhoto(file: File): Promise<void> {
+    const assessment = this.assessment!;
+    const image = await loadImage(file);
+    const payload = readQr(image);
+    let page = this.currentPage;
+
+    if (payload) {
+      if (payload.examId !== assessment.id) {
+        this.toast.warning(
+          "Una foto pertenece a otra evaluación y se omitió.",
+          "ExamHub",
+          4000
+        );
+        return;
+      }
+      if (payload.versionId !== this.form!.id) {
+        if (this.pagesScanned.size > 0) {
+          this.toast.warning(
+            "Una foto es de otra forma del examen (otro estudiante). Guarda esta hoja primero.",
+            "ExamHub",
+            4500
+          );
+          return;
+        }
+        this.selectFormById(payload.versionId);
+      }
+      page = payload.page;
+    }
+
+    if (assessment.sheet.version === 1) {
+      const result = await this.omrService.detectAnswers(
+        image,
+        this.form!.key.map((k) => k.letter),
+        assessment.letters
+      );
+      this.detected = result.answers;
+      this.omrPreviewDataUrl = result.previewDataUrl;
+    } else {
+      const layout = computeSheetLayout({
+        questionLetters: this.form!.key.map((k) => this.bubbleCount(k)),
+        letterCount: assessment.sheet.letterCount,
+        codeDigits: assessment.sheet.codeDigits,
+      });
+      const pageLayout = layout.pages[page - 1];
+      if (!pageLayout) {
+        this.toast.warning(`La hoja ${page} no existe en esta forma.`, "ExamHub", 3500);
+        return;
+      }
+      const read = await this.omrService.detectSheet(image, pageLayout, assessment.letters);
+      const next = [...this.detected];
+      read.answers.forEach((ans, idx) => (next[idx] = ans));
+      this.detected = next;
+      this.omrPreviewDataUrl = read.previewDataUrl;
+      if (read.code && !this.selectedStudentId) this.matchStudentByCode(read.code);
+    }
+    this.pagesScanned.add(page);
+    this.currentPage = Math.min(this.totalPages, page + 1);
+    if (this.lastSource !== "mixed") this.lastSource = "omr";
   }
 
-  /** Devuelve el breakdown calculado en vivo para mostrar en pantalla. */
-  get breakdown(): QuestionGradeBreakdown[] {
-    if (!this.selectedVersion) return [];
-    return computeBreakdown(this.detected, this.selectedVersion);
-  }
-
-  /**
-   * Cantidad de "puntos" acumulados. Las MCQ correctas suman 1, las
-   * incorrectas suman 0. Las abiertas/numéricas suman lo que el profe
-   * cargó en `manualScores[i]` (entre 0 y 1, default 0).
-   *
-   *  El resultado puede ser decimal (ej: 7 MCQ correctas + 1 abierta
-   *  con 0.5 puntos = 7.5).
-   */
-  get correctCount(): number {
-    const mcqPoints = this.breakdown.filter((b) => b.isCorrect).length;
-    const manualPoints = this.breakdown
-      .filter((b) => b.isUngradable)
-      .reduce((s, b) => s + (this.manualScores[b.index] ?? 0), 0);
-    return Math.round((mcqPoints + manualPoints) * 10) / 10;
-  }
-
-  /**
-   * Total de preguntas que cuentan al puntaje. Ahora incluye TODAS
-   * (MCQ + abiertas + numéricas), porque las manuales también valen.
-   */
-  get gradableCount(): number {
-    return this.breakdown.length;
-  }
-
-  /** Nota calculada con la escala configurada. */
-  get score(): number {
-    return this.gradingService.computeScore(
-      this.correctCount,
-      this.gradableCount,
-      this.maxScore
-    );
-  }
+  // ---------------------------------------------------------------------
+  //  Guardar
+  // ---------------------------------------------------------------------
 
   async save(): Promise<void> {
-    if (!this.exam || !this.selectedVersion || this.isSaving) return;
-    if (!this.studentName.trim()) {
-      this.toast.warning(
-        "Ingresá el nombre del alumno para guardar.",
-        "ExamHub",
-        3000
-      );
+    if (!this.assessment || !this.form || this.isSaving) return;
+    const student = this.selectedStudent;
+    if (!student && !this.studentName.trim()) {
+      this.toast.warning("Elige el estudiante o escribe su nombre.", "ExamHub", 3000);
       return;
     }
     this.isSaving = true;
-    // Filtramos manualScores para no guardar entradas en 0 (limpieza).
-    const cleanManual: Record<number, number> = {};
-    for (const [k, v] of Object.entries(this.manualScores)) {
-      if (v > 0) cleanManual[Number(k)] = v;
-    }
-    const result: Omit<ExamResult, "examId" | "scannedAt"> = {
-      id: uuidv4(),
-      versionId: this.selectedVersion.versionId,
-      studentName: this.studentName.trim(),
-      studentCode: this.studentCode.trim() || undefined,
-      answers: [...this.detected],
-      manualScores:
-        Object.keys(cleanManual).length > 0 ? cleanManual : undefined,
-      correct: this.correctCount,
-      total: this.gradableCount,
-      score: this.score,
-      source: this.lastSource,
-    };
     try {
-      await this.gradingService.saveResult(this.exam.id, result);
+      let id = uuidv4();
+      if (student) {
+        const existing = await this.gradingService.findResponseForStudent(this.assessment.id, student.id);
+        if (existing) {
+          const ok = await this.confirm.ask({
+            title: "Este estudiante ya tiene calificación",
+            message: `${student.fullName} ya fue calificado (${existing.score}). ¿Reemplazar?`,
+            confirmText: "Reemplazar",
+          });
+          if (!ok) return;
+          id = existing.id;
+        }
+      }
+      const breakdown = this.breakdown!;
+      const cleanManual = Object.fromEntries(
+        Object.entries(this.manualScores).filter(([, v]) => v > 0)
+      );
+      const code = student?.code ?? this.readCode ?? undefined;
+      await this.gradingService.saveResponse(this.assessment.id, {
+        id,
+        formId: this.form.id,
+        answers: [...this.detected],
+        source: this.lastSource,
+        breakdown,
+        score: this.score,
+        pagesScanned: [...this.pagesScanned].sort((a, b) => a - b),
+        ...(student
+          ? { studentId: student.id, studentName: student.fullName, groupId: student.groupId ?? undefined }
+          : { studentName: this.studentName.trim() }),
+        ...(code ? { studentCode: code } : {}),
+        ...(Object.keys(cleanManual).length ? { manualScores: cleanManual } : {}),
+      });
       this.toast.success(
-        `Calificación guardada (${this.score} / ${this.maxScore}).`,
+        `Guardado: ${student?.fullName ?? this.studentName} — ${this.score} / ${this.maxScore}.`,
         "ExamHub",
         3500
       );
-      // Reset para escanear el siguiente
+      this.selectedStudentId = null;
       this.studentName = "";
-      this.studentCode = "";
-      this.detected = new Array(this.selectedVersion.answers.length).fill(null);
-      this.manualScores = {};
-      this.lastSource = "assisted";
+      this.studentSearch = "";
+      this.readCode = null;
       this.omrPreviewDataUrl = null;
       this.omrStatus = "";
+      this.currentPage = 1;
+      this.resetAnswers();
     } catch (err) {
-      console.error("Error guardando resultado:", err);
-      this.toast.danger(
-        "No pudimos guardar el resultado.",
-        "ExamHub",
-        3500
-      );
+      console.error("Error guardando la calificación:", err);
+      this.toast.danger("No pudimos guardar la calificación.", "ExamHub", 3500);
     } finally {
       this.isSaving = false;
     }
@@ -350,4 +425,33 @@ export class GradingComponent implements OnInit {
   goToList(): void {
     this.router.navigateByUrl(MODULES.GRADE.LIST);
   }
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Lee el QR de ExamHub en la foto (null si no hay o no es nuestro). */
+function readQr(img: HTMLImageElement) {
+  const maxW = 1600;
+  const scale = Math.min(1, maxW / img.naturalWidth);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const result = jsQR(data.data, data.width, data.height);
+  return result ? decodeQrPayload(result.data) : null;
 }

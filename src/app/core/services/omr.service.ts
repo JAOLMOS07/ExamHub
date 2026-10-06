@@ -1,13 +1,13 @@
 import { Injectable } from "@angular/core";
 import { AnswerLetter, DetectedAnswer } from "../models/gradedExam.model";
 import {
-  BUBBLE_SAMPLE_RADIUS_PT,
   FIDUCIAL_CENTERS,
   FIDUCIAL_SIZE_PT,
   PAGE_H_PT,
   PAGE_W_PT,
-  bubbleCenter,
 } from "../utils/omrLayout.const";
+import { Point, SheetPage, legacySheetPage } from "../domain/answerSheetLayout";
+import { pickMarked } from "../domain/markDetection";
 
 /**
  * ========================================================================
@@ -54,8 +54,6 @@ const FIDUCIAL_TARGETS = {
   br: { x: pt(FIDUCIAL_CENTERS.br.x), y: pt(FIDUCIAL_CENTERS.br.y) },
 };
 
-// "Lleno" si el promedio del centro está por debajo (más oscuro) que este umbral
-const FILL_THRESHOLD = 130; // 0=negro puro, 255=blanco puro
 
 const PDF_PAGE_WIDTH_PT = PAGE_W_PT;
 
@@ -77,6 +75,18 @@ export interface OmrResult {
   /** Cuántas filas se detectaron (no necesariamente = expectedQuestions). */
   detectedRows: number;
   /** Cuántas fiduciales se detectaron (4 = ideal, <4 = degradado). */
+  fiducialsFound: number;
+}
+
+/** Resultado de leer UNA página de la hoja (v1 o v2). */
+export interface SheetReadResult {
+  /** índice global de pregunta → respuesta detectada. */
+  answers: Map<number, DetectedAnswer>;
+  /** Dígito por columna del código (null = vacío o ambiguo). */
+  codeDigits: (number | null)[];
+  /** Código completo si todas las columnas se leyeron. */
+  code: string | null;
+  previewDataUrl: string;
   fiducialsFound: number;
 }
 
@@ -237,25 +247,48 @@ export class OmrService {
   }
 
   /**
-   * Pipeline principal. Toma una imagen (cualquier formato que cargue
-   * un <img>) y devuelve las respuestas detectadas.
+   * Hoja v1 (exámenes viejos): una página con la geometría legacy.
    *
-   * @param image          HTMLImageElement ya cargado (decodificado).
-   * @param totalQuestions Cuántas preguntas tiene el examen.
-   * @param letters        Letras válidas (ej: ["A","B","C","D"]).
-   */
-  /**
-   * @param expectedAnswers Array con la answerKey de la versión. Su largo
-   *                        es `totalQuestions`. Las entradas `null`
-   *                        corresponden a preguntas NO calificables
-   *                        (abiertas / numéricas) — saltamos esas filas
-   *                        al mapear lo que detectamos.
+   * @param expectedAnswers answerKey de la versión; las entradas `null`
+   *                        (abiertas / numéricas) no se muestrean.
    */
   public async detectAnswers(
     image: HTMLImageElement,
     expectedAnswers: (AnswerLetter | null)[],
     letters: string[]
   ): Promise<OmrResult> {
+    const page = legacySheetPage(expectedAnswers.length, letters.length);
+    const gradable = new Set(
+      expectedAnswers.map((a, i) => (a !== null ? i : -1)).filter((i) => i >= 0)
+    );
+    const read = await this.detectSheet(image, page, letters, gradable);
+    const answers: DetectedAnswer[] = expectedAnswers.map(
+      (_, i) => read.answers.get(i) ?? null
+    );
+    return {
+      answers,
+      previewDataUrl: read.previewDataUrl,
+      detectedRows: gradable.size,
+      fiducialsFound: read.fiducialsFound,
+    };
+  }
+
+  /**
+   * Pipeline principal para cualquier página descrita por un layout:
+   *
+   *   foto → grises → umbral → fiduciales → warp → muestreo de burbujas
+   *
+   * @param page     Geometría de la página (answerSheetLayout.ts).
+   * @param letters  Letras del examen (A, B, C…).
+   * @param gradable Índices de pregunta a muestrear (null = todas las
+   *                 que tengan burbujas).
+   */
+  public async detectSheet(
+    image: HTMLImageElement,
+    page: SheetPage,
+    letters: string[],
+    gradable: Set<number> | null = null
+  ): Promise<SheetReadResult> {
     await this.ensureLoaded();
     const cv = this.getCv();
     if (!cv || typeof cv.imread !== "function") {
@@ -264,24 +297,10 @@ export class OmrService {
       );
     }
 
-    const totalQuestions = expectedAnswers.length;
-    // Índices de las preguntas que SÍ se pueden calificar automáticamente.
-    // Las filas detectadas en la hoja se mapean a estos índices en orden,
-    // saltando las preguntas abiertas/numéricas que en la hoja aparecen
-    // como texto "(se responde en el espacio…)" en vez de burbujas.
-    const gradableIndices: number[] = [];
-    expectedAnswers.forEach((a, i) => {
-      if (a !== null) gradableIndices.push(i);
-    });
-
-    // Para diagnosticar dónde se atora si una foto tarda más de lo
-    // esperado. El usuario abre DevTools → Console y nos pasa qué
-    // logs aparecieron y cuáles no.
     const t0 = performance.now();
     const log = (msg: string) =>
       console.log(`[OMR ${Math.round(performance.now() - t0)}ms] ${msg}`);
 
-    // Trackeamos Mats creados para liberarlos siempre en finally.
     const mats: any[] = [];
     const track = <T>(m: T): T => {
       mats.push(m);
@@ -289,32 +308,14 @@ export class OmrService {
     };
 
     try {
-      // -----------------------------------------------------------------
-      // 0. Downscale: fotos de celular pueden venir a 4000+px. OpenCV.js
-      //    en wasm + adaptive threshold + findContours sobre eso tarda
-      //    decenas de segundos. Achicamos a MAX_INPUT_WIDTH_PX antes.
-      // -----------------------------------------------------------------
-      log(`imagen original: ${image.naturalWidth}x${image.naturalHeight}`);
+      // 0-1. Downscale + Mat (fotos de celular pueden venir a 4000+ px)
       const scaled = this.downscaleIfNeeded(image, MAX_INPUT_WIDTH_PX);
-      log(`imagen escalada: ${scaled.width}x${scaled.height}`);
-
-      // -----------------------------------------------------------------
-      // 1. Cargar imagen escalada como Mat
-      // -----------------------------------------------------------------
+      log(`imagen ${image.naturalWidth}x${image.naturalHeight} → ${scaled.width}x${scaled.height}`);
       const src = track(cv.imread(scaled));
-      log(`cv.imread OK (channels=${src.channels()})`);
-
-      // imread normalmente devuelve RGBA, pero algunos formatos/builds
-      // entregan RGB. Elegimos el conversor según el canal real.
       const gray = track(new cv.Mat());
-      const grayCode =
-        src.channels() === 4 ? cv.COLOR_RGBA2GRAY : cv.COLOR_RGB2GRAY;
-      cv.cvtColor(src, gray, grayCode);
-      log("grayscale OK");
+      cv.cvtColor(src, gray, src.channels() === 4 ? cv.COLOR_RGBA2GRAY : cv.COLOR_RGB2GRAY);
 
-      // -----------------------------------------------------------------
-      // 2. Threshold (binarizamos para detección de fiduciales)
-      // -----------------------------------------------------------------
+      // 2. Umbral adaptativo para encontrar las fiduciales
       const bin = track(new cv.Mat());
       cv.adaptiveThreshold(
         gray,
@@ -325,18 +326,10 @@ export class OmrService {
         31,
         10
       );
-      log("adaptiveThreshold OK");
 
-      // -----------------------------------------------------------------
-      // 3. Detectar los 4 cuadrados fiduciales en las esquinas
-      // -----------------------------------------------------------------
+      // 3. Fiduciales
       const fiducials = this.findFiducials(cv, bin, src.cols, src.rows);
-      log(
-        `findFiducials → ${fiducials.length} encontradas: ${fiducials
-          .map((f) => `${f.corner}(${Math.round(f.x)},${Math.round(f.y)})`)
-          .join(" ")}`
-      );
-
+      log(`fiduciales: ${fiducials.length}`);
       if (fiducials.length < 4) {
         throw new OmrError(
           `Solo detectamos ${fiducials.length} de las 4 marcas de las esquinas. Probá con una foto más nítida.`,
@@ -344,109 +337,76 @@ export class OmrService {
         );
       }
 
-      // -----------------------------------------------------------------
-      // 4. Warp perspectivo al canónico
-      // -----------------------------------------------------------------
+      // 4. Warp al canónico (mismas fiduciales en v1 y v2)
       const warped = track(this.warpToCanonical(cv, src, fiducials));
-      log("warpPerspective OK");
       const warpedGray = track(new cv.Mat());
-      const warpedGrayCode =
-        warped.channels() === 4 ? cv.COLOR_RGBA2GRAY : cv.COLOR_RGB2GRAY;
-      cv.cvtColor(warped, warpedGray, warpedGrayCode);
-
-      // -----------------------------------------------------------------
-      // 5. Muestreo DETERMINÍSTICO de burbujas.
-      //
-      //    No usamos HoughCircles. Como la hoja tiene posiciones de
-      //    burbujas EXACTAS y conocidas (definidas en omrLayout.const),
-      //    después del warp sabemos dónde está cada una en el canónico.
-      //    Solo tenemos que samplear el centro y decidir "lleno o no".
-      // -----------------------------------------------------------------
-      const sampledBubbles: Array<{
-        questionIdx: number;
-        letterIdx: number;
-        x: number;
-        y: number;
-        fill: number;
-      }> = [];
-      const detectedAnswers: DetectedAnswer[] = new Array(totalQuestions).fill(
-        null
-      );
-      const sampleRadius = Math.max(
-        3,
-        Math.round(BUBBLE_SAMPLE_RADIUS_PT * CANONICAL_SCALE)
-      );
-
-      for (const qIdx of gradableIndices) {
-        const fills: { letterIdx: number; v: number }[] = [];
-        for (let lIdx = 0; lIdx < letters.length; lIdx++) {
-          const centerPt = bubbleCenter(qIdx, lIdx, totalQuestions);
-          const xCan = pt(centerPt.x);
-          const yCan = pt(centerPt.y);
-          const v = this.measureFill(cv, warpedGray, xCan, yCan, sampleRadius);
-          fills.push({ letterIdx: lIdx, v });
-          sampledBubbles.push({
-            questionIdx: qIdx,
-            letterIdx: lIdx,
-            x: xCan,
-            y: yCan,
-            fill: v,
-          });
-        }
-        // Cuántas burbujas están "claramente más oscuras" que el promedio
-        // de la fila + offset (= "más llenas que el resto"). Esto es más
-        // robusto que un threshold absoluto porque tolera variaciones
-        // de iluminación entre regiones de la foto.
-        const minV = Math.min(...fills.map((f) => f.v));
-        const filled = fills
-          .filter((f) => f.v < FILL_THRESHOLD || f.v < minV + 25)
-          .filter((f) => f.v < 180); // descartamos casos donde TODAS están blancas
-        if (filled.length === 0) {
-          detectedAnswers[qIdx] = null;
-        } else if (filled.length === 1) {
-          detectedAnswers[qIdx] = letters[filled[0].letterIdx] ?? null;
-        } else {
-          // Solo una claramente más oscura que las demás → la elegimos
-          const sorted = filled.slice().sort((a, b) => a.v - b.v);
-          if (sorted[1].v - sorted[0].v > 20) {
-            detectedAnswers[qIdx] = letters[sorted[0].letterIdx] ?? null;
-          } else {
-            detectedAnswers[qIdx] = "MULTI";
-          }
-        }
-      }
-      log(
-        `muestreo OK (${gradableIndices.length} preguntas calificables × ${letters.length} letras)`
-      );
-
-      // -----------------------------------------------------------------
-      // 6. Generar preview con overlay para debugging visual
-      // -----------------------------------------------------------------
-      const previewDataUrl = this.renderDeterministicPreview(
-        cv,
+      cv.cvtColor(
         warped,
-        sampledBubbles,
-        detectedAnswers,
-        letters,
-        totalQuestions,
-        sampleRadius
+        warpedGray,
+        warped.channels() === 4 ? cv.COLOR_RGBA2GRAY : cv.COLOR_RGB2GRAY
       );
-      log("preview generado, pipeline completo");
+
+      // 5. Muestreo determinístico: las posiciones salen del layout.
+      const sampleRadius = Math.max(3, Math.round(page.sampleR * CANONICAL_SCALE));
+      const marks: PreviewMark[] = [];
+      const sampleRow = (bubbles: Point[]) =>
+        bubbles.map((b, idx) => {
+          const x = pt(b.x);
+          const y = pt(b.y);
+          return { idx, x, y, v: this.measureFill(cv, warpedGray, x, y, sampleRadius) };
+        });
+
+      const answers = new Map<number, DetectedAnswer>();
+      for (const q of page.questions) {
+        if (q.bubbles.length === 0) continue;
+        if (gradable && !gradable.has(q.index)) continue;
+        const fills = sampleRow(q.bubbles);
+        const pick = pickMarked(fills.map((f) => f.v));
+        const detected: DetectedAnswer =
+          pick === "MULTI" ? "MULTI" : pick === null ? null : letters[pick] ?? null;
+        answers.set(q.index, detected);
+        fills.forEach((f) =>
+          marks.push({
+            x: f.x,
+            y: f.y,
+            state: pick === "MULTI" ? "multi" : pick === f.idx ? "marked" : "empty",
+          })
+        );
+      }
+
+      // 6. Código del estudiante: un dígito por columna.
+      const codeDigits = page.codeColumns.map((column) => {
+        const fills = sampleRow(column);
+        const pick = pickMarked(fills.map((f) => f.v));
+        fills.forEach((f) =>
+          marks.push({
+            x: f.x,
+            y: f.y,
+            state: pick === "MULTI" ? "multi" : pick === f.idx ? "marked" : "empty",
+          })
+        );
+        return typeof pick === "number" ? pick : null;
+      });
+      const code =
+        codeDigits.length > 0 && codeDigits.every((d) => d !== null)
+          ? codeDigits.join("")
+          : null;
+      log(`muestreo OK (${answers.size} preguntas, código ${code ?? "—"})`);
 
       return {
-        answers: detectedAnswers,
-        previewDataUrl,
-        detectedRows: gradableIndices.length,
+        answers,
+        codeDigits,
+        code,
+        previewDataUrl: this.renderDeterministicPreview(cv, warped, marks, sampleRadius),
         fiducialsFound: fiducials.length,
       };
     } finally {
-      // Liberamos TODAS las Mats trackeadas pase lo que pase.
       // Sin esto, varios runs seguidos agotan la memoria del wasm.
       for (const m of mats) {
         try {
           if (m && typeof m.delete === "function") m.delete();
         } catch {
-          // Si una Mat ya fue eliminada por otra ruta, no nos importa.
+          // Ya eliminada por otra ruta.
         }
       }
     }
@@ -718,48 +678,27 @@ export class OmrService {
   }
 
   /**
-   * Renderiza el canónico con overlay de las burbujas MUESTREADAS.
-   * Pinta:
-   *   - Naranja: cada burbuja sampleada (sin marcar).
-   *   - Verde:   la burbuja inferida como marcada.
-   *   - Rojo:    multi-marca (ambigua).
-   * Sirve para que el profe vea visualmente qué interpretó el motor.
+   * Renderiza el canónico con overlay de las burbujas muestreadas:
+   * verde = marcada, rojo = doble marca, naranja = vacía.
    */
   private renderDeterministicPreview(
     cv: any,
     warped: any,
-    sampled: Array<{
-      questionIdx: number;
-      letterIdx: number;
-      x: number;
-      y: number;
-      fill: number;
-    }>,
-    answers: DetectedAnswer[],
-    letters: string[],
-    totalQuestions: number,
+    marks: PreviewMark[],
     sampleRadius: number
   ): string {
     const out = new cv.Mat();
     warped.copyTo(out);
-    for (const b of sampled) {
-      const letter = letters[b.letterIdx];
-      const ans = answers[b.questionIdx];
-      let color: any;
-      let thickness: number;
-      if (ans === letter) {
-        color = new cv.Scalar(0, 200, 0, 255); // verde
-        thickness = 3;
-      } else if (ans === "MULTI") {
-        color = new cv.Scalar(0, 0, 220, 255); // rojo (BGR)
-        thickness = 2;
-      } else {
-        color = new cv.Scalar(0, 140, 255, 255); // naranja
-        thickness = 1;
-      }
+    for (const m of marks) {
+      const [color, thickness] =
+        m.state === "marked"
+          ? [new cv.Scalar(0, 200, 0, 255), 3]
+          : m.state === "multi"
+          ? [new cv.Scalar(0, 0, 220, 255), 2]
+          : [new cv.Scalar(0, 140, 255, 255), 1];
       cv.circle(
         out,
-        new cv.Point(Math.round(b.x), Math.round(b.y)),
+        new cv.Point(Math.round(m.x), Math.round(m.y)),
         sampleRadius + 1,
         color,
         thickness
@@ -770,4 +709,10 @@ export class OmrService {
     out.delete();
     return canvas.toDataURL("image/png");
   }
+}
+
+interface PreviewMark {
+  x: number;
+  y: number;
+  state: "marked" | "multi" | "empty";
 }

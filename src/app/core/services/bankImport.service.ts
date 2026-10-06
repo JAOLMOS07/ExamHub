@@ -3,6 +3,7 @@ import { Document, Option } from "../models/folder.model";
 import { objectType } from "../models/objectType.enum";
 import { QuestionKind } from "../models/questionKind.enum";
 import { ExamService } from "./ExamService.service";
+import { getCompetency, getTest } from "../domain/taxonomy/saber11";
 
 /**
  * Resultado de validar/parsear un JSON pegado por el usuario.
@@ -58,7 +59,10 @@ FORMATO ESPERADO:
       "numericTolerance": 0.01,         // opcional, default 0
       "subject": "Matemática",          // opcional: materia
       "grade": "6° básico",             // opcional: grado
-      "difficulty": 2                   // opcional: 1=fácil, 2=media, 3=difícil
+      "difficulty": 2,                  // opcional: 1=fácil, 2=media, 3=difícil
+      "test": "matematicas",            // opcional, prueba ICFES: lectura_critica | matematicas | sociales_ciudadanas | ciencias_naturales | ingles
+      "competency": "formulacion_ejecucion", // opcional, competencia de esa prueba
+      "rationale": "Por qué B es correcta y qué error refleja cada distractor"  // opcional
     }
   ],
   "passages": [                         // lecturas con preguntas asociadas
@@ -81,6 +85,12 @@ INSTRUCCIONES ADICIONALES:
 - Si todas las preguntas son sueltas, dejá "passages" como [] y solo llená "questions".
 - Inferí materia y grado si están claros en el contenido. Si no, omitilos.
 - Inferí dificultad: 1 si es trivial/recordatoria, 2 si requiere aplicar, 3 si requiere análisis.
+- Si la pregunta corresponde a una prueba Saber 11, completá "test" y "competency" con estos ids:
+  lectura_critica: identificar_entender, comprender_articulacion, reflexionar_evaluar
+  matematicas: interpretacion_representacion, formulacion_ejecucion, argumentacion
+  sociales_ciudadanas: pensamiento_social, interpretacion_perspectivas, pensamiento_reflexivo
+  ciencias_naturales: uso_comprensivo, explicacion_fenomenos, indagacion
+  ingles: parte_1 … parte_7
 
 AQUÍ ESTÁ MI BANCO A CONVERTIR:
 ==========================================
@@ -257,6 +267,14 @@ AQUÍ ESTÁ MI BANCO A CONVERTIR:
     if (typeof raw.difficulty === "number" && [1, 2, 3].includes(raw.difficulty)) {
       doc.difficulty = raw.difficulty;
     }
+    if (getTest(raw.test)) {
+      doc.test = raw.test;
+      if (getCompetency(raw.test, raw.competency)) doc.competency = raw.competency;
+    }
+    if (typeof raw.rationale === "string" && raw.rationale.trim()) {
+      doc.rationale = raw.rationale.trim();
+    }
+    doc.source = "import";
 
     return doc;
   }

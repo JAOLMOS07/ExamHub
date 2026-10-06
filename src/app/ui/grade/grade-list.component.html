@@ -5,11 +5,11 @@
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
     <div>
       <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-        Calificar exámenes
+        Evaluaciones
       </h1>
       <p class="text-sm text-slate-500 mt-1">
-        Escaneá la hoja de respuestas del alumno con la cámara y obtené la
-        nota al instante.
+        Evaluaciones y simulacros de la institución. Escanea las hojas de
+        respuestas y consulta los reportes por prueba y competencia.
       </p>
     </div>
     <a
@@ -38,13 +38,19 @@
               <div class="min-w-0 flex-1">
                 <h3 class="text-sm font-semibold text-slate-900 truncate">
                   {{ exam.title }}
+                  @if (exam.type === "simulacro") {
+                    <span class="eh-tag ml-1 bg-indigo-50 text-indigo-700 border-indigo-200">Simulacro</span>
+                  }
+                  @if (exam.legacy) {
+                    <span class="eh-tag ml-1">Versión anterior</span>
+                  }
                 </h3>
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                   <span>{{ formatDate(exam.createdAt) }}</span>
                   <span>·</span>
                   <span>{{ exam.totalQuestions }} preguntas</span>
                   <span>·</span>
-                  <span>{{ exam.versions.length }} {{ exam.versions.length === 1 ? "versión" : "versiones" }}</span>
+                  <span>{{ exam.forms.length }} {{ exam.forms.length === 1 ? "forma" : "formas" }}</span>
                   <span *ngIf="exam.subject" class="hidden sm:inline">·</span>
                   <span *ngIf="exam.subject" class="hidden sm:inline">{{ exam.subject }}</span>
                 </div>
@@ -74,11 +80,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <p class="text-sm font-medium text-slate-700">
-          Todavía no tenés exámenes calificables.
+          Todavía no hay evaluaciones.
         </p>
         <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-          Cuando generes un examen desde el banco, va a aparecer acá listo para
-          escanear las hojas de respuestas.
+          Cuando generes un examen o simulacro desde el banco, aparecerá aquí
+          listo para escanear las hojas de respuestas.
         </p>
       </div>
     </ng-template>

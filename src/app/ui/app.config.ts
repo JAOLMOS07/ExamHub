@@ -8,6 +8,7 @@ import {
   provideFirestore,
 } from "@angular/fire/firestore";
 import { getStorage, provideStorage } from "@angular/fire/storage";
+import { getFunctions, provideFunctions } from "@angular/fire/functions";
 
 import { routes } from "./app.routes";
 import { environment } from "../../environments/environment";
@@ -39,5 +40,7 @@ export const appConfig: ApplicationConfig = {
      *   }
      */
     provideStorage(() => getStorage()),
+    /** Cloud Functions de IA (functions/src/index.ts). */
+    provideFunctions(() => getFunctions(getApp(), "us-central1")),
   ],
 };

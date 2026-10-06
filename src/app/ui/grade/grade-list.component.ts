@@ -4,7 +4,7 @@ import { Router, RouterModule } from "@angular/router";
 import { ToastService } from "../../core/services/toast.service";
 import { Observable } from "rxjs";
 import { ConfirmService } from "../../core/services/confirm.service";
-import { GradedExam } from "../../core/models/gradedExam.model";
+import { Assessment } from "../../core/models/assessment.model";
 import { GradingService } from "../../core/services/grading.service";
 import { MODULES } from "../routes.constants";
 import { SharedModule } from "../shared/shared.module";
@@ -22,7 +22,7 @@ import { SharedModule } from "../shared/shared.module";
   templateUrl: "./grade-list.component.html",
 })
 export class GradeListComponent implements OnInit {
-  exams$!: Observable<GradedExam[]>;
+  exams$!: Observable<Assessment[]>;
   /** Ruta del scanner — la dejo expuesta para que el template no
    *  conozca la estructura de paths. */
   readonly scanRoute = MODULES.GRADE.SCAN;
@@ -35,7 +35,7 @@ export class GradeListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.exams$ = this.gradingService.listMyExams();
+    this.exams$ = this.gradingService.listAssessments();
   }
 
   goToExam(examId: string): void {
@@ -47,7 +47,7 @@ export class GradeListComponent implements OnInit {
    * todos sus resultados, que ya hace cascade-delete en el service).
    * Se llama desde el icono de basura en cada fila.
    */
-  async deleteExam(event: Event, exam: GradedExam): Promise<void> {
+  async deleteExam(event: Event, exam: Assessment): Promise<void> {
     // Importantísimo: evitar que el click burbujee y nos lleve al detalle
     event.stopPropagation();
     const confirmed = await this.confirm.ask({
@@ -58,7 +58,7 @@ export class GradeListComponent implements OnInit {
     });
     if (!confirmed) return;
     try {
-      await this.gradingService.deleteExam(exam.id);
+      await this.gradingService.deleteAssessment(exam.id);
       this.toast.success("Examen eliminado.", "ExamHub", 2500);
     } catch (err) {
       console.error("Error borrando examen:", err);

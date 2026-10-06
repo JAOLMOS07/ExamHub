@@ -28,6 +28,8 @@ import {
 } from "../../shared/math/math-editor-dialog.component";
 import { ImageUploadService } from "../../../core/services/imageUpload.service";
 import { environment } from "../../../../environments/environment";
+import { SABER11_TESTS, TestDef, getTest } from "../../../core/domain/taxonomy/saber11";
+import { AiService, ItemReview } from "../../../core/services/ai.service";
 
 @Component({
   selector: "app-create-question",
@@ -85,6 +87,61 @@ export class CreateQuestionDialogComponent {
   grade: string = "";
   difficulty: Difficulty | null = null;
 
+  /** Alineación ICFES (ver taxonomy/saber11.ts). */
+  readonly tests: TestDef[] = SABER11_TESTS;
+  test = "";
+  competency = "";
+  component = "";
+  rationale = "";
+
+  get selectedTest(): TestDef | undefined {
+    return getTest(this.test);
+  }
+
+  onTestChange(testId: string): void {
+    this.test = testId;
+    if (!this.selectedTest?.competencies.some((c) => c.id === this.competency)) {
+      this.competency = "";
+    }
+    if (!this.selectedTest?.components?.some((c) => c.id === this.component)) {
+      this.component = "";
+    }
+  }
+
+  // ----- Revisión con IA -----
+  aiAvailable = false;
+  isReviewing = false;
+  aiReview: ItemReview | null = null;
+
+  async reviewWithAi(): Promise<void> {
+    if (!this.newQuestion.name?.trim()) {
+      this.toast.warning("Escribe primero el enunciado.", "ExamHub", 3000);
+      return;
+    }
+    this.isReviewing = true;
+    try {
+      this.aiReview = await this.ai.reviewItem({
+        stem: this.newQuestion.name,
+        kind: this.selectedKind,
+        options: this.options.map((o) => ({ text: o.content, correct: o.correct })),
+        test: this.test || undefined,
+        competency: this.competency || undefined,
+        grade: this.grade || undefined,
+      });
+    } catch (err: any) {
+      this.toast.danger(this.ai.friendlyError(err), "ExamHub", 4500);
+    } finally {
+      this.isReviewing = false;
+    }
+  }
+
+  applySuggestedAlignment(): void {
+    const s = this.aiReview?.suggestedAlignment;
+    if (!s?.test) return;
+    this.onTestChange(s.test);
+    if (s.competency) this.competency = s.competency;
+  }
+
   /** Enum + labels expuestos al template. */
   Difficulty = Difficulty;
   DIFFICULTY_LABEL = DIFFICULTY_LABEL;
@@ -121,6 +178,7 @@ export class CreateQuestionDialogComponent {
     private toast: ToastService,
     private mathDialog: MatDialog,
     private imageUpload: ImageUploadService,
+    private ai: AiService,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       question?: Document;
@@ -253,7 +311,12 @@ export class CreateQuestionDialogComponent {
       this.subject = this.data.question.subject ?? "";
       this.grade = this.data.question.grade ?? "";
       this.difficulty = (this.data.question.difficulty as Difficulty) ?? null;
+      this.test = this.data.question.test ?? "";
+      this.competency = this.data.question.competency ?? "";
+      this.component = this.data.question.component ?? "";
+      this.rationale = this.data.question.rationale ?? "";
     }
+    this.aiAvailable = this.ai.enabled;
   }
 
   /**
@@ -449,6 +512,10 @@ export class CreateQuestionDialogComponent {
     if (this.subject.trim()) result.subject = this.subject.trim();
     if (this.grade.trim()) result.grade = this.grade.trim();
     if (this.difficulty) result.difficulty = this.difficulty;
+    if (this.test) result.test = this.test;
+    if (this.test && this.competency) result.competency = this.competency;
+    if (this.test && this.component) result.component = this.component;
+    if (this.rationale.trim()) result.rationale = this.rationale.trim();
 
     this.dialogRef.close(result);
     this.resetNewQuestion();

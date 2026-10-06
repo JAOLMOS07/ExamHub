@@ -49,8 +49,27 @@
   </h3>
 
   <!-- Metadata: materia / grado / dificultad como tags chiquitos -->
-  @if (question.subject || question.grade || question.difficulty) {
+  @if (question.subject || question.grade || question.difficulty || question.test || question.source === 'ai') {
     <div class="flex flex-wrap gap-1 mb-2">
+      @if (question.source === 'ai') {
+        <span
+          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border"
+          [class.bg-violet-50]="question.reviewed === false"
+          [class.text-violet-700]="question.reviewed === false"
+          [class.border-violet-200]="question.reviewed === false"
+          [class.bg-slate-50]="question.reviewed !== false"
+          [class.text-slate-600]="question.reviewed !== false"
+          [class.border-slate-200]="question.reviewed !== false"
+          [title]="question.reviewed === false ? 'Generada con IA: revísala antes de usarla' : 'Generada con IA y revisada'"
+        >
+          IA{{ question.reviewed === false ? " · sin revisar" : "" }}
+        </span>
+      }
+      @if (alignmentLabel) {
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700" [title]="alignmentTitle">
+          {{ alignmentLabel }}
+        </span>
+      }
       @if (question.subject) {
         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
           {{ question.subject }}

@@ -1,177 +1,302 @@
 <app-navbar />
 
-<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
-  <a
-    (click)="goBackToList()"
-    class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 mb-3 cursor-pointer transition"
-  >
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-    Volver a la lista
-  </a>
+<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
+  <button (click)="goBackToList()" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 mb-3">
+    <app-icon [icon]="'arrow_back'" /> Evaluaciones
+  </button>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="text-center py-20 text-sm text-slate-500">
-    Cargando examen…
-  </div>
-
-  <!-- Error -->
-  <div *ngIf="!isLoading && errorMessage" class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
-    <p class="text-sm text-red-700">{{ errorMessage }}</p>
-  </div>
-
-  <!-- Vista normal -->
-  <ng-container *ngIf="!isLoading && exam">
-    <!-- Header -->
-    <header class="bg-white border border-slate-200 rounded-2xl shadow-card p-5 mb-4">
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div class="min-w-0 flex-1">
-          <h1 class="text-xl font-bold text-slate-900 truncate">{{ exam.title }}</h1>
-          <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span>{{ formatDate(exam.createdAt) }}</span>
-            <span>·</span>
-            <span>{{ exam.totalQuestions }} preguntas</span>
-            <span>·</span>
-            <span>{{ exam.versions.length }} {{ exam.versions.length === 1 ? "versión" : "versiones" }}</span>
-            <ng-container *ngIf="exam.subject">
-              <span>·</span>
-              <span>{{ exam.subject }}</span>
-            </ng-container>
-            <ng-container *ngIf="exam.grade">
-              <span>·</span>
-              <span>Grado: {{ exam.grade }}</span>
-            </ng-container>
+  @if (isLoading) {
+    <div class="text-center py-20 text-sm text-slate-500">Cargando evaluación…</div>
+  } @else if (errorMessage) {
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-sm text-red-700">{{ errorMessage }}</div>
+  } @else if (exam) {
+    <!-- Encabezado -->
+    <header class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+          {{ exam.title }}
+          @if (exam.type === "simulacro") {
+            <span class="eh-tag ml-1 bg-indigo-50 text-indigo-700 border-indigo-200 align-middle">Simulacro</span>
+          }
+        </h1>
+        <p class="text-xs text-slate-500 mt-1">
+          {{ formatDate(exam.createdAt) }} · {{ exam.totalQuestions }} preguntas · {{ exam.forms.length }}
+          {{ exam.forms.length === 1 ? "forma" : "formas" }}
+          @if (exam.subject) { · {{ exam.subject }} }
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button (click)="goToGrade()" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800">
+          <app-icon [icon]="'photo_camera'" /> Calificar hojas
+        </button>
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 cursor-pointer" [class.opacity-50]="isExporting">
+            <app-icon [icon]="'download'" /> Exportar
           </div>
-        </div>
-        <!-- Acciones primarias -->
-        <div class="flex flex-col sm:flex-row gap-2 flex-shrink-0">
-          <button
-            (click)="goToScan()"
-            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 transition"
-          >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l3-3h4l2-2h4l2 2h4l3 3v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <circle cx="12" cy="14" r="4" />
-            </svg>
-            Escanear
-          </button>
-          <button
-            (click)="goToGrade()"
-            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-sm hover:shadow-md transition bg-brand-700 hover:bg-brand-800"
-          >
-            Calificar hoja
-          </button>
+          <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-60 border border-slate-200">
+            <li><a (click)="exportPdf('planilla')">Planilla de resultados (PDF)</a></li>
+            <li><a (click)="exportPdf('boletines')">Boletines por estudiante (PDF)</a></li>
+            <li><a (click)="exportCsv()">Resultados para Excel (CSV)</a></li>
+          </ul>
         </div>
       </div>
     </header>
 
-    <!-- Métricas -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-      <div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
-        <p class="text-xs text-slate-500">Calificados</p>
-        <p class="text-xl font-bold text-slate-900 mt-1">{{ studentCount }}</p>
-      </div>
-      <div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
-        <p class="text-xs text-slate-500">Promedio</p>
-        <p class="text-xl font-bold text-indigo-700 mt-1">{{ studentCount > 0 ? average : "—" }}</p>
-      </div>
-      <div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
-        <p class="text-xs text-slate-500">Mejor nota</p>
-        <p class="text-xl font-bold text-green-700 mt-1">{{ studentCount > 0 ? bestScore : "—" }}</p>
-      </div>
-      <div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
-        <p class="text-xs text-slate-500">Peor nota</p>
-        <p class="text-xl font-bold text-red-700 mt-1">{{ studentCount > 0 ? worstScore : "—" }}</p>
+    <!-- Filtro de grupo + métricas -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+      @if (groupsWithResults.length > 0) {
+        <select class="eh-input md:w-56" [(ngModel)]="groupFilter">
+          <option value="all">Todos los grupos</option>
+          @for (g of groupsWithResults; track g.id) {
+            <option [value]="g.id">{{ g.name }}</option>
+          }
+          <option value="none">Sin grupo</option>
+        </select>
+      }
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 flex-1">
+        <div class="eh-section py-2 px-3"><p class="text-xs text-slate-500">Calificados</p><p class="text-lg font-bold">{{ filtered.length }}</p></div>
+        <div class="eh-section py-2 px-3"><p class="text-xs text-slate-500">Promedio</p><p class="text-lg font-bold">{{ average }} <span class="text-xs font-normal text-slate-400">/ {{ exam.maxScore }}</span></p></div>
+        <div class="eh-section py-2 px-3"><p class="text-xs text-slate-500">Mejor</p><p class="text-lg font-bold text-emerald-700">{{ bestScore }}</p></div>
+        <div class="eh-section py-2 px-3"><p class="text-xs text-slate-500">Más bajo</p><p class="text-lg font-bold text-red-700">{{ worstScore }}</p></div>
+        @if (globalAverage !== null) {
+          <div class="eh-section py-2 px-3"><p class="text-xs text-slate-500">Global estimado</p><p class="text-lg font-bold text-indigo-700">{{ globalAverage }} <span class="text-xs font-normal text-slate-400">/ 500</span></p></div>
+        }
       </div>
     </div>
 
-    <!-- Tabla de resultados -->
-    <section class="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
-      <div class="flex items-center justify-between p-4 border-b border-slate-100">
-        <h2 class="text-sm font-semibold text-slate-900">
-          Resultados ({{ studentCount }})
-        </h2>
-        <button
-          (click)="exportPdf()"
-          [disabled]="isExporting || studentCount === 0"
-          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-          </svg>
-          {{ isExporting ? "Generando…" : "Exportar PDF" }}
-        </button>
-      </div>
+    <!-- Tabs -->
+    <div class="border-b border-slate-200 mb-4">
+      <nav class="flex gap-1 overflow-x-auto">
+        @for (t of [
+          { id: 'results', label: 'Resultados' },
+          { id: 'competencies', label: 'Por prueba y competencia' },
+          { id: 'items', label: 'Análisis de preguntas' },
+          { id: 'ai', label: 'Informe con IA' }
+        ]; track t.id) {
+          @if (t.id !== 'ai' || aiEnabled) {
+            <button
+              (click)="tab = $any(t.id)"
+              class="px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap"
+              [class.border-indigo-600]="tab === t.id"
+              [class.text-indigo-700]="tab === t.id"
+              [class.border-transparent]="tab !== t.id"
+              [class.text-slate-500]="tab !== t.id"
+            >
+              {{ t.label }}
+            </button>
+          }
+        }
+      </nav>
+    </div>
 
-      <ng-container *ngIf="studentCount > 0; else noResults">
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-50">
-              <tr class="text-left text-xs uppercase tracking-wide text-slate-500">
-                <th class="px-4 py-2 font-medium w-10">#</th>
-                <th class="px-4 py-2 font-medium">Alumno</th>
-                <th class="px-4 py-2 font-medium hidden sm:table-cell">Versión</th>
-                <th class="px-4 py-2 font-medium hidden md:table-cell">Aciertos</th>
-                <th class="px-4 py-2 font-medium text-right">Nota</th>
-                <th class="px-4 py-2 font-medium hidden lg:table-cell">Fecha</th>
-                <th class="px-4 py-2 font-medium w-10"></th>
+    @if (filtered.length === 0) {
+      <div class="eh-empty">
+        <p class="font-medium text-slate-700">Todavía no hay hojas calificadas</p>
+        <p class="text-sm">Toma una foto de cada hoja de respuestas desde "Calificar hojas".</p>
+      </div>
+    } @else {
+      <!-- ============ Resultados ============ -->
+      @if (tab === "results") {
+        <div class="eh-section p-0 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-slate-500 border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th class="py-2 px-3">Estudiante</th>
+                <th class="py-2 px-3">Grupo</th>
+                <th class="py-2 px-3 text-center">Forma</th>
+                <th class="py-2 px-3 text-center">Aciertos</th>
+                @for (t of testsPresent; track t) {
+                  <th class="py-2 px-3 text-center" [title]="getTest(t)?.label">{{ getTest(t)?.shortLabel }}</th>
+                }
+                @if (globalAverage !== null) {
+                  <th class="py-2 px-3 text-center">Global</th>
+                }
+                <th class="py-2 px-3 text-right">Nota</th>
+                <th class="py-2 px-3 hidden md:table-cell">Fecha</th>
+                <th class="py-2 px-3"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr *ngFor="let r of results; let i = index" class="hover:bg-slate-50">
-                <td class="px-4 py-2 text-slate-500 font-mono">{{ i + 1 }}</td>
-                <td class="px-4 py-2">
-                  <div class="font-medium text-slate-900 truncate max-w-[200px]">
+            <tbody>
+              @for (r of sortedFiltered; track r.id) {
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                  <td class="py-2 px-3">
                     {{ r.studentName || "(sin nombre)" }}
-                  </div>
-                  <div *ngIf="r.studentCode" class="text-xs text-slate-500">
-                    {{ r.studentCode }}
-                  </div>
-                </td>
-                <td class="px-4 py-2 hidden sm:table-cell text-slate-600">
-                  {{ r.versionId }}
-                </td>
-                <td class="px-4 py-2 hidden md:table-cell text-slate-600">
-                  {{ r.correct }} / {{ r.total }}
-                </td>
-                <td class="px-4 py-2 text-right font-semibold"
-                    [class.text-green-700]="(r.score ?? 0) >= (maxScore * 0.7)"
-                    [class.text-yellow-700]="(r.score ?? 0) >= (maxScore * 0.5) && (r.score ?? 0) < (maxScore * 0.7)"
-                    [class.text-red-700]="(r.score ?? 0) < (maxScore * 0.5)">
-                  {{ r.score ?? "—" }}
-                </td>
-                <td class="px-4 py-2 hidden lg:table-cell text-xs text-slate-500">
-                  {{ formatDateTime(r.scannedAt) }}
-                </td>
-                <td class="px-4 py-2 text-right">
-                  <button
-                    (click)="deleteResult(r)"
-                    class="text-slate-400 hover:text-red-600 transition"
-                    title="Borrar esta calificación"
-                  >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
+                    @if (r.studentCode) {
+                      <span class="text-xs text-slate-400 font-mono">{{ r.studentCode }}</span>
+                    }
+                  </td>
+                  <td class="py-2 px-3 text-slate-500">{{ groupName(r.groupId) || "—" }}</td>
+                  <td class="py-2 px-3 text-center">{{ formLabel(r.formId) }}</td>
+                  <td class="py-2 px-3 text-center">{{ r.breakdown.correct }}/{{ r.breakdown.total }}</td>
+                  @for (t of testsPresent; track t) {
+                    <td class="py-2 px-3 text-center">{{ r.breakdown.byTest[t]?.score ?? "—" }}</td>
+                  }
+                  @if (globalAverage !== null) {
+                    <td class="py-2 px-3 text-center font-semibold text-indigo-700">{{ r.breakdown.global ?? "—" }}</td>
+                  }
+                  <td class="py-2 px-3 text-right font-bold" [class.text-red-700]="r.score < exam.maxScore * 0.6">{{ r.score }}</td>
+                  <td class="py-2 px-3 text-xs text-slate-500 hidden md:table-cell">{{ formatDateTime(r.scannedAt) }}</td>
+                  <td class="py-2 px-3 text-right">
+                    <button class="text-slate-400 hover:text-red-600" title="Borrar" (click)="deleteResult(r)">
+                      <app-icon [icon]="'delete'" />
+                    </button>
+                  </td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
-      </ng-container>
+      }
 
-      <ng-template #noResults>
-        <div class="text-center py-12 text-sm text-slate-500">
-          <svg class="mx-auto w-10 h-10 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <p>Todavía no calificaste ninguna hoja de este examen.</p>
-          <p class="text-xs mt-1">
-            Tocá "Escanear" o "Calificar hoja" arriba para empezar.
+      <!-- ============ Por prueba y competencia ============ -->
+      @if (tab === "competencies") {
+        @if (testSummary.length === 0) {
+          <div class="eh-empty">
+            <p class="font-medium text-slate-700">Las preguntas de esta evaluación no están alineadas al ICFES</p>
+            <p class="text-sm">Asigna prueba y competencia a las preguntas del banco para ver este reporte en las próximas evaluaciones.</p>
+          </div>
+        } @else {
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            @for (t of testSummary; track t.id) {
+              <div class="eh-section">
+                <div class="flex items-baseline justify-between mb-2">
+                  <h3 class="font-semibold text-slate-900">{{ t.label }}</h3>
+                  <span class="text-2xl font-bold text-indigo-700">{{ t.avg }}<span class="text-xs text-slate-400"> / 100</span></span>
+                </div>
+                <p class="text-xs text-slate-500 mb-1">Niveles de desempeño (estimados)</p>
+                <div class="flex h-6 rounded overflow-hidden text-[10px] text-white font-semibold">
+                  @for (l of t.levels; track i; let i = $index) {
+                    @if (l.pct > 0) {
+                      <div
+                        class="flex items-center justify-center"
+                        [style.width.%]="l.pct"
+                        [style.background]="['#dc2626', '#f59e0b', '#16a34a', '#2563eb'][i]"
+                        [title]="'Nivel ' + l.label + ': ' + l.count + ' estudiantes'"
+                      >
+                        {{ l.label }}
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="eh-section">
+            <h3 class="font-semibold text-slate-900 mb-3">Aciertos por competencia</h3>
+            <ul class="space-y-2">
+              @for (c of competencySummary; track c.test + c.label) {
+                <li>
+                  <div class="flex justify-between text-sm">
+                    <span><span class="text-xs text-slate-400">{{ getTest(c.test)?.shortLabel }}</span> {{ c.label }}</span>
+                    <span class="font-semibold" [class.text-red-700]="c.pct < 50">{{ c.pct }}%</span>
+                  </div>
+                  <div class="h-2 rounded bg-slate-100 overflow-hidden">
+                    <div class="h-full" [style.width.%]="c.pct" [class.bg-red-500]="c.pct < 50" [class.bg-amber-500]="c.pct >= 50 && c.pct < 70" [class.bg-emerald-500]="c.pct >= 70"></div>
+                  </div>
+                </li>
+              }
+            </ul>
+            <p class="text-xs text-slate-400 mt-3">Puntajes estimados por ExamHub; no son resultados oficiales del ICFES.</p>
+          </div>
+        }
+      }
+
+      <!-- ============ Análisis de preguntas ============ -->
+      @if (tab === "items") {
+        @if (itemAnalysis.length === 0) {
+          <div class="eh-empty">
+            <p class="font-medium text-slate-700">Sin análisis por pregunta</p>
+            <p class="text-sm">Disponible para evaluaciones generadas con la versión actual de ExamHub.</p>
+          </div>
+        } @else {
+          <p class="text-sm text-slate-500 mb-3">
+            % de acierto, discriminación (qué tanto separa a quienes dominan el tema de quienes no; bajo 0,2 conviene
+            revisar la pregunta) y qué eligió el grupo en cada opción (la clave en verde). Los indicadores son
+            confiables desde ~10 estudiantes.
           </p>
+          <div class="space-y-2">
+            @for (it of itemAnalysis; track it.itemId) {
+              <div class="eh-section py-3">
+                <div class="flex flex-col md:flex-row md:items-center gap-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs text-slate-400">
+                      Pregunta {{ it.position + 1 }} (forma A)
+                      @if (it.test) { · {{ getTest(it.test)?.label }} }
+                    </p>
+                    <p class="text-sm text-slate-800 truncate">{{ stemOf(it.itemId) || "—" }}</p>
+                    @for (f of flagsOf(it); track f) {
+                      <span class="eh-tag mr-1 mt-1 bg-amber-50 text-amber-800 border-amber-200">{{ FLAG_LABEL[f] }}</span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-4 text-sm shrink-0">
+                    <div class="text-center w-16">
+                      <p class="text-xs text-slate-500">Acierto</p>
+                      <p class="font-bold">{{ pct(it.pValue) }}%</p>
+                    </div>
+                    <div class="text-center w-16">
+                      <p class="text-xs text-slate-500">Discrim.</p>
+                      <p class="font-bold" [class.text-red-700]="it.discrimination !== null && it.discrimination < 0.2">
+                        {{ it.discrimination === null ? "—" : (it.discrimination | number: "1.2-2") }}
+                      </p>
+                    </div>
+                    <div class="flex items-end gap-1 h-10">
+                      @for (share of it.optionShare; track k; let k = $index) {
+                        <div class="flex flex-col items-center w-6" [title]="ALPHABET[k] + ': ' + pct(share) + '%'">
+                          <div class="w-4 rounded-t" [style.height.px]="4 + share * 28" [class.bg-emerald-500]="k === it.correctOption" [class.bg-slate-300]="k !== it.correctOption"></div>
+                          <span class="text-[10px] text-slate-500">{{ ALPHABET[k] }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Las letras corresponden al orden original de las opciones en el banco.</p>
+        }
+      }
+
+      <!-- ============ Informe con IA ============ -->
+      @if (tab === "ai" && aiEnabled) {
+        <div class="eh-section">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <p class="text-sm text-slate-600 flex-1">
+              Genera un informe pedagógico con fortalezas, debilidades y acciones de mejora a partir de los
+              resultados agregados{{ groupFilter !== "all" ? " del grupo seleccionado" : "" }}. No se envían
+              nombres ni datos personales de los estudiantes.
+            </p>
+            <button class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50" [disabled]="isGeneratingReport" (click)="generateAiReport()">
+              <app-icon [icon]="'auto_awesome'" /> {{ isGeneratingReport ? "Generando…" : "Generar informe" }}
+            </button>
+          </div>
+          @if (aiReport) {
+            <div class="space-y-4 text-sm text-slate-800">
+              <p class="whitespace-pre-line">{{ aiReport.summary }}</p>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="font-semibold text-emerald-700 mb-1">Fortalezas</h4>
+                  <ul class="list-disc pl-5 space-y-1">@for (s of aiReport.strengths; track $index) { <li>{{ s }}</li> }</ul>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-red-700 mb-1">Debilidades</h4>
+                  <ul class="list-disc pl-5 space-y-1">@for (s of aiReport.weaknesses; track $index) { <li>{{ s }}</li> }</ul>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-semibold text-indigo-700 mb-1">Acciones de mejora</h4>
+                <ul class="list-disc pl-5 space-y-1">@for (s of aiReport.actions; track $index) { <li>{{ s }}</li> }</ul>
+              </div>
+              @if (aiReport.itemsToReview.length) {
+                <div>
+                  <h4 class="font-semibold text-amber-700 mb-1">Preguntas para revisar</h4>
+                  <ul class="list-disc pl-5 space-y-1">@for (s of aiReport.itemsToReview; track $index) { <li>{{ s }}</li> }</ul>
+                </div>
+              }
+              <p class="text-xs text-slate-400">Generado con IA a partir de {{ aiReport.responses }} hojas. Revísalo antes de compartirlo.</p>
+            </div>
+          }
         </div>
-      </ng-template>
-    </section>
-  </ng-container>
+      }
+    }
+  }
 </div>
