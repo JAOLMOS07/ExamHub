@@ -1,4 +1,4 @@
-import { pickMarked } from "./markDetection";
+import { pickCornerSquares, pickMarked } from "./markDetection";
 import { computeSheetLayout, legacySheetPage, SHEET_V2 } from "./answerSheetLayout";
 import { parseStudentsCsv } from "./studentsCsv";
 import { decodeQrPayload, encodeQrPayload } from "../utils/qrPayload.util";
@@ -104,5 +104,28 @@ describe("pickMarked", () => {
   });
   it("tolera una marca clara junto a un borrón leve", () => {
     expect(pickMarked([40, 120, 225, 228])).toBe(0);
+  });
+});
+
+describe("pickCornerSquares", () => {
+  const aspect = (548 - 47) / (762 - 154);
+  const sq = (cx: number, cy: number, area = 900) => ({ cx, cy, area });
+
+  it("encuentra las esquinas en una hoja girada y con ruido", () => {
+    const rot = (x: number, y: number) => {
+      const a = (5 * Math.PI) / 180;
+      return sq(x * Math.cos(a) - y * Math.sin(a) + 200, x * Math.sin(a) + y * Math.cos(a) + 80);
+    };
+    const tl = rot(47, 154);
+    const tr = rot(548, 154);
+    const bl = rot(47, 762);
+    const br = rot(548, 762);
+    const qrFinder = { ...rot(522, 177), area: 350 };
+    const r = pickCornerSquares([qrFinder, br, tl, bl, tr], aspect);
+    expect(r).toEqual({ tl, tr, bl, br });
+  });
+
+  it("rechaza geometrías que no son la hoja", () => {
+    expect(pickCornerSquares([sq(0, 0), sq(100, 0), sq(0, 30), sq(100, 30)], aspect)).toBeNull();
   });
 });

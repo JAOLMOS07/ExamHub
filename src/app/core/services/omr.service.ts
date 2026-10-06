@@ -7,7 +7,7 @@ import {
   PAGE_W_PT,
 } from "../utils/omrLayout.const";
 import { Point, SheetPage, legacySheetPage } from "../domain/answerSheetLayout";
-import { pickMarked } from "../domain/markDetection";
+import { Corner, pickCornerSquares, pickMarked } from "../domain/markDetection";
 
 /**
  * ========================================================================
@@ -511,11 +511,15 @@ export class OmrService {
 
     const contours = new cv.MatVector();
     const hierarchy = new cv.Mat();
+    // RETR_LIST (no RETR_EXTERNAL): con la hoja sobre una mesa más
+    // oscura, el umbral dibuja un marco continuo alrededor del papel y
+    // las fiduciales quedarían como contornos "hijos" descartados. Los
+    // filtros de tamaño, proporción y solidez de abajo separan el resto.
     cv.findContours(
       bin,
       contours,
       hierarchy,
-      cv.RETR_EXTERNAL,
+      cv.RETR_LIST,
       cv.CHAIN_APPROX_SIMPLE
     );
 
@@ -540,21 +544,25 @@ export class OmrService {
     for (let i = 0; i < contours.size(); i++) {
       const cnt = contours.get(i);
       const rect = cv.boundingRect(cnt);
-      const ratio = rect.width / rect.height;
+      // Proporción y solidez contra el rectángulo ROTADO mínimo: así una
+      // hoja girada unos grados no "infla" el área y descarta la marca.
+      const rotated = cv.minAreaRect(cnt);
+      const rw = Math.max(1, rotated.size.width);
+      const rh = Math.max(1, rotated.size.height);
+      const ratio = rw / rh;
       if (ratio < 0.6 || ratio > 1.6) {
         cnt.delete();
         continue;
       }
-      const rectArea = rect.width * rect.height;
+      const rectArea = rw * rh;
       if (rectArea < minFidArea || rectArea > maxFidArea) {
         cnt.delete();
         continue;
       }
       const contourArea = cv.contourArea(cnt);
       const solidity = contourArea / rectArea;
-      // Fiducial relleno: solidez > 0.80 (aflojamos un poco para
-      // tolerar antialiasing en imágenes de baja resolución).
-      // QR finder patterns: solidez < 0.7.
+      // Fiducial relleno: solidez > 0.80. Un círculo (burbuja rellena)
+      // da ~0.785 y queda afuera.
       if (solidity < 0.8) {
         cnt.delete();
         continue;
@@ -595,6 +603,31 @@ export class OmrService {
     }
     contours.delete();
     hierarchy.delete();
+
+    // Respaldo: hoja girada o encuadrada con margen (las ventanas fijas
+    // asumen que la hoja llena la foto).
+    const aspect =
+      (FIDUCIAL_CENTERS.tr.x - FIDUCIAL_CENTERS.tl.x) /
+      (FIDUCIAL_CENTERS.bl.y - FIDUCIAL_CENTERS.tl.y);
+    const windowsOk =
+      found.length === 4 &&
+      pickCornerSquares(
+        found.map((f) => ({ cx: f.x, cy: f.y, area: 1 })),
+        aspect
+      ) !== null;
+    if (!windowsOk) {
+      const corners = pickCornerSquares(candidates, aspect);
+      if (corners) {
+        console.log("[OMR fid] ventanas incompletas; esquinas por geometría");
+        return (Object.entries(corners) as [Corner, { cx: number; cy: number }][]).map(
+          ([corner, c]) => ({ x: c.cx, y: c.cy, corner })
+        );
+      }
+      console.log(
+        "[OMR fid] sin geometría válida; candidatos:",
+        candidates.map((c) => `(${Math.round(c.cx)},${Math.round(c.cy)}) a=${Math.round(c.area)}`).join(" ")
+      );
+    }
     return found;
   }
 

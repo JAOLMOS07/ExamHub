@@ -13,6 +13,13 @@ export interface AnswerSheetOptions {
 }
 
 const BUBBLE_LINE = "#4b5563";
+const LABEL_FONT = 6;
+
+/** Ancho aproximado (pt) de una letra/dígito de Roboto a LABEL_FONT. */
+function glyphWidth(label: string): number {
+  const em = /[MW]/.test(label) ? 0.85 : /[I1]/.test(label) ? 0.35 : 0.6;
+  return label.length * em * LABEL_FONT;
+}
 const LETTER_COLOR = "#6b7280";
 
 /**
@@ -141,12 +148,12 @@ function bubble(cx: number, cy: number, r: number, label: string, filled: boolea
       ? []
       : [
           {
+            // pdfmake ignora width/alignment en texto con posición
+            // absoluta: centramos estimando el ancho del glifo.
             text: label,
-            fontSize: 6,
+            fontSize: LABEL_FONT,
             color: LETTER_COLOR,
-            alignment: "center",
-            width: r * 2,
-            absolutePosition: { x: cx - r, y: cy - 3.6 },
+            absolutePosition: { x: cx - glyphWidth(label) / 2, y: cy - LABEL_FONT * 0.6 },
           },
         ]),
   ];
