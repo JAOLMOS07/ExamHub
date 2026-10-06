@@ -9,7 +9,6 @@ import {
 } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
-import { ExamService } from "../../core/services/ExamService.service";
 import { ToastService } from "../../core/services/toast.service";
 import { LogoComponent } from "../shared/brand/logo.component";
 
@@ -50,7 +49,7 @@ function getFriendlyAuthError(error: any): string {
 @Component({
   selector: "app-login",
   standalone: true,
-  providers: [UserService, ExamService],
+  providers: [UserService],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, LogoComponent],
   templateUrl: "./login.component.html",
   styleUrls: ["./login.component.css"],
@@ -66,6 +65,8 @@ export class LoginComponent {
   isSendingReset = false;
   /** Mostrar/ocultar contraseña en el input. */
   showPassword = false;
+  /** Iniciar sesión o crear cuenta nueva. */
+  mode: "login" | "register" = "login";
 
   constructor(
     private userService: UserService,
@@ -76,7 +77,13 @@ export class LoginComponent {
     this.loginForm = this.formBuilder.group({
       email: ["", [Validators.required, Validators.email]],
       password: ["", [Validators.required, Validators.minLength(6)]],
+      displayName: [""],
     });
+  }
+
+  setMode(mode: "login" | "register"): void {
+    this.mode = mode;
+    this.errorMessage = "";
   }
 
   ngOnInit() {
@@ -127,9 +134,12 @@ export class LoginComponent {
     }
     this.errorMessage = "";
     this.isSubmitting = true;
-    const { email, password } = this.loginForm.value;
-    this.userService
-      .login(email, password)
+    const { email, password, displayName } = this.loginForm.value;
+    const action =
+      this.mode === "login"
+        ? this.userService.login(email, password)
+        : this.userService.register(email, password, displayName);
+    action
       .then(() => {
         this.router.navigate(["/home"]);
       })

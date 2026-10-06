@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// ExamHub — Storage Rules
+//   orgs/{orgId}/items/{itemId}/{archivo}   imágenes de preguntas (v2)
+//   users/{uid}/...                          imágenes v1 (solo dueño)
+//
+// Las reglas de Storage consultan Firestore para validar la membresía.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isMember(orgId) {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/orgs/$(orgId)/members/$(request.auth.uid));
+    }
+
+    match /orgs/{orgId}/{allPaths=**} {
+      allow read: if isMember(orgId);
+      allow create, update: if isMember(orgId)
+        && request.resource.size < 4 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isMember(orgId);
+    }
+
+    match /users/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

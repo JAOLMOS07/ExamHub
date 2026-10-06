@@ -1,6 +1,37 @@
 <app-navbar />
 
 <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+  @if (showMigrationBanner) {
+    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div class="flex-1">
+        <p class="font-semibold text-amber-900">Tienes datos de la versión anterior de ExamHub</p>
+        <p class="text-sm text-amber-800">
+          Copia tu banco de preguntas, exámenes y calificaciones a tu organización actual.
+          Los datos originales no se borran.
+        </p>
+        @if (migrationStatus) {
+          <p class="text-xs text-amber-700 mt-1">{{ migrationStatus }}</p>
+        }
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <button
+          class="rounded-lg px-3 py-2 text-sm text-amber-800 hover:bg-amber-100"
+          [disabled]="isMigrating"
+          (click)="dismissMigration()"
+        >
+          Más tarde
+        </button>
+        <button
+          class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
+          [disabled]="isMigrating"
+          (click)="migrateLegacyData()"
+        >
+          {{ isMigrating ? "Migrando…" : "Migrar ahora" }}
+        </button>
+      </div>
+    </div>
+  }
+
   <!-- ====================== HEADER DEL NIVEL ====================== -->
   <header class="mb-6">
     <!-- Breadcrumb + acción "Volver" -->

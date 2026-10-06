@@ -2,6 +2,8 @@ import { Component, OnInit } from "@angular/core";
 import { UserService } from "../../../../core/services/UserService.service";
 import { Router } from "@angular/router";
 import { User } from "@angular/fire/auth";
+import { TenantService } from "../../../../core/services/tenant.service";
+import { OrgRef, ROLE_LABEL } from "../../../../core/models/org.model";
 
 /**
  * Navbar superior. Muestra:
@@ -20,7 +22,25 @@ export class NavbarComponent implements OnInit {
   /** Controla la visibilidad del modal de cambio de contraseña. */
   showChangePassword = false;
 
-  constructor(private userService: UserService, private router: Router) {}
+  readonly ROLE_LABEL = ROLE_LABEL;
+  activeOrgId: string | null = null;
+  orgs: { id: string; ref: OrgRef }[] = [];
+  pendingInvites = 0;
+
+  constructor(
+    private userService: UserService,
+    private router: Router,
+    private tenant: TenantService
+  ) {}
+
+  get activeOrg(): OrgRef | null {
+    return this.orgs.find((o) => o.id === this.activeOrgId)?.ref ?? null;
+  }
+
+  switchOrg(orgId: string): void {
+    if (orgId !== this.activeOrgId) this.tenant.switchOrg(orgId);
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
 
   /** Abre el modal de cambio de contraseña desde el dropdown de usuario. */
   openChangePassword(): void {
@@ -36,6 +56,13 @@ export class NavbarComponent implements OnInit {
     this.userService.currentUser$.subscribe((user) => {
       this.user = user;
     });
+    this.tenant.orgId$.subscribe((id) => (this.activeOrgId = id));
+    this.tenant.profile$.subscribe((p) => {
+      this.orgs = Object.entries(p?.orgs ?? {})
+        .map(([id, ref]) => ({ id, ref }))
+        .sort((a, b) => a.ref.name.localeCompare(b.ref.name));
+    });
+    this.tenant.pendingInvites$.subscribe((inv) => (this.pendingInvites = inv.length));
   }
 
   /** Iniciales del email del usuario para mostrar en el avatar. */

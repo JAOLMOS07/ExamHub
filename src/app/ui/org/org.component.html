@@ -1,0 +1,242 @@
+<app-navbar />
+
+<main class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <header>
+    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+      {{ org?.name ?? "Institución" }}
+    </h1>
+    @if (org) {
+      <div class="flex flex-wrap items-center gap-2 mt-2 text-sm">
+        <span class="eh-tag bg-brand-50 text-brand-700 border-brand-200">{{ PLAN_LABEL[org.plan] }}</span>
+        @if (role) {
+          <span class="eh-tag">{{ ROLE_LABEL[role] }}</span>
+        }
+        @if (isSchool) {
+          <span class="text-slate-500">
+            {{ studentCount }} / {{ org.seats }} estudiantes licenciados
+          </span>
+          @if (studentCount > org.seats) {
+            <span class="text-red-600 font-medium">· Superaste el cupo: contáctanos para ampliarlo.</span>
+          }
+        }
+      </div>
+    }
+  </header>
+
+  <!-- ================= Invitaciones para mí ================= -->
+  @if (pendingInvites.length > 0) {
+    <section class="eh-section border-brand-200 bg-brand-50/50">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Invitaciones pendientes</h2>
+      <ul class="space-y-2">
+        @for (inv of pendingInvites; track inv.orgId) {
+          <li class="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg bg-white border border-slate-200 p-3">
+            <div class="flex-1">
+              <p class="font-medium text-slate-900">{{ inv.orgName }}</p>
+              <p class="text-xs text-slate-500">Te invitaron como {{ ROLE_LABEL[inv.role] }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button class="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100" (click)="declineInvite(inv)">
+                Rechazar
+              </button>
+              <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800" (click)="acceptInvite(inv)">
+                Aceptar
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- ================= Mis organizaciones ================= -->
+  <section class="eh-section">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold text-slate-900">Mis organizaciones</h2>
+      <button
+        class="rounded-lg px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        (click)="showCreateSchool = !showCreateSchool"
+      >
+        <app-icon [icon]="'add_business'" /> Crear colegio
+      </button>
+    </div>
+    <ul class="divide-y divide-slate-100">
+      @for (o of myOrgs; track o.id) {
+        <li class="flex items-center gap-3 py-2">
+          <app-icon class="text-slate-400" [icon]="o.id.startsWith('p_') ? 'person' : 'school'" />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-900 truncate">{{ o.ref.name }}</p>
+            <p class="text-xs text-slate-500">{{ ROLE_LABEL[o.ref.role] }}</p>
+          </div>
+          @if (o.id === activeOrgId) {
+            <span class="text-xs font-medium text-emerald-700">Activa</span>
+          } @else {
+            <button class="rounded-lg px-3 py-1 text-sm text-brand-700 hover:bg-brand-50" (click)="switchOrg(o.id)">
+              Cambiar
+            </button>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (showCreateSchool) {
+      <form class="mt-4 grid sm:grid-cols-2 gap-3 rounded-lg border border-slate-200 p-4" (ngSubmit)="createSchool()">
+        <p class="sm:col-span-2 text-sm text-slate-600">
+          Crea el espacio de tu colegio en modo prueba (hasta 100 estudiantes). Serás su administrador
+          y podrás invitar a los docentes.
+        </p>
+        <label class="sm:col-span-2 text-sm">
+          <span class="text-slate-700 font-medium">Nombre del colegio *</span>
+          <input class="eh-input mt-1" name="sname" [(ngModel)]="schoolForm.name" placeholder="Institución Educativa San José" />
+        </label>
+        <label class="text-sm">
+          <span class="text-slate-700 font-medium">NIT</span>
+          <input class="eh-input mt-1" name="snit" [(ngModel)]="schoolForm.nit" />
+        </label>
+        <label class="text-sm">
+          <span class="text-slate-700 font-medium">Código DANE</span>
+          <input class="eh-input mt-1" name="sdane" [(ngModel)]="schoolForm.daneCode" />
+        </label>
+        <label class="text-sm">
+          <span class="text-slate-700 font-medium">Ciudad / municipio</span>
+          <input class="eh-input mt-1" name="scity" [(ngModel)]="schoolForm.city" />
+        </label>
+        <div class="sm:col-span-2 flex justify-end gap-2">
+          <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100" (click)="showCreateSchool = false">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="isSaving" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+            Crear colegio
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+
+  <!-- ================= Datos de la institución ================= -->
+  @if (org) {
+    <section class="eh-section">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Datos y configuración</h2>
+      <form class="grid sm:grid-cols-2 gap-3" (ngSubmit)="saveOrg()">
+        <label class="sm:col-span-2 text-sm">
+          <span class="text-slate-700 font-medium">Nombre</span>
+          <input class="eh-input mt-1" name="name" [(ngModel)]="orgForm.name" [disabled]="!isAdmin" />
+        </label>
+        @if (isSchool) {
+          <label class="text-sm">
+            <span class="text-slate-700 font-medium">NIT</span>
+            <input class="eh-input mt-1" name="nit" [(ngModel)]="orgForm.nit" [disabled]="!isAdmin" />
+          </label>
+          <label class="text-sm">
+            <span class="text-slate-700 font-medium">Código DANE</span>
+            <input class="eh-input mt-1" name="dane" [(ngModel)]="orgForm.daneCode" [disabled]="!isAdmin" />
+          </label>
+          <label class="text-sm">
+            <span class="text-slate-700 font-medium">Ciudad / municipio</span>
+            <input class="eh-input mt-1" name="city" [(ngModel)]="orgForm.city" [disabled]="!isAdmin" />
+          </label>
+        }
+        <label class="text-sm">
+          <span class="text-slate-700 font-medium">Dígitos del código del estudiante</span>
+          <input class="eh-input mt-1" type="number" min="0" max="10" name="digits" [(ngModel)]="orgForm.studentCodeDigits" [disabled]="!isAdmin" />
+          <span class="text-xs text-slate-500">Se rellenan en burbujas en la hoja de respuestas (0 = sin código).</span>
+        </label>
+        <label class="text-sm">
+          <span class="text-slate-700 font-medium">Nota máxima</span>
+          <input class="eh-input mt-1" type="number" min="1" max="100" step="0.5" name="maxScore" [(ngModel)]="orgForm.maxScore" [disabled]="!isAdmin" />
+        </label>
+        @if (isAdmin) {
+          <div class="sm:col-span-2 flex justify-end">
+            <button type="submit" [disabled]="isSaving" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+              Guardar
+            </button>
+          </div>
+        }
+      </form>
+    </section>
+  }
+
+  <!-- ================= Miembros (colegio, admin) ================= -->
+  @if (isSchool && isAdmin) {
+    <section class="eh-section">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">Docentes y roles</h2>
+      <p class="text-sm text-slate-500 mb-4">
+        <strong>Coordinador:</strong> administra grupos, estudiantes y todas las evaluaciones.
+        <strong>Docente:</strong> usa el banco institucional, crea evaluaciones y califica.
+      </p>
+
+      <form class="flex flex-col sm:flex-row gap-2 mb-2" (ngSubmit)="sendInvite()">
+        <input class="eh-input flex-1" type="email" name="invEmail" placeholder="docente@colegio.edu.co" [(ngModel)]="inviteForm.email" />
+        <select class="eh-input sm:w-44" name="invRole" [(ngModel)]="inviteForm.role">
+          @for (r of roles; track r) {
+            <option [value]="r">{{ ROLE_LABEL[r] }}</option>
+          }
+        </select>
+        <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800">
+          Invitar
+        </button>
+      </form>
+      <p class="text-xs text-slate-500 mb-4">
+        La persona debe entrar (o crear su cuenta) con ese mismo correo en
+        <a class="text-brand-700 underline cursor-pointer" (click)="copyRegisterUrl()">{{ registerUrl }}</a>
+        y aceptar la invitación en esta pantalla.
+      </p>
+
+      @if (invites.length > 0) {
+        <h3 class="text-sm font-semibold text-slate-700 mb-2">Invitaciones enviadas</h3>
+        <ul class="divide-y divide-slate-100 mb-4">
+          @for (inv of invites; track inv.email) {
+            <li class="flex items-center gap-3 py-2 text-sm">
+              <span class="flex-1 truncate">{{ inv.email }}</span>
+              <span class="text-slate-500">{{ ROLE_LABEL[inv.role] }}</span>
+              <span class="text-xs text-slate-400 hidden sm:inline">{{ formatDate(inv.createdAt) }}</span>
+              <button class="text-red-600 hover:underline" (click)="revokeInvite(inv)">Revocar</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <h3 class="text-sm font-semibold text-slate-700 mb-2">Miembros ({{ members.length }})</h3>
+      <ul class="divide-y divide-slate-100">
+        @for (m of members; track m.uid) {
+          <li class="flex items-center gap-3 py-2 text-sm">
+            <div class="flex-1 min-w-0">
+              <p class="truncate text-slate-900">{{ m.displayName || m.email }}</p>
+              @if (m.displayName) {
+                <p class="truncate text-xs text-slate-500">{{ m.email }}</p>
+              }
+            </div>
+            @if (m.uid === myUid) {
+              <span class="text-slate-500">{{ ROLE_LABEL[m.role] }} (tú)</span>
+            } @else {
+              <select class="eh-input w-40 py-1" [ngModel]="m.role" (ngModelChange)="changeRole(m, $event)" [name]="'role-' + m.uid">
+                @for (r of roles; track r) {
+                  <option [value]="r">{{ ROLE_LABEL[r] }}</option>
+                }
+              </select>
+              <button class="text-red-600 hover:underline" (click)="removeMember(m)">Quitar</button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- ================= Migración ================= -->
+  <section class="eh-section">
+    <h2 class="text-lg font-semibold text-slate-900 mb-1">Datos de la versión anterior</h2>
+    <p class="text-sm text-slate-500 mb-3">
+      Copia tu banco de preguntas, exámenes y calificaciones de la versión anterior de ExamHub a
+      esta organización. Puedes repetirlo sin duplicar datos.
+    </p>
+    <button
+      class="rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+      [disabled]="isMigrating"
+      (click)="migrateLegacy()"
+    >
+      {{ isMigrating ? "Copiando…" : "Copiar mis datos aquí" }}
+    </button>
+    @if (migrationStatus) {
+      <p class="text-xs text-slate-500 mt-2">{{ migrationStatus }}</p>
+    }
+  </section>
+</main>

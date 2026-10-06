@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Auth } from "@angular/fire/auth";
+import { TenantService } from "./tenant.service";
 import {
   Storage,
   ref,
@@ -22,7 +22,8 @@ export interface UploadedImage {
  * Gestiona la subida y borrado de imágenes a Firebase Storage.
  *
  * Estructura de paths:
- *   users/<uid>/questions/<questionId>/<timestamp>_<filename>
+ *   orgs/<orgId>/items/<questionId>/<timestamp>_<filename>
+ * (visible para todos los miembros de la organización; ver storage.rules)
  *
  * Validaciones:
  *   - Tipo: solo image/* (png, jpg, webp, gif).
@@ -42,7 +43,7 @@ export class ImageUploadService {
   /** 4 MB en bytes. */
   private readonly MAX_SIZE_BYTES = 4 * 1024 * 1024;
 
-  constructor(private storage: Storage, private auth: Auth) {}
+  constructor(private storage: Storage, private tenant: TenantService) {}
 
   /**
    * Valida un File contra las restricciones del servicio.
@@ -66,12 +67,7 @@ export class ImageUploadService {
     file: File,
     questionId: string
   ): Promise<UploadedImage> {
-    const uid = this.auth.currentUser?.uid;
-    if (!uid) {
-      throw new Error(
-        "No hay sesión activa. Iniciá sesión para subir imágenes."
-      );
-    }
+    const orgId = await this.tenant.requireOrgId();
 
     const validation = this.validate(file);
     if (validation) {
@@ -81,7 +77,7 @@ export class ImageUploadService {
     // Path único: timestamp + nombre saneado para evitar choques si
     // se sube otra imagen con el mismo nombre.
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `users/${uid}/questions/${questionId}/${Date.now()}_${safeName}`;
+    const path = `orgs/${orgId}/items/${questionId}/${Date.now()}_${safeName}`;
 
     const storageRef = ref(this.storage, path);
     await uploadBytes(storageRef, file, {

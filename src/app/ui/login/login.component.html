@@ -17,13 +17,13 @@
       <!-- Mensaje principal -->
       <div class="max-w-lg">
         <h1 class="text-4xl xl:text-5xl font-bold leading-tight mb-4">
-          Tu banco de preguntas,<br />
-          <span class="text-amber-400">organizado y listo</span><br />
-          para imprimir.
+          Simulacros tipo ICFES<br />
+          <span class="text-amber-400">para todo tu colegio</span>,<br />
+          calificados con el celular.
         </h1>
         <p class="text-indigo-100/90 text-lg leading-relaxed mb-8">
-          Crea preguntas con opciones, lecturas y fórmulas matemáticas.
-          Genera exámenes con hoja de respuestas estilo ICFES en segundos.
+          Banco institucional de preguntas, hojas de respuesta con lectura
+          óptica y reportes por prueba y competencia, como los del ICFES.
         </p>
 
         <!-- Features destacadas -->
@@ -34,7 +34,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
-            <span>Múltiples tipos: opción múltiple, V/F, abierta, numérica.</span>
+            <span>Preguntas alineadas a pruebas y competencias Saber 11.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/15">
@@ -42,7 +42,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
-            <span>Lecturas con preguntas asociadas, ideales para Sociales y Lenguaje.</span>
+            <span>Califica en papel: foto de la hoja y listo, sin internet estable.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/15">
@@ -50,7 +50,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
-            <span>Editor visual de fórmulas matemáticas integrado.</span>
+            <span>Reportes por grupo, competencia y análisis de cada pregunta.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/15">
@@ -58,7 +58,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </span>
-            <span>Layout en 1 o 2 columnas para ahorrar papel.</span>
+            <span>Asistente con IA para crear y revisar preguntas tipo ICFES.</span>
           </li>
         </ul>
       </div>
@@ -81,14 +81,33 @@
       <div class="bg-white rounded-2xl shadow-card border border-slate-200 p-8">
         <header class="mb-6">
           <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
-            Iniciar sesión
+            {{ mode === "login" ? "Iniciar sesión" : "Crear cuenta" }}
           </h2>
           <p class="text-sm text-slate-500 mt-1">
-            Accede con tu cuenta para abrir tu banco de preguntas.
+            @if (mode === "login") {
+              Accede con tu cuenta para abrir tu banco de preguntas.
+            } @else {
+              Gratis para docentes. Si tu colegio te invitó, usa el mismo correo de la invitación.
+            }
           </p>
         </header>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+          @if (mode === "register") {
+            <div>
+              <label for="displayName" class="block text-sm font-medium text-slate-700 mb-1">
+                Nombre completo
+              </label>
+              <input
+                id="displayName"
+                type="text"
+                placeholder="Ana María Rojas"
+                formControlName="displayName"
+                autocomplete="name"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none transition"
+              />
+            </div>
+          }
           <!-- Email -->
           <div>
             <label
@@ -117,6 +136,7 @@
               >
                 Contraseña
               </label>
+              @if (mode === "login") {
               <a
                 (click)="resetPassword()"
                 [class.pointer-events-none]="isSendingReset"
@@ -125,6 +145,7 @@
               >
                 {{ isSendingReset ? "Enviando…" : "¿La olvidaste?" }}
               </a>
+              }
             </div>
             <div class="relative">
               <input
@@ -132,7 +153,7 @@
                 [type]="showPassword ? 'text' : 'password'"
                 placeholder="••••••••"
                 formControlName="password"
-                autocomplete="current-password"
+                [attr.autocomplete]="mode === 'login' ? 'current-password' : 'new-password'"
                 class="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 text-slate-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none transition"
                 required
               />
@@ -174,7 +195,11 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
               </svg>
             }
-            {{ isSubmitting ? "Iniciando sesión…" : "Iniciar sesión" }}
+            @if (mode === "login") {
+              {{ isSubmitting ? "Iniciando sesión…" : "Iniciar sesión" }}
+            } @else {
+              {{ isSubmitting ? "Creando cuenta…" : "Crear cuenta" }}
+            }
             @if (!isSubmitting) {
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -184,8 +209,14 @@
         </form>
       </div>
 
-      <p class="text-center text-xs text-slate-500 mt-6">
-        ¿Eres nuevo? Pidele a tu administrador que cree tu cuenta.
+      <p class="text-center text-sm text-slate-500 mt-6">
+        @if (mode === "login") {
+          ¿Eres nuevo?
+          <a (click)="setMode('register')" class="text-brand-700 font-medium hover:underline cursor-pointer">Crea tu cuenta</a>
+        } @else {
+          ¿Ya tienes cuenta?
+          <a (click)="setMode('login')" class="text-brand-700 font-medium hover:underline cursor-pointer">Inicia sesión</a>
+        }
       </p>
     </div>
   </section>

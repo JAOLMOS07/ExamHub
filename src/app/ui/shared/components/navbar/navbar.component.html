@@ -32,7 +32,53 @@
           </svg>
           <span class="hidden sm:inline">Calificar</span>
         </a>
+        <a
+          routerLink="/students"
+          routerLinkActive="bg-slate-100 text-slate-900"
+          class="px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition inline-flex items-center gap-1.5"
+        >
+          <app-icon [icon]="'groups'" />
+          <span class="hidden md:inline">Estudiantes</span>
+        </a>
       </nav>
+
+      <!-- Organización activa -->
+      @if (activeOrg) {
+        <div class="dropdown dropdown-end">
+          <div
+            tabindex="0"
+            role="button"
+            class="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 cursor-pointer max-w-[220px]"
+            [title]="activeOrg.name"
+          >
+            <app-icon class="text-slate-400" [icon]="activeOrgId?.startsWith('p_') ? 'person' : 'school'" />
+            <span class="text-sm font-medium text-slate-700 truncate">{{ activeOrg.name }}</span>
+            @if (pendingInvites > 0) {
+              <span class="ml-1 h-2 w-2 rounded-full bg-red-500"></span>
+            }
+          </div>
+          <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-64 border border-slate-200">
+            <li class="menu-title"><span class="text-xs text-slate-400">Organizaciones</span></li>
+            @for (o of orgs; track o.id) {
+              <li>
+                <a (click)="switchOrg(o.id)" [class.font-semibold]="o.id === activeOrgId">
+                  <span class="truncate flex-1">{{ o.ref.name }}</span>
+                  <span class="text-xs text-slate-400">{{ ROLE_LABEL[o.ref.role] }}</span>
+                </a>
+              </li>
+            }
+            <li class="border-t border-slate-100 mt-1 pt-1">
+              <a routerLink="/org">
+                <app-icon [icon]="'apartment'" />
+                Institución
+                @if (pendingInvites > 0) {
+                  <span class="badge badge-sm bg-red-500 text-white border-0">{{ pendingInvites }}</span>
+                }
+              </a>
+            </li>
+          </ul>
+        </div>
+      }
 
       <!-- Usuario -->
       @if (user) {
@@ -75,6 +121,12 @@
               {{ user.email }}
             </li>
             <li class="border-t border-slate-100 mt-1 pt-1">
+              <a routerLink="/org" class="hover:bg-slate-100">
+                <app-icon [icon]="'apartment'" />
+                Institución
+              </a>
+            </li>
+            <li>
               <a routerLink="/preferences" class="hover:bg-slate-100">
                 <app-icon [icon]="'tune'" />
                 Preferencias

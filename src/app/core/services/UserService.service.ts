@@ -1,11 +1,13 @@
 import { Injectable } from "@angular/core";
 import {
   Auth,
+  createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   updatePassword,
+  updateProfile,
   User,
 } from "@angular/fire/auth";
 import { signOut } from "firebase/auth";
@@ -29,6 +31,19 @@ export class UserService {
         return result.user;
       }
     );
+  }
+
+  /**
+   * Crea una cuenta nueva. El espacio personal (organización de un
+   * miembro) lo crea TenantService al detectar la sesión.
+   */
+  public async register(email: string, password: string, displayName?: string) {
+    const result = await createUserWithEmailAndPassword(this.auth, email, password);
+    if (displayName?.trim()) {
+      await updateProfile(result.user, { displayName: displayName.trim() });
+    }
+    this.currentUserSubject.next(result.user);
+    return result.user;
   }
 
   public logout() {

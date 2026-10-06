@@ -1,0 +1,206 @@
+<app-navbar />
+
+<main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Estudiantes</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        El código de cada estudiante se rellena en la hoja de respuestas y permite identificarlo
+        automáticamente al calificar.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <select class="eh-input w-28" [(ngModel)]="year" name="year">
+        @for (y of years; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+      @if (canEdit) {
+        <button class="rounded-lg px-3 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 whitespace-nowrap" (click)="showImport = !showImport">
+          <app-icon [icon]="'upload_file'" /> Importar
+        </button>
+        <button class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 whitespace-nowrap" (click)="editStudent()">
+          <app-icon [icon]="'person_add'" /> Estudiante
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (!canEdit) {
+    <p class="mb-4 rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600">
+      Solo coordinadores y administradores pueden modificar grupos y estudiantes.
+    </p>
+  }
+
+  <!-- ================= Importación ================= -->
+  @if (showImport) {
+    <section class="eh-section mb-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-1">Importar listado</h2>
+      <p class="text-sm text-slate-500 mb-3">
+        Pega desde Excel o un CSV exportado de SIMAT. Columnas: <strong>código, nombre, grupo</strong>
+        (el grupo es opcional; si no existe se crea). El código debe tener solo dígitos.
+      </p>
+      <textarea
+        class="eh-input font-mono text-xs h-40"
+        [(ngModel)]="importText"
+        name="importText"
+        placeholder="codigo;nombre;grupo&#10;100245;Ana María Pérez Gómez;11-A&#10;100246;Luis Fernando Rojas;11-B"
+      ></textarea>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 mt-3">
+        <label class="text-sm flex items-center gap-2">
+          <span class="text-slate-600 whitespace-nowrap">Grupo para filas sin grupo:</span>
+          <select class="eh-input" [(ngModel)]="importDefaultGroupId" name="defGroup">
+            <option [ngValue]="null">Sin grupo</option>
+            @for (g of yearGroups; track g.id) {
+              <option [ngValue]="g.id">{{ g.name }}</option>
+            }
+          </select>
+        </label>
+        <div class="flex-1"></div>
+        <button class="rounded-lg px-3 py-2 text-sm border border-slate-300 hover:bg-slate-50" (click)="previewImport()">
+          Revisar
+        </button>
+        <button
+          class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50"
+          [disabled]="!importPreview?.rows?.length || isImporting"
+          (click)="runImport()"
+        >
+          {{ isImporting ? "Importando…" : "Importar " + (importPreview?.rows?.length ?? 0) }}
+        </button>
+      </div>
+      @if (importPreview) {
+        <div class="mt-3 text-sm">
+          <p class="text-emerald-700">{{ importPreview.rows.length }} filas válidas.</p>
+          @for (e of importPreview.errors.slice(0, 8); track $index) {
+            <p class="text-red-600 text-xs">{{ e }}</p>
+          }
+          @if (importPreview.errors.length > 8) {
+            <p class="text-red-600 text-xs">…y {{ importPreview.errors.length - 8 }} errores más.</p>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <div class="grid lg:grid-cols-[260px_1fr] gap-6">
+    <!-- ================= Grupos ================= -->
+    <aside class="eh-section h-fit">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-slate-900">Grupos {{ year }}</h2>
+        @if (canEdit) {
+          <button class="text-sm text-brand-700 hover:underline" (click)="editGroup()">+ Nuevo</button>
+        }
+      </div>
+      <ul class="space-y-1 text-sm">
+        <li>
+          <button class="w-full text-left rounded-lg px-2 py-1.5 hover:bg-slate-100" [class.bg-brand-50]="selectedGroupId === 'all'" (click)="selectedGroupId = 'all'">
+            Todos
+          </button>
+        </li>
+        @for (g of yearGroups; track g.id) {
+          <li class="flex items-center group">
+            <button class="flex-1 text-left rounded-lg px-2 py-1.5 hover:bg-slate-100" [class.bg-brand-50]="selectedGroupId === g.id" (click)="selectedGroupId = g.id">
+              {{ g.name }}
+              <span class="text-xs text-slate-400">({{ countIn(g.id) }})</span>
+              @if (g.shift) {
+                <span class="text-xs text-slate-400">· {{ g.shift }}</span>
+              }
+            </button>
+            @if (canEdit) {
+              <button class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700" title="Editar" (click)="editGroup(g)">
+                <app-icon [icon]="'edit'" />
+              </button>
+              <button class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600" title="Eliminar" (click)="deleteGroup(g)">
+                <app-icon [icon]="'delete'" />
+              </button>
+            }
+          </li>
+        }
+        <li>
+          <button class="w-full text-left rounded-lg px-2 py-1.5 hover:bg-slate-100 text-slate-500" [class.bg-brand-50]="selectedGroupId === 'none'" (click)="selectedGroupId = 'none'">
+            Sin grupo
+          </button>
+        </li>
+      </ul>
+
+      @if (showGroupForm) {
+        <form class="mt-4 space-y-2 border-t border-slate-100 pt-4" (ngSubmit)="saveGroup()">
+          <input class="eh-input" name="gname" placeholder="Nombre (ej. 11-A)" [(ngModel)]="groupForm.name" />
+          <input class="eh-input" name="ggrade" type="number" min="0" max="13" placeholder="Grado (ej. 11)" [(ngModel)]="groupForm.grade" />
+          <input class="eh-input" name="gshift" placeholder="Jornada (opcional)" [(ngModel)]="groupForm.shift" />
+          <input class="eh-input" name="gcampus" placeholder="Sede (opcional)" [(ngModel)]="groupForm.campus" />
+          <div class="flex justify-end gap-2">
+            <button type="button" class="text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100" (click)="showGroupForm = false">Cancelar</button>
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg font-semibold text-white bg-brand-700 hover:bg-brand-800">Guardar</button>
+          </div>
+        </form>
+      }
+    </aside>
+
+    <!-- ================= Estudiantes ================= -->
+    <section class="eh-section">
+      <div class="flex items-center gap-2 mb-3">
+        <input class="eh-input" placeholder="Buscar por nombre o código" [(ngModel)]="search" name="search" />
+        <span class="text-sm text-slate-500 whitespace-nowrap">{{ filteredStudents.length }} estudiantes</span>
+      </div>
+
+      @if (showStudentForm) {
+        <form class="grid sm:grid-cols-[140px_1fr_160px_auto] gap-2 mb-4 rounded-lg border border-slate-200 p-3" (ngSubmit)="saveStudent()">
+          <input class="eh-input" name="scode" inputmode="numeric" placeholder="Código" [(ngModel)]="studentForm.code" />
+          <input class="eh-input" name="sname" placeholder="Nombre completo" [(ngModel)]="studentForm.fullName" />
+          <select class="eh-input" name="sgroup" [(ngModel)]="studentForm.groupId">
+            <option [ngValue]="null">Sin grupo</option>
+            @for (g of yearGroups; track g.id) {
+              <option [ngValue]="g.id">{{ g.name }}</option>
+            }
+          </select>
+          <div class="flex gap-2">
+            <button type="button" class="text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100" (click)="showStudentForm = false">Cancelar</button>
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg font-semibold text-white bg-brand-700 hover:bg-brand-800">Guardar</button>
+          </div>
+        </form>
+      }
+
+      @if (filteredStudents.length === 0) {
+        <div class="eh-empty py-10">
+          <p class="font-medium text-slate-700">No hay estudiantes aquí todavía</p>
+          <p class="text-sm">Impórtalos desde Excel o agrégalos uno a uno.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th class="py-2 pr-3">Código</th>
+                <th class="py-2 pr-3">Nombre</th>
+                <th class="py-2 pr-3">Grupo</th>
+                @if (canEdit) {
+                  <th class="py-2 w-20"></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of filteredStudents; track s.id) {
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                  <td class="py-2 pr-3 font-mono">{{ s.code }}</td>
+                  <td class="py-2 pr-3">{{ s.fullName }}</td>
+                  <td class="py-2 pr-3 text-slate-500">{{ groupName(s.groupId) }}</td>
+                  @if (canEdit) {
+                    <td class="py-2 text-right whitespace-nowrap">
+                      <button class="text-slate-400 hover:text-slate-700" title="Editar" (click)="editStudent(s)">
+                        <app-icon [icon]="'edit'" />
+                      </button>
+                      <button class="text-slate-400 hover:text-red-600" title="Eliminar" (click)="deleteStudent(s)">
+                        <app-icon [icon]="'delete'" />
+                      </button>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+</main>

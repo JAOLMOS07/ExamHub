@@ -248,6 +248,27 @@ router-outlet + * {
   padding: 1.25rem;
 }
 
+/* Campo de formulario estándar (inputs y selects de las pantallas v2) */
+.eh-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.eh-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px #c7d2fe;
+}
+.eh-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+}
+
 /* Scroll horizontal sin barra visible — para breadcrumbs en móvil */
 .scrollbar-hide {
   -ms-overflow-style: none;

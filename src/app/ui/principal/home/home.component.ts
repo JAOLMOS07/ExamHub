@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy } from "@angular/core";
 import { SharedModule } from "../../shared/shared.module";
 import { FormsModule } from "@angular/forms";
 import { Document, Option } from "../../../core/models/folder.model";
@@ -16,9 +16,11 @@ import { ExamService } from "../../../core/services/ExamService.service";
 import { UserService } from "../../../core/services/UserService.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { ConfirmService } from "../../../core/services/confirm.service";
-import { filter, take } from "rxjs/operators";
-import { firstValueFrom } from "rxjs";
+import { distinctUntilChanged, filter, take } from "rxjs/operators";
+import { Subscription, firstValueFrom } from "rxjs";
 import { PreferencesService } from "../../../core/services/preferences.service";
+import { TenantService } from "../../../core/services/tenant.service";
+import { MigrationService } from "../../../core/services/migration.service";
 @Component({
   selector: "app-home",
   standalone: true,
@@ -31,7 +33,7 @@ import { PreferencesService } from "../../../core/services/preferences.service";
   templateUrl: "./home.component.html",
   styleUrls: ["./home.component.css"],
 })
-export class HomeComponent {
+export class HomeComponent implements OnDestroy {
   objectType = objectType;
   isLoading: boolean = false;
   showCurrentExam: boolean = false;
@@ -195,6 +197,13 @@ export class HomeComponent {
     this.filterDifficulty = null;
   }
 
+  /** Hay datos de la versión anterior sin migrar. */
+  showMigrationBanner = false;
+  isMigrating = false;
+  migrationStatus = "";
+
+  private documentsSub?: Subscription;
+
   /** Preferencias del usuario (materias y grados predefinidos). */
   prefSubjects: string[] = [];
   prefGrades: string[] = [];
@@ -206,22 +215,33 @@ export class HomeComponent {
     private userService: UserService,
     private preferencesService: PreferencesService,
     private toast: ToastService,
-    private confirm: ConfirmService
+    private confirm: ConfirmService,
+    private tenant: TenantService,
+    private migration: MigrationService
   ) {
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;
     });
 
-    // Esperamos a que Firebase confirme el usuario antes de pedirle a
-    // Firestore. Si HomeComponent se construye antes de que
-    // onAuthStateChanged emita (caso típico en navegación
-    // /login → /home), evitamos el error "no hay usuario autenticado".
-    this.userService.currentUser$
+    // El banco es de la organización activa: al cambiar de organización
+    // volvemos a la raíz y recargamos.
+    this.tenant.orgId$
       .pipe(
-        filter((user) => !!user),
-        take(1)
+        filter((orgId) => !!orgId),
+        distinctUntilChanged()
       )
-      .subscribe(() => this.loadDocuments());
+      .subscribe(() => {
+        this.currentPath = ["1"];
+        this.paths = ["Inicio"];
+        this.pathTypes = [objectType.FOLDER];
+        this.currentPassage = null;
+        this.loadDocuments();
+      });
+
+    this.migration
+      .needsMigration()
+      .then((needed) => (this.showMigrationBanner = needed))
+      .catch(() => (this.showMigrationBanner = false));
 
     // Suscribirse a las preferencias para enriquecer sugerencias.
     this.preferencesService.preferences$.subscribe((p) => {
@@ -231,12 +251,51 @@ export class HomeComponent {
   }
   loadDocuments(): void {
     this.isLoading = true;
-    this.examService.getDocuments(this.currentPath).subscribe((docs) => {
+    this.documentsSub?.unsubscribe();
+    this.documentsSub = this.examService.getDocuments(this.currentPath).subscribe((docs) => {
       this.documents = docs;
       this.isLoading = false;
     });
   }
   folderName: string = "";
+
+  ngOnDestroy(): void {
+    this.documentsSub?.unsubscribe();
+  }
+
+  /** Copia el banco y los exámenes de la versión anterior a la organización activa. */
+  async migrateLegacyData(): Promise<void> {
+    if (this.isMigrating) return;
+    this.isMigrating = true;
+    try {
+      const orgId = await this.tenant.requireOrgId();
+      const report = await this.migration.migrate(orgId, (msg) => (this.migrationStatus = msg));
+      this.toast.success(
+        `Migración lista: ${report.questions} preguntas, ${report.passages} lecturas, ${report.exams} exámenes y ${report.results} calificaciones.`,
+        "ExamHub",
+        6000
+      );
+      this.showMigrationBanner = false;
+      this.loadDocuments();
+    } catch (err) {
+      console.error("Error migrando:", err);
+      this.toast.danger("No pudimos completar la migración. Reintentá.", "ExamHub", 5000);
+    } finally {
+      this.isMigrating = false;
+      this.migrationStatus = "";
+    }
+  }
+
+  async dismissMigration(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: "¿Ocultar este aviso?",
+      message: "Tus datos anteriores no se borran. Podrás migrarlos más adelante desde Institución.",
+      confirmText: "Ocultar",
+    });
+    if (!ok) return;
+    await this.migration.dismiss();
+    this.showMigrationBanner = false;
+  }
 
   get currentFolders(): Document[] {
     let folders = this.documents;

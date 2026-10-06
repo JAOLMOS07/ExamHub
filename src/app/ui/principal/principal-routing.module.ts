@@ -41,6 +41,20 @@ const routes: Routes = [
           ),
         ...canActivate(() => redirectUnauthorizedTo(["/login"])),
       },
+      {
+        path: "org",
+        loadComponent: () =>
+          import("../org/org.component").then((m) => m.OrgComponent),
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+      },
+      {
+        path: "students",
+        loadComponent: () =>
+          import("../students/students.component").then(
+            (m) => m.StudentsComponent
+          ),
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+      },
       // Feature de calificación: lista, scanner y pantalla de grading.
       {
         path: GRADE.NAME,

@@ -1,113 +1,289 @@
 rules_version = '2';
 
 // ============================================================================
-// ExamHub — Firestore Security Rules
+// ExamHub — Firestore Security Rules (v2, multi-organización)
 // ----------------------------------------------------------------------------
-// Cubren TODAS las colecciones de la app: banco de preguntas, preferencias
-// y el feature de calificación. Default deny: lo que no matchea acá,
-// Firestore lo rechaza.
+// Fuente de verdad de permisos: /orgs/{orgId}/members/{uid}.role
+//   admin        administra la organización, miembros e invitaciones
+//   coordinator  administra grupos/estudiantes y cualquier evaluación
+//   teacher      banco y evaluaciones propias; califica cualquier evaluación
+//
+// Default deny: lo que no matchea acá, Firestore lo rechaza.
 //
 // Deploy:
-//   firebase deploy --only firestore:rules
+//   firebase deploy --only firestore:rules,firestore:indexes
+// Tests:
+//   npm run test:rules   (requiere el emulador de Firestore)
 // ============================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // -------- Helpers --------
-    function isSignedIn() {
+    function signedIn() {
       return request.auth != null;
     }
 
-    function isOwner(ownerField) {
-      return isSignedIn() && request.auth.uid == ownerField;
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function orgPath(orgId) {
+      return /databases/$(database)/documents/orgs/$(orgId);
+    }
+
+    function memberPath(orgId) {
+      return /databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid);
+    }
+
+    function isMember(orgId) {
+      return signedIn() && exists(memberPath(orgId));
+    }
+
+    function roleIn(orgId, roles) {
+      return isMember(orgId) && get(memberPath(orgId)).data.role in roles;
+    }
+
+    function isAdmin(orgId) {
+      return roleIn(orgId, ['admin']);
+    }
+
+    function isStaff(orgId) {
+      return roleIn(orgId, ['admin', 'coordinator']);
+    }
+
+    function validRole(r) {
+      return r in ['admin', 'coordinator', 'teacher'];
+    }
+
+    function unchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
     // ========================================================================
-    // MATCH:  /{uid}/{document=**}  — BANCO DE PREGUNTAS
-    //   El banco usa el UID del docente como nombre de la colección raíz:
-    //     /{uid}/{folderId}/content/{docId}/content/... (recursivo)
-    //   Solo el dueño (auth.uid == uid) puede leer/escribir su árbol.
-    //
-    //   Nota: este match con comodín NO abre /exams ni /users, porque la
-    //   condición exige que el nombre de la colección raíz sea exactamente
-    //   el uid del usuario autenticado, y además los excluimos explícito.
+    //  Perfil de usuario (caché de membresías para la UI; no otorga permisos)
     // ========================================================================
-    match /{uid}/{document=**} {
-      allow read, write: if isSignedIn()
-        && request.auth.uid == uid
-        && uid != 'exams'
-        && uid != 'users';
+    match /users/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+
+      match /preferences/{docId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
     }
 
     // ========================================================================
-    // MATCH:  /users/{uid}/preferences/{docId}
-    //   Preferencias del docente (firmas, encabezados de examen, etc.).
-    //   Solo el dueño puede leer/escribir.
+    //  Organizaciones
     // ========================================================================
-    match /users/{uid}/preferences/{docId} {
-      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    match /orgs/{orgId} {
+      allow read: if isMember(orgId);
+
+      // Espacio personal (id determinista p_<uid>) o colegio en prueba.
+      // Plan, cupos y créditos de IA los sube ExamHub desde el backend.
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.seats <= 100
+        && request.resource.data.aiCreditsMonthly <= 200
+        && (
+          (request.resource.data.kind == 'personal'
+            && request.resource.data.plan == 'personal'
+            && orgId == 'p_' + request.auth.uid)
+          || (request.resource.data.kind == 'school'
+            && request.resource.data.plan == 'trial')
+        );
+
+      allow update: if isAdmin(orgId)
+        && unchanged(['plan', 'seats', 'aiCreditsMonthly', 'kind', 'createdBy', 'createdAt']);
+
+      allow delete: if false;
+
+      // ---------------- Miembros ----------------
+      match /members/{memberId} {
+        allow read: if isMember(orgId)
+          || (signedIn() && request.auth.uid == memberId);
+
+        // Solo uno mismo se da de alta: como creador de la organización
+        // (en el mismo batch que la crea) o aceptando una invitación.
+        allow create: if signedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && (
+            (request.resource.data.role == 'admin'
+              && !exists(orgPath(orgId))
+              && getAfter(orgPath(orgId)).data.createdBy == request.auth.uid)
+            || (exists(/databases/$(database)/documents/orgs/$(orgId)/invites/$(myEmail()))
+              && get(/databases/$(database)/documents/orgs/$(orgId)/invites/$(myEmail())).data.role
+                == request.resource.data.role)
+          );
+
+        // El admin cambia roles de otros (nunca el propio: evita quedar
+        // sin administradores).
+        allow update: if isAdmin(orgId)
+          && memberId != request.auth.uid
+          && validRole(request.resource.data.role)
+          && unchanged(['uid', 'email', 'joinedAt']);
+
+        // El admin saca a otros; cualquiera que no sea admin puede irse.
+        allow delete: if (isAdmin(orgId) && memberId != request.auth.uid)
+          || (isMember(orgId) && memberId == request.auth.uid && !isAdmin(orgId));
+      }
+
+      // ---------------- Invitaciones ----------------
+      match /invites/{email} {
+        allow read: if isAdmin(orgId);
+        allow create, update: if isAdmin(orgId)
+          && email == request.resource.data.email
+          && email == request.resource.data.email.lower()
+          && request.resource.data.orgId == orgId
+          && validRole(request.resource.data.role);
+        allow delete: if isAdmin(orgId) || (signedIn() && email == myEmail());
+      }
+
+      // ---------------- Grupos y estudiantes ----------------
+      match /groups/{groupId} {
+        allow read: if isMember(orgId);
+        allow write: if isStaff(orgId);
+      }
+
+      match /students/{studentId} {
+        allow read: if isMember(orgId);
+        allow write: if isStaff(orgId);
+      }
+
+      // ---------------- Banco de preguntas ----------------
+      match /folders/{id} {
+        allow read: if isMember(orgId);
+        allow create: if isMember(orgId) && request.resource.data.createdBy == request.auth.uid;
+        allow update: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId))
+          && unchanged(['createdBy']);
+        allow delete: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId));
+      }
+
+      match /stimuli/{id} {
+        allow read: if isMember(orgId);
+        allow create: if isMember(orgId) && request.resource.data.createdBy == request.auth.uid;
+        allow update: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId))
+          && unchanged(['createdBy']);
+        allow delete: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId));
+      }
+
+      match /items/{id} {
+        allow read: if isMember(orgId);
+        allow create: if isMember(orgId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 20000;
+        allow update: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId))
+          && unchanged(['createdBy']);
+        allow delete: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId));
+      }
+
+      // ---------------- Evaluaciones ----------------
+      match /assessments/{aId} {
+        function assessmentPath() {
+          return /databases/$(database)/documents/orgs/$(orgId)/assessments/$(aId);
+        }
+
+        function canManageAssessment() {
+          return isStaff(orgId) || get(assessmentPath()).data.createdBy == request.auth.uid;
+        }
+
+        allow read: if isMember(orgId);
+
+        allow create: if isMember(orgId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.orgId == orgId
+          && request.resource.data.id == aId
+          && request.resource.data.totalQuestions is int
+          && request.resource.data.totalQuestions > 0
+          && request.resource.data.totalQuestions <= 400
+          && request.resource.data.forms.size() >= 1
+          && request.resource.data.forms.size() <= 30;
+
+        allow update: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId))
+          && unchanged(['createdBy', 'orgId', 'id']);
+
+        allow delete: if isMember(orgId)
+          && (resource.data.createdBy == request.auth.uid || isStaff(orgId));
+
+        // Snapshot inmutable de los ítems impresos.
+        match /items/{itemId} {
+          allow read: if isMember(orgId);
+          allow create: if isMember(orgId)
+            && getAfter(assessmentPath()).data.createdBy == request.auth.uid;
+          allow update: if false;
+          allow delete: if isMember(orgId) && canManageAssessment();
+        }
+
+        // Respuestas de estudiantes: cualquier docente de la institución
+        // puede calificar (simulacros aplicados por varios docentes).
+        match /responses/{rId} {
+          allow read: if isMember(orgId);
+          allow create: if isMember(orgId)
+            && request.resource.data.assessmentId == aId
+            && request.resource.data.answers is list
+            && request.resource.data.answers.size() <= 400
+            && request.resource.data.scannedBy == request.auth.uid
+            && request.resource.data.source in ['assisted', 'omr', 'mixed'];
+          allow update: if isMember(orgId) && unchanged(['assessmentId']);
+          allow delete: if isMember(orgId)
+            && (resource.data.scannedBy == request.auth.uid || canManageAssessment());
+        }
+      }
+
+      // ---------------- Solo backend (Cloud Functions) ----------------
+      match /usage/{period} {
+        allow read: if isMember(orgId);
+        allow write: if false;
+      }
+
+      match /stats/{doc=**} {
+        allow read: if isMember(orgId);
+        allow write: if false;
+      }
+    }
+
+    // Invitaciones pendientes del usuario (consulta collectionGroup).
+    // La consulta filtra por el campo `email`, así que la regla se
+    // evalúa sobre resource.data (no sobre el id del documento).
+    match /{path=**}/invites/{inviteId} {
+      allow read: if signedIn() && resource.data.email == myEmail();
     }
 
     // ========================================================================
-    // MATCH:  /exams/{examId}
-    //   Documento principal del examen calificable. El campo `ownerId` define
-    //   al docente dueño. Solo el dueño puede leerlo, modificarlo o borrarlo.
-    //
-    //   IMPORTANTE: el scanner del propio docente lee el examen desde acá tras
-    //   decodificar el QR. Como el scanner ya está logueado como el dueño,
-    //   no hace falta abrir lectura pública.
-    //
-    //   Si en el futuro quisiéramos permitir que un asistente del colegio
-    //   escanee exámenes del docente, habría que agregar un campo `editors:
-    //   [uid, uid]` y chequearlo en `allow read`.
+    //  LEGACY v1 — se conserva para que la versión anterior siga
+    //  funcionando y para que la migración pueda leer. Retirar cuando
+    //  todos los usuarios hayan migrado.
     // ========================================================================
+    match /{legacyUid}/{document=**} {
+      allow read, write: if signedIn()
+        && request.auth.uid == legacyUid
+        && !(legacyUid in ['exams', 'users', 'orgs']);
+    }
+
     match /exams/{examId} {
-
-      allow read: if isOwner(resource.data.ownerId);
-
-      // Al crear, el dueño DEBE ser el usuario autenticado y los campos
-      // críticos no se pueden mentir.
-      allow create: if isSignedIn()
+      allow read: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.id == examId
-        && request.resource.data.totalQuestions is int
-        && request.resource.data.totalQuestions > 0
-        && request.resource.data.totalQuestions <= 200
-        && request.resource.data.versions.size() >= 1
-        && request.resource.data.versions.size() <= 30;
-
-      // En update, el ownerId no se puede cambiar. El resto sí.
-      allow update: if isOwner(resource.data.ownerId)
+        && request.resource.data.id == examId;
+      allow update: if signedIn()
+        && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
 
-      allow delete: if isOwner(resource.data.ownerId);
-
-      // ----------------------------------------------------------------------
-      // MATCH:  /exams/{examId}/results/{resultId}
-      //   Resultados individuales de estudiantes. Heredan dueño del examen
-      //   padre. Como la regla no puede leer el padre directamente sin
-      //   `get(/...)`, usamos exists+get para validar.
-      // ----------------------------------------------------------------------
       match /results/{resultId} {
-
-        function parentExam() {
-          return get(/databases/$(database)/documents/exams/$(examId)).data;
-        }
-
         function isExamOwner() {
-          return isSignedIn() && parentExam().ownerId == request.auth.uid;
+          return signedIn()
+            && get(/databases/$(database)/documents/exams/$(examId)).data.ownerId == request.auth.uid;
         }
-
-        allow read: if isExamOwner();
-
-        allow create: if isExamOwner()
-          && request.resource.data.examId == examId
-          && request.resource.data.answers is list
-          && request.resource.data.source in ['assisted', 'omr', 'mixed'];
-
-        allow update: if isExamOwner();
-        allow delete: if isExamOwner();
+        allow read, update, delete: if isExamOwner();
+        allow create: if isExamOwner() && request.resource.data.examId == examId;
       }
     }
   }
