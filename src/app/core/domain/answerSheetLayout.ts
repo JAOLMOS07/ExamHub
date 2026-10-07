@@ -103,7 +103,17 @@ export interface SheetLayoutSpec {
   /** Máximo de letras del examen (define el ancho de columna). */
   letterCount: number;
   codeDigits: number;
+  /**
+   * Reparte las preguntas de cada página en columnas parejas (con al
+   * menos MIN_BALANCED_ROWS filas) en vez de llenar la primera columna
+   * hasta abajo. Las evaluaciones generadas antes de esta opción no la
+   * tienen y conservan su geometría (sus hojas impresas se siguen leyendo).
+   */
+  balanced?: boolean;
 }
+
+/** Filas mínimas por columna en el modo balanceado. */
+export const MIN_BALANCED_ROWS = 10;
 
 export function columnWidth(letterCount: number): number {
   return SHEET_V2.numberWidth + letterCount * SHEET_V2.bubbleStep + SHEET_V2.colGap;
@@ -137,11 +147,23 @@ export function computeSheetLayout(spec: SheetLayoutSpec): SheetLayout {
     const questions: SheetQuestion[] = [];
     const start = p * perPage;
     const end = Math.min(total, start + perPage);
+    const onPage = end - start;
+    const rowsUsed = spec.balanced
+      ? Math.min(
+          rowsPerColumn,
+          Math.ceil(onPage / Math.max(1, Math.min(columns, Math.ceil(onPage / MIN_BALANCED_ROWS))))
+        )
+      : rowsPerColumn;
+    // Columnas centradas en el ancho útil cuando no se usan todas.
+    const colsUsed = Math.ceil(onPage / rowsUsed);
+    const offsetX = spec.balanced
+      ? Math.max(0, (usable - (colsUsed * colW - SHEET_V2.colGap)) / 2)
+      : 0;
     for (let index = start; index < end; index++) {
       const local = index - start;
-      const col = Math.floor(local / rowsPerColumn);
-      const row = local % rowsPerColumn;
-      const colX = SHEET_V2.contentLeft + col * colW;
+      const col = Math.floor(local / rowsUsed);
+      const row = local % rowsUsed;
+      const colX = SHEET_V2.contentLeft + offsetX + col * colW;
       const cy = gridTop + row * SHEET_V2.rowStep;
       const letters = spec.questionLetters[index];
       questions.push({

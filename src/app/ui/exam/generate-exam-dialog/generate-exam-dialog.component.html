@@ -182,31 +182,11 @@
           2 columnas es ideal para exámenes con muchas preguntas cortas. El encabezado y la hoja de respuestas siempre van a ancho completo.
         </p>
 
-        <!-- Control extra: preguntas por columna (solo en 2 col) -->
         @if (examConfigForm.value.layout === '2col') {
-          <div class="mt-3 p-3 rounded-md bg-slate-50 border border-slate-200">
-            <label class="block text-xs font-medium text-slate-700 mb-1">
-              Preguntas por columna
-            </label>
-            <div class="flex items-center gap-2">
-              <input
-                type="number"
-                min="2"
-                max="15"
-                formControlName="questionsPerColumn"
-                class="w-20 input input-bordered input-sm"
-              />
-              <span class="text-xs text-slate-500">
-                = {{ examConfigForm.value.questionsPerColumn * 2 }} preguntas por página
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
-              <strong>Si las columnas quedan vacías abajo</strong>, subí este número
-              (probá 8 o 9 con preguntas cortas).
-              <strong>Si se desbordan</strong>, bajalo (4-5 con lecturas largas o
-              fórmulas).
-            </p>
-          </div>
+          <p class="mt-2 text-xs text-slate-500">
+            Las preguntas se reparten solas entre las dos columnas según lo que ocupa cada una;
+            las lecturas largas van a ancho completo y ninguna pregunta se parte entre páginas.
+          </p>
         }
       </div>
       <!-- Hoja de respuestas del maestro (clave) -->

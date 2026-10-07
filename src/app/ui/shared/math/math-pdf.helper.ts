@@ -21,7 +21,8 @@ const PAD_Y = 8;
 export async function textToPdfNode(
   text: string,
   maxWidth: number = 500,
-  fontSizePx: number = 14
+  fontSizePx: number = 14,
+  bold = false
 ): Promise<any> {
   const safeText = text ?? "";
   if (!safeText.includes("$")) {
@@ -74,10 +75,14 @@ export async function textToPdfNode(
               background: #fff;
               color: #000;
             }
+            /* Misma tipografía e interlineado que el texto de pdfmake
+               (Roboto, ~1.17) para que las preguntas con fórmulas no
+               se vean distintas al resto del cuadernillo. 1px = 1pt. */
             body {
-              font-family: 'Times New Roman', Times, serif;
+              font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
               font-size: ${fontSizePx}px;
-              line-height: 1.45;
+              font-weight: ${bold ? 600 : 400};
+              line-height: 1.3;
               padding: ${PAD_Y}px ${PAD_X}px;
               width: ${contentWidth}px;
               box-sizing: content-box;
@@ -144,10 +149,10 @@ export async function textToPdfNode(
     const trimmedCanvas = trimWhitespace(rawCanvas);
 
     const dataUrl = trimmedCanvas.toDataURL("image/png");
-    return {
-      image: dataUrl,
-      width: Math.min(contentWidth, trimmedCanvas.width / 2),
-    };
+    const width = Math.min(contentWidth, trimmedCanvas.width / 2);
+    // Alto en pt a ese ancho (lo usa el reparto en columnas).
+    const height = (trimmedCanvas.height / 2) * (width / (trimmedCanvas.width / 2));
+    return { image: dataUrl, width, height };
   } finally {
     document.body.removeChild(iframe);
   }

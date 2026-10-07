@@ -55,6 +55,8 @@ export interface SheetSpec {
   /** Dígitos del código del estudiante en burbujas (0 = sin código). */
   codeDigits: number;
   totalPages: number;
+  /** Columnas balanceadas en la hoja (ver answerSheetLayout.ts). */
+  balanced?: boolean;
 }
 
 export type AssessmentType = "quiz" | "simulacro";

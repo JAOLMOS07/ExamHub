@@ -53,6 +53,29 @@ describe("computeSheetLayout", () => {
     expect(layout.pages[0].questions[1].bubbles).toHaveLength(0);
   });
 
+  it("balanceado: 14 preguntas en 2 columnas de 7 y 40 en 4 de 10", () => {
+    const cols = (n: number) => {
+      const page = computeSheetLayout({ questionLetters: new Array(n).fill(4), letterCount: 4, codeDigits: 6, balanced: true }).pages[0];
+      const xs = new Set(page.questions.map((q) => q.numberPos.x));
+      const rows = new Set(page.questions.map((q) => q.numberPos.y));
+      return [xs.size, rows.size];
+    };
+    expect(cols(14)).toEqual([2, 7]);
+    expect(cols(40)).toEqual([4, 10]);
+  });
+
+  it("balanceado: las burbujas siguen dentro del área entre fiduciales", () => {
+    for (const n of [5, 14, 37, 130]) {
+      const layout = computeSheetLayout({ questionLetters: new Array(n).fill(5), letterCount: 5, codeDigits: 8, balanced: true });
+      for (const b of layout.pages.flatMap((p) => p.questions.flatMap((q) => q.bubbles))) {
+        expect(b.x - SHEET_V2.bubbleR).toBeGreaterThan(FIDUCIAL_POSITIONS.tl.x + SHEET_V2.fiducialSize);
+        expect(b.x + SHEET_V2.bubbleR).toBeLessThan(FIDUCIAL_POSITIONS.tr.x);
+      }
+      const all = layout.pages.flatMap((p) => p.questions.map((q) => q.index));
+      expect(all).toEqual(Array.from({ length: n }, (_, i) => i));
+    }
+  });
+
   it("el layout legacy reproduce la hoja v1", () => {
     const page = legacySheetPage(10, 4);
     expect(page.questions).toHaveLength(10);

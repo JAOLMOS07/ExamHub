@@ -334,6 +334,7 @@ export class GradingComponent implements OnInit, OnDestroy {
         questionLetters: this.form!.key.map((k) => this.bubbleCount(k)),
         letterCount: assessment.sheet.letterCount,
         codeDigits: assessment.sheet.codeDigits,
+        balanced: assessment.sheet.balanced === true,
       });
       const pageLayout = layout.pages[page - 1];
       if (!pageLayout) {

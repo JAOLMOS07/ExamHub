@@ -25,6 +25,12 @@ import { BuiltForm, buildForm, formLabel, hasBubbles } from "../../../core/domai
 import { computeSheetLayout, questionsPerPage } from "../../../core/domain/answerSheetLayout";
 import { getTest } from "../../../core/domain/taxonomy/saber11";
 import { buildAnswerSheetPage } from "./answer-sheet.pdf";
+import {
+  LINE_HEIGHT,
+  PackBlock,
+  estimateTextHeight,
+  packColumns,
+} from "../../../core/domain/columnPacking";
 
 @Component({
   selector: "app-generate-exam-dialog",
@@ -37,7 +43,6 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   exam: Document[] = [];
   amount: number = 1;
   amountQuestions: number = 1;
-  greaterAmount: number = 0;
 
   /** Plantillas guardadas en preferencias del usuario. */
   templates: ExamTemplate[] = [];
@@ -115,20 +120,6 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
       layout: ["1col", Validators.required],
       /** Espaciado vertical entre preguntas en pt. */
       questionSpacing: [10],
-      /**
-       * Cantidad de preguntas por columna (solo aplica a layout 2col).
-       * Determina el flujo: cada página tiene questionsPerColumn × 2
-       * preguntas. Default 7 (= 14 por página) que aprovecha bien el
-       * alto cuando son preguntas MCQ cortas. El profe baja a 4-5 si
-       * tiene lecturas largas o muchas opciones; sube a 8-10 si son
-       * preguntas tipo V/F muy cortas.
-       *
-       * LIMITACIÓN: este valor es por count, no por altura real (PDFmake
-       * no permite medir antes de renderizar). Si entran más de las
-       * indicadas, la columna queda con espacio en blanco; si entran
-       * menos, se desbordan a la siguiente página.
-       */
-      questionsPerColumn: [7],
       /**
        * Incluir o no la HOJA DE RESPUESTAS DEL MAESTRO (la clave con las
        * burbujas correctas rellenas) al final del PDF.
@@ -320,6 +311,7 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
           questionLetters: form.questions.map((q) => this.lettersFor(q)),
           letterCount,
           codeDigits,
+          balanced: true,
         })
       );
       const totalPages = Math.max(...layouts.map((l) => l.pages.length));
@@ -335,7 +327,7 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
               groupIds: config.groupIds ?? [],
               totalQuestions: Math.max(...built.map((b) => b.def.key.length)),
               letters: ALPHABET.slice(0, letterCount),
-              sheet: { version: 2, letterCount, codeDigits, totalPages },
+              sheet: { version: 2, letterCount, codeDigits, totalPages, balanced: true },
               forms: built.map((b) => b.def),
               maxScore: Number(config.maxScore) || DEFAULT_ORG_SETTINGS.maxScore,
               ...(config.subtitle ? { subject: config.subtitle } : {}),
@@ -377,7 +369,7 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
 
         const docDefinition: any = {
           margin: 10,
-          pageMargins: [40, 130, 40, 60],
+          pageMargins: this.bodyGeometry(config).pageMargins,
           header,
           content: [
             {
@@ -475,265 +467,183 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Construye el cuerpo del examen (sección de preguntas) para
-   * pdfmake. Maneja:
-   *   - Numeración manual continua (1, 2, 3...) saltando las lecturas.
-   *   - Bloques de lectura (PASSAGE) renderizados como contexto.
-   *   - Layout en 1 o 2 columnas según `config.layout`.
-   *   - Tipos de pregunta: opción múltiple, V/F, abierta, numérica.
+   * Cuerpo del cuadernillo para pdfmake.
    *
-   * Devuelve UN nodo pdfmake listo para meter en `content`.
+   *   - Numeración continua (las lecturas no se numeran).
+   *   - Simulacro: título de prueba ANTES de la lectura o pregunta que
+   *     abre cada prueba.
+   *   - 1 columna: flujo normal; ninguna pregunta se parte entre páginas.
+   *   - 2 columnas: reparto tipo periódico con alturas estimadas
+   *     (domain/columnPacking.ts); lecturas largas a ancho completo.
    */
-  private async buildExamBody(
-    exam: Document[],
-    config: any
-  ): Promise<any> {
+  private async buildExamBody(exam: Document[], config: any): Promise<any> {
     const is2Col = config.layout === "2col";
+    const geo = this.bodyGeometry(config);
+    const fullW = geo.usableWidth;
+    const colW = is2Col ? (fullW - geo.columnGap) / 2 : fullW;
+    const enuncFontSize = is2Col ? 10 : 11.5;
+    const optFontSize = is2Col ? 9.5 : 11;
+    const numberColWidth = is2Col ? 18 : 22;
+    const optionLetterWidth = is2Col ? 13 : 16;
+    const spacing = Number(config.questionSpacing ?? 10);
+    const stemW = colW - numberColWidth - 4;
+    const optW = stemW - optionLetterWidth - 2;
 
-    // Anchos máximos para textToPdfNode según layout. El espacio útil
-    // de A4 con margen 40 es ~515pt. Para 2 columnas con gap 20:
-    // (515 - 20) / 2 = ~247pt por columna; dejamos buffer.
-    const enuncMaxWidth = is2Col ? 215 : 460;
-    const optMaxWidth = is2Col ? 195 : 400;
-    const enuncFontSize = is2Col ? 10 : 12;
-    const optFontSize = is2Col ? 9 : 11;
-    const numberColWidth = is2Col ? 16 : 22;
-    const optionLetterWidth = is2Col ? 12 : 16;
-
-    // weightedBlocks: cada bloque viene con un "peso" estimado en
-    // unidades equivalentes a una pregunta MCQ simple (~1). Lo usamos
-    // al final para hacer greedy packing en 2 columnas (sin medir
-    // píxeles reales, pero compensando que las lecturas y abiertas
-    // ocupan mucho más que un MCQ corto).
-    const weightedBlocks: { node: any; weight: number }[] = [];
+    type Block = PackBlock & {
+      build: (wide: boolean) => any;
+    };
+    const blocks: Block[] = [];
     let qNumber = 0;
     let currentTest: string | undefined;
 
-    for (const item of exam) {
+    const sectionHeader = (testId: string): Block => {
+      const node = {
+        text: (getTest(testId)?.label ?? testId).toUpperCase(),
+        bold: true,
+        fontSize: enuncFontSize + 1,
+        color: "#3730a3",
+        margin: [0, 4, 0, 6],
+      };
+      return {
+        height: (enuncFontSize + 1) * LINE_HEIGHT + 10,
+        keepWithNext: true,
+        build: () => node,
+      };
+    };
+
+    for (let idx = 0; idx < exam.length; idx++) {
+      const item = exam[idx];
+
+      // Título de prueba antes del bloque que la abre (lectura o pregunta).
+      const blockTest =
+        item.type === objectType.PASSAGE
+          ? exam.slice(idx + 1).find((d) => d.type === objectType.QUESTION)?.test
+          : item.test;
+      if (config.simulacro && blockTest && blockTest !== currentTest) {
+        currentTest = blockTest;
+        blocks.push(sectionHeader(blockTest));
+      }
+
       if (item.type === objectType.PASSAGE) {
-        // Bloque de lectura: título + texto. Se imprime una sola vez,
-        // sin numerar, antes de sus preguntas asociadas.
-        const passageBody = await textToPdfNode(
-          item.passageText ?? "",
-          is2Col ? 235 : 480,
-          enuncFontSize
-        );
-        if (!passageBody.image) {
-          passageBody.style = undefined;
-          passageBody.color = "#1f2937";
-          passageBody.fontSize = enuncFontSize;
-          passageBody.alignment = "justify";
-        }
-        const node = {
-          stack: [
-            {
-              text: item.name,
-              bold: true,
-              fontSize: enuncFontSize + 1,
-              color: "#92400e",
-              margin: [0, 0, 0, 3],
-            },
-            passageBody,
-          ],
-          margin: [0, 8, 0, 6],
-          fillColor: "#fffbeb",
+        const text = item.passageText ?? "";
+        const titleH = (enuncFontSize + 1) * LINE_HEIGHT + 3;
+        const makeNode = async (width: number) => {
+          const body = await textToPdfNode(text, width, enuncFontSize);
+          if (!body.image) {
+            Object.assign(body, { color: "#1f2937", fontSize: enuncFontSize, alignment: "justify" });
+          }
+          return {
+            stack: [
+              { text: item.name, bold: true, fontSize: enuncFontSize + 1, color: "#92400e", margin: [0, 0, 0, 3] },
+              body,
+            ],
+            margin: [0, 4, 0, 8],
+          };
         };
-        // Peso de la lectura: simple, cuenta como 1 item igual que
-        // una pregunta. El profe ajusta `questionsPerColumn` si tiene
-        // lecturas largas que necesitan más holgura.
-        weightedBlocks.push({ node, weight: 1 });
+        const colNode = await makeNode(colW);
+        const wideNode = is2Col ? await makeNode(fullW) : colNode;
+        const bodyH = (node: any, width: number) =>
+          node.stack[1].image ? node.stack[1].height ?? 0 : estimateTextHeight(text, width, enuncFontSize);
+        blocks.push({
+          height: titleH + bodyH(colNode, colW) + 12,
+          fullHeight: titleH + bodyH(wideNode, fullW) + 12,
+          keepWithNext: true,
+          build: (wide) => (wide ? wideNode : colNode),
+        });
         continue;
       }
 
-      // ----- ES PREGUNTA -----
-      // Simulacro: encabezado de sección cada vez que cambia la prueba.
-      if (config.simulacro && item.test && item.test !== currentTest) {
-        currentTest = item.test;
-        weightedBlocks.push({
-          node: {
-            text: (getTest(item.test)?.label ?? item.test).toUpperCase(),
-            bold: true,
-            fontSize: enuncFontSize + 1,
-            color: "#3730a3",
-            margin: [0, 6, 0, 6],
-          },
-          weight: 1,
-        });
-      }
+      // ----- Pregunta -----
       qNumber++;
       const kind = getQuestionKind(item);
       const hasOptions =
-        kind === QuestionKind.MULTIPLE_CHOICE_SINGLE ||
-        kind === QuestionKind.TRUE_FALSE;
+        kind === QuestionKind.MULTIPLE_CHOICE_SINGLE || kind === QuestionKind.TRUE_FALSE;
 
-      if (hasOptions && item.options) {
-        if (item.options.length > this.greaterAmount) {
-          this.greaterAmount = item.options.length;
-        }
-      }
+      const stemNode = await textToPdfNode(item.name, stemW, enuncFontSize, true);
+      if (!stemNode.image) Object.assign(stemNode, { bold: true, fontSize: enuncFontSize });
+      let height = stemNode.image
+        ? stemNode.height ?? 0
+        : estimateTextHeight(item.name, stemW, enuncFontSize, true);
 
-      // Enunciado (puede contener fórmulas LaTeX)
-      const enunciadoNode = await textToPdfNode(
-        item.name,
-        enuncMaxWidth,
-        enuncFontSize
-      );
-      if (!enunciadoNode.image) {
-        enunciadoNode.bold = true;
-        enunciadoNode.fontSize = enuncFontSize;
-      }
-
-      // Opciones / respuesta según tipo
       const subBlocks: any[] = [];
-
       if (hasOptions && item.options) {
         for (let i = 0; i < item.options.length; i++) {
           const opt = item.options[i];
-          const letter = String.fromCharCode(65 + i);
-          const optNode = await textToPdfNode(
-            opt.content,
-            optMaxWidth,
-            optFontSize
-          );
-          if (!optNode.image) {
-            optNode.fontSize = optFontSize;
-          }
+          const optNode = await textToPdfNode(opt.content, optW, optFontSize);
+          if (!optNode.image) optNode.fontSize = optFontSize;
+          height +=
+            (optNode.image ? optNode.height ?? optFontSize * LINE_HEIGHT : estimateTextHeight(opt.content, optW, optFontSize)) + 2;
           subBlocks.push({
             columns: [
-              {
-                text: `${letter}.`,
-                width: optionLetterWidth,
-                fontSize: optFontSize,
-                margin: [0, 0, 0, 0],
-              },
+              { text: `${ALPHABET[i]}.`, width: optionLetterWidth, fontSize: optFontSize },
               optNode,
             ],
             columnGap: 2,
             margin: [0, 1, 0, 1],
           });
         }
+        height += 3;
       } else if (kind === QuestionKind.OPEN) {
-        // Menos líneas en 2cols (espacio más comprimido) para
-        // evitar que la pregunta desborde la columna y genere
-        // páginas fantasma. Si necesitan más espacio, el profe
-        // puede agregar varias preguntas abiertas o usar 1 columna.
         const lineCount = is2Col ? 4 : 6;
-        const dash = is2Col
-          ? "_____________________________________________________"
-          : "_______________________________________________________________________________________________";
         for (let i = 0; i < lineCount; i++) {
           subBlocks.push({
-            text: dash,
-            margin: [0, i === 0 ? 4 : 4, 0, 0],
-            fontSize: optFontSize,
+            canvas: [{ type: "line", x1: 0, y1: 0, x2: stemW, y2: 0, lineWidth: 0.5, lineColor: "#9ca3af" }],
+            margin: [0, 16, 0, 0],
           });
         }
+        height += lineCount * 16 + 4;
       } else if (kind === QuestionKind.NUMERIC) {
-        subBlocks.push({
-          text: "Respuesta: ______________________",
-          margin: [0, 4, 0, 0],
-          fontSize: optFontSize,
-        });
+        subBlocks.push({ text: "Respuesta: ______________________", margin: [0, 4, 0, 0], fontSize: optFontSize });
+        height += optFontSize * LINE_HEIGHT + 4;
       }
 
-      // Componer la pregunta: número a la izquierda, contenido a la derecha
       const node = {
         columns: [
-          {
-            text: `${qNumber}.`,
-            width: numberColWidth,
-            bold: true,
-            fontSize: enuncFontSize,
-          },
-          {
-            stack: [enunciadoNode, ...subBlocks],
-            width: "*",
-          },
+          { text: `${qNumber}.`, width: numberColWidth, bold: true, fontSize: enuncFontSize },
+          { stack: [{ ...stemNode, margin: [0, 0, 0, 3] }, ...subBlocks], width: "*" },
         ],
         columnGap: 4,
-        margin: [0, 0, 0, config.questionSpacing ?? 10],
+        margin: [0, 0, 0, spacing],
+        unbreakable: true,
       };
-
-      // Peso simple para el chunking por columnas:
-      //   - OPEN (4-6 líneas en blanco): cuenta como 2 (ocupa el espacio de 2 preguntas normales).
-      //   - Todo lo demás: cuenta como 1.
-      // Es deliberadamente simple — un cálculo más fino dejaba más
-      // espacios en blanco que este enfoque pragmático.
-      const weight = kind === QuestionKind.OPEN ? 2 : 1;
-      weightedBlocks.push({ node, weight });
+      blocks.push({ height: height + spacing + 3, build: () => node });
     }
 
-    // 1 columna: stack vertical normal
-    if (!is2Col) {
-      return { stack: weightedBlocks.map((b) => b.node) };
-    }
+    if (!is2Col) return { stack: blocks.map((b) => b.build(false)) };
 
-    // 2 columnas: chunks por PESO acumulado.
-    //
-    // Cada bloque tiene un peso (1 normalmente, 2 para preguntas
-    // abiertas porque ocupan ~doble por las líneas en blanco).
-    // Vamos llenando chunks hasta alcanzar `perPage` unidades de peso,
-    // y cerramos página. Esto evita el caso donde una pregunta abierta
-    // al final desborda la columna y genera una página fantasma con
-    // solo unas líneas.
-    //
-    // Dentro de cada chunk, dividimos por mitad de PESO (no de count)
-    // para que la columna izquierda y derecha queden parejas aunque
-    // haya una abierta entre medio.
-    const perColumn = Math.max(1, Number(config.questionsPerColumn) || 7);
-    const perPage = perColumn * 2;
-    const pages: any[] = [];
-
-    // Agrupar weightedBlocks en chunks por peso acumulado
-    const chunks: { node: any; weight: number }[][] = [];
-    let currentChunk: { node: any; weight: number }[] = [];
-    let currentChunkWeight = 0;
-
-    for (const wb of weightedBlocks) {
-      if (
-        currentChunkWeight + wb.weight > perPage &&
-        currentChunk.length > 0
-      ) {
-        chunks.push(currentChunk);
-        currentChunk = [];
-        currentChunkWeight = 0;
-      }
-      currentChunk.push(wb);
-      currentChunkWeight += wb.weight;
-    }
-    if (currentChunk.length > 0) chunks.push(currentChunk);
-
-    // Render de cada chunk como una página de 2 columnas
-    chunks.forEach((chunk, idx) => {
-      const totalWeight = chunk.reduce((sum, b) => sum + b.weight, 0);
-      const halfWeight = totalWeight / 2;
-
-      // Buscar el split point que mejor reparte peso entre izq y der
-      const leftBlocks: any[] = [];
-      const rightBlocks: any[] = [];
-      let leftSum = 0;
-      for (const wb of chunk) {
-        if (leftSum + wb.weight / 2 <= halfWeight) {
-          leftBlocks.push(wb.node);
-          leftSum += wb.weight;
-        } else {
-          rightBlocks.push(wb.node);
-        }
-      }
-
-      pages.push({
-        columns: [
-          { stack: leftBlocks, width: "*" },
-          { stack: rightBlocks, width: "*" },
-        ],
-        columnGap: 20,
-      });
-
-      if (idx < chunks.length - 1) {
-        pages.push({ text: "", pageBreak: "after" });
-      }
+    // Margen de seguridad: la estimación nunca es exacta.
+    const safety = 0.95;
+    const segments = packColumns(blocks, {
+      firstPageHeight: (geo.pageContentHeight - geo.firstPageOffset) * safety,
+      pageHeight: geo.pageContentHeight * safety,
     });
+    return {
+      stack: segments.map((seg) =>
+        seg.kind === "full"
+          ? { ...blocks[seg.index].build(true), ...(seg.newPage ? { pageBreak: "before" } : {}) }
+          : {
+              columns: [
+                { stack: seg.left.map((i) => blocks[i].build(false)), width: "*" },
+                { stack: seg.right.map((i) => blocks[i].build(false)), width: "*" },
+              ],
+              columnGap: geo.columnGap,
+              ...(seg.newPage ? { pageBreak: "before" } : {}),
+            }
+      ),
+    };
+  }
 
-    return { stack: pages };
+  /** Márgenes y alturas útiles del cuadernillo (A4 en pt). */
+  private bodyGeometry(config: any) {
+    const top = config.headerType === "image" ? 130 : 112;
+    const bottom = 50;
+    return {
+      pageMargins: [40, top, 40, bottom] as [number, number, number, number],
+      usableWidth: 595 - 80,
+      columnGap: 18,
+      pageContentHeight: 842 - top - bottom,
+      /** Línea de Nombre/Fecha/Grado al inicio de la primera página. */
+      firstPageOffset: 28,
+    };
   }
 }
