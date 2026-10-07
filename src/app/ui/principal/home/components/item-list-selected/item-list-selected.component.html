@@ -1,94 +1,68 @@
-@if(question){
-<div
-  class="collapse collapse-arrow bg-slate-100 hover:bg-slate-200 rounded-md my-1"
->
-  <input type="checkbox" name="accordion-question" />
-  <div class="collapse-title text-md font-medium whitespace-normal break-words">
-    <div class="flex justify-between items-center">
-      <span><math-text [content]="question.name"></math-text></span>
-    </div>
-  </div>
-  <div class="collapse-content">
-    <ul class="list-disc pl-5 mt-2 space-y-1">
-      @for (option of question.options; track $index) { @if(!showAnswer){
-      <li class="text-gray-700">
-        <math-text [content]="option.content"></math-text>
-      </li>
-      }@else {
-      <li
-        [ngClass]="{
-          'text-gray-700': option.correct,
-          'text-gray-300': !option.correct
-        }"
-      >
-        <math-text [content]="option.content"></math-text>
-      </li>
-      } }
-    </ul>
-    <div class="flex space-x-2 mt-2 w-full justify-between items-center">
-      <div>
-        <button
-          (mousedown)="onHoldStart()"
-          (mouseup)="onHoldEnd()"
-          (mouseleave)="onHoldEnd()"
-          (touchstart)="onHoldStart()"
-          (touchend)="onHoldEnd()"
-          class="btn btn-circle btn-primary btn-outline btn-sm"
-        >
-          @if(showAnswer){
-          <svg
-            class="w-6 h-6"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-width="2"
-              d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6Z"
-            />
-            <path
-              stroke="currentColor"
-              stroke-width="2"
-              d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-            />
-          </svg>
-
-          }@else {
-          <svg
-            class="w-6 h-6"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3.933 13.909A4.357 4.357 0 0 1 3 12c0-1 4-6 9-6m7.6 3.8A5.068 5.068 0 0 1 21 12c0 1-3 6-9 6-.314 0-.62-.014-.918-.04M5 19 19 5m-4 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-            />
-          </svg>
-
+@if (question) {
+  <div
+    class="group rounded-xl border bg-white transition"
+    [class.border-amber-200]="isPassage"
+    [class.bg-amber-50]="isPassage"
+    [class.border-slate-200]="!isPassage"
+    [class.hover:border-slate-300]="!isPassage"
+  >
+    <div class="flex items-start gap-2.5 p-2.5">
+      @if (isPassage) {
+        <span class="shrink-0 w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+          <app-icon [icon]="'menu_book'" />
+        </span>
+      } @else {
+        <span class="shrink-0 w-7 h-7 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center">
+          {{ index }}
+        </span>
+      }
+      <button type="button" class="flex-1 min-w-0 text-left" (click)="expanded = !expanded">
+        @if (isPassage) {
+          <span class="eh-overline !text-amber-700">Lectura</span>
+          <span class="block text-sm font-medium text-slate-900 truncate">{{ question.name }}</span>
+        } @else {
+          @if (testShort) {
+            <span class="eh-test mb-1" [ngClass]="'eh-test--' + question.test">{{ testShort }}</span>
           }
-        </button>
-      </div>
-      <div class="flex space-x-2 items-center text-center justify-center">
-        <div
-          (click)="removeQuestion(question)"
-          class="text-red-500 hover:text-red-600 cursor-pointer"
-        >
-          <app-icon [icon]="'delete_outline'" />
-        </div>
-      </div>
+          <span class="block text-sm text-slate-800 leading-snug" [class.line-clamp-2]="!expanded">
+            <math-text [content]="question.name"></math-text>
+          </span>
+        }
+      </button>
+      <button
+        type="button"
+        class="shrink-0 eh-icon-btn !w-7 !h-7 opacity-60 group-hover:opacity-100 hover:!text-red-600 hover:!bg-red-50"
+        (click)="removeQuestion(question)"
+        title="Quitar del examen"
+      >
+        <app-icon [icon]="'close'" />
+      </button>
     </div>
-  </div>
-</div>
 
+    @if (expanded) {
+      <div class="px-3 pb-3 pl-12">
+        @if (isPassage) {
+          <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line line-clamp-6">{{ question.passageText }}</p>
+        } @else if (question.options?.length) {
+          <ol class="space-y-1">
+            @for (option of question.options; track k; let k = $index) {
+              <li
+                class="flex gap-2 text-sm rounded-md px-2 py-1"
+                [class.bg-emerald-50]="showAnswer && option.correct"
+                [class.text-emerald-800]="showAnswer && option.correct"
+                [class.font-medium]="showAnswer && option.correct"
+                [class.text-slate-600]="!(showAnswer && option.correct)"
+              >
+                <span class="font-semibold">{{ ALPHABET[k] }}.</span>
+                <math-text [content]="option.content"></math-text>
+              </li>
+            }
+          </ol>
+          <button type="button" class="mt-2 text-xs font-medium text-brand-700 hover:underline" (click)="showAnswer = !showAnswer">
+            {{ showAnswer ? "Ocultar respuesta" : "Ver respuesta" }}
+          </button>
+        }
+      </div>
+    }
+  </div>
 }

@@ -66,7 +66,7 @@
         </span>
       }
       @if (alignmentLabel) {
-        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700" [title]="alignmentTitle">
+        <span class="eh-test" [ngClass]="'eh-test--' + question.test" [title]="alignmentTitle">
           {{ alignmentLabel }}
         </span>
       }

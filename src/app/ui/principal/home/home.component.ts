@@ -22,6 +22,7 @@ import { PreferencesService } from "../../../core/services/preferences.service";
 import { TenantService } from "../../../core/services/tenant.service";
 import { MigrationService } from "../../../core/services/migration.service";
 import { AiService } from "../../../core/services/ai.service";
+import { SABER11_TESTS } from "../../../core/domain/taxonomy/saber11";
 import { AiGenerateDialogComponent } from "../../exam/ai-generate-dialog/ai-generate-dialog.component";
 @Component({
   selector: "app-home",
@@ -207,6 +208,24 @@ export class HomeComponent implements OnDestroy {
   private documentsSub?: Subscription;
 
   aiEnabled = false;
+
+  /** Preguntas (sin lecturas) del examen en curso. */
+  get selectedQuestionCount(): number {
+    return this.questionsSelected.filter((d) => d.type === objectType.QUESTION).length;
+  }
+
+  /** Conteo por prueba ICFES del examen en curso (bandeja y panel). */
+  get selectedByTest(): { id: string; label: string; count: number }[] {
+    const counts = new Map<string, number>();
+    for (const d of this.questionsSelected) {
+      if (d.type === objectType.QUESTION && d.test) counts.set(d.test, (counts.get(d.test) ?? 0) + 1);
+    }
+    return SABER11_TESTS.filter((t) => counts.has(t.id)).map((t) => ({
+      id: t.id,
+      label: t.shortLabel,
+      count: counts.get(t.id)!,
+    }));
+  }
   isAligning = false;
 
   /** Preguntas del nivel actual sin prueba ICFES asignada. */

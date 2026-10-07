@@ -1,158 +1,132 @@
-<header class="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="flex h-14 items-center justify-between gap-4">
-      <!-- Logo -->
-      <a routerLink="/home" class="flex items-center gap-2 group">
-        <eh-logo [size]="30" />
-      </a>
-
-      <!-- Acceso rápido a las secciones principales.
-           En mobile: solo iconos (compacto).
-           En desktop (sm+): icono + texto. -->
-      <nav class="flex flex-1 items-center justify-center gap-1">
-        <a
-          routerLink="/home"
-          routerLinkActive="bg-slate-100 text-slate-900"
-          [routerLinkActiveOptions]="{ exact: false }"
-          class="px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition inline-flex items-center gap-1.5"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
-          </svg>
-          <span class="hidden sm:inline">Banco</span>
-        </a>
-        <a
-          routerLink="/grade"
-          routerLinkActive="bg-slate-100 text-slate-900"
-          class="px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition inline-flex items-center gap-1.5"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l3-3h4l2-2h4l2 2h4l3 3v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <circle cx="12" cy="14" r="4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <span class="hidden sm:inline">Calificar</span>
-        </a>
-        <a
-          routerLink="/students"
-          routerLinkActive="bg-slate-100 text-slate-900"
-          class="px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition inline-flex items-center gap-1.5"
-        >
-          <app-icon [icon]="'groups'" />
-          <span class="hidden md:inline">Estudiantes</span>
-        </a>
-      </nav>
-
-      <!-- Organización activa -->
-      @if (activeOrg) {
-        <div class="dropdown dropdown-end">
-          <div
-            tabindex="0"
-            role="button"
-            class="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 cursor-pointer max-w-[220px]"
-            [title]="activeOrg.name"
-          >
-            <app-icon class="text-slate-400" [icon]="activeOrgId?.startsWith('p_') ? 'person' : 'school'" />
-            <span class="text-sm font-medium text-slate-700 truncate">{{ activeOrg.name }}</span>
-            @if (pendingInvites > 0) {
-              <span class="ml-1 h-2 w-2 rounded-full bg-red-500"></span>
-            }
-          </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-64 border border-slate-200">
-            <li class="menu-title"><span class="text-xs text-slate-400">Organizaciones</span></li>
-            @for (o of orgs; track o.id) {
-              <li>
-                <a (click)="switchOrg(o.id)" [class.font-semibold]="o.id === activeOrgId">
-                  <span class="truncate flex-1">{{ o.ref.name }}</span>
-                  <span class="text-xs text-slate-400">{{ ROLE_LABEL[o.ref.role] }}</span>
-                </a>
-              </li>
-            }
-            <li class="border-t border-slate-100 mt-1 pt-1">
-              <a routerLink="/org">
-                <app-icon [icon]="'apartment'" />
-                Institución
-                @if (pendingInvites > 0) {
-                  <span class="badge badge-sm bg-red-500 text-white border-0">{{ pendingInvites }}</span>
-                }
-              </a>
-            </li>
-          </ul>
-        </div>
-      }
-
-      <!-- Usuario -->
-      @if (user) {
-        <div class="dropdown dropdown-end">
-          <div
-            tabindex="0"
-            role="button"
-            class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-          >
-            <div
-              class="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-semibold flex items-center justify-center"
-            >
-              {{ initials }}
-            </div>
-            <span class="hidden sm:inline text-sm font-medium text-slate-700 max-w-[200px] truncate">
-              {{ user.email }}
-            </span>
-            <svg
-              class="hidden sm:inline w-4 h-4 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m19 9-7 7-7-7"
-              />
-            </svg>
-          </div>
-          <ul
-            tabindex="0"
-            class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-56 border border-slate-200"
-          >
-            <li class="menu-title">
-              <span class="text-xs text-slate-400">Sesión activa</span>
-            </li>
-            <li class="px-3 py-1 text-xs text-slate-500 truncate">
-              {{ user.email }}
-            </li>
-            <li class="border-t border-slate-100 mt-1 pt-1">
-              <a routerLink="/org" class="hover:bg-slate-100">
-                <app-icon [icon]="'apartment'" />
-                Institución
-              </a>
-            </li>
-            <li>
-              <a routerLink="/preferences" class="hover:bg-slate-100">
-                <app-icon [icon]="'tune'" />
-                Preferencias
-              </a>
-            </li>
-            <li>
-              <a (click)="openChangePassword()" class="hover:bg-slate-100 cursor-pointer">
-                <app-icon [icon]="'lock'" />
-                Cambiar contraseña
-              </a>
-            </li>
-            <li>
-              <a (click)="logout()" class="text-red-600 hover:bg-red-50">
-                <app-icon [icon]="'logout'" />
-                Cerrar sesión
-              </a>
-            </li>
-          </ul>
-        </div>
-      }
-    </div>
-  </div>
+<!-- ============ Barra superior (móvil y tablet) ============ -->
+<header class="lg:hidden sticky top-0 z-30 h-14 px-4 flex items-center gap-3 bg-white/90 backdrop-blur border-b border-slate-200">
+  <button type="button" class="eh-icon-btn -ml-2" (click)="mobileOpen = true" aria-label="Abrir menú">
+    <app-icon [icon]="'menu'" />
+  </button>
+  <a routerLink="/home" class="flex items-center"><eh-logo [size]="26" /></a>
+  <span class="flex-1 min-w-0 text-right text-xs font-medium text-slate-500 truncate">{{ activeOrgName }}</span>
 </header>
 
-<!-- Modal de cambio de contraseña (controlado desde el dropdown) -->
-<app-change-password
-  *ngIf="showChangePassword"
-  (close)="closeChangePassword()"
-></app-change-password>
+<!-- Fondo del cajón en móvil -->
+@if (mobileOpen) {
+  <div class="lg:hidden fixed inset-0 z-40 bg-slate-900/40" (click)="closeMenus()"></div>
+}
+
+<!-- ============ Barra lateral ============ -->
+<aside
+  class="fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white border-r border-slate-200 transition-transform duration-200 lg:translate-x-0"
+  [class.-translate-x-full]="!mobileOpen"
+  [class.translate-x-0]="mobileOpen"
+>
+  <div class="h-16 px-5 flex items-center justify-between">
+    <a routerLink="/home"><eh-logo [size]="28" /></a>
+    <button type="button" class="lg:hidden eh-icon-btn" (click)="closeMenus()" aria-label="Cerrar menú">
+      <app-icon [icon]="'close'" />
+    </button>
+  </div>
+
+  <!-- Institución activa -->
+  <div class="px-3 relative">
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-left hover:border-slate-300 hover:bg-slate-50 transition"
+      (click)="orgMenuOpen = !orgMenuOpen; userMenuOpen = false"
+    >
+      <span
+        class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+        [class.bg-brand-50]="!isPersonal"
+        [class.text-brand-700]="!isPersonal"
+        [class.bg-slate-100]="isPersonal"
+        [class.text-slate-600]="isPersonal"
+      >
+        <app-icon [icon]="isPersonal ? 'person' : 'school'" />
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-sm font-semibold text-slate-900 truncate">{{ activeOrgName || "…" }}</span>
+        <span class="block text-xs text-slate-500 truncate">
+          {{ org ? PLAN_LABEL[org.plan] : "" }}{{ role ? " · " + ROLE_LABEL[role] : "" }}
+        </span>
+      </span>
+      @if (pendingInvites > 0) {
+        <span class="w-2 h-2 rounded-full bg-red-500" title="Tienes invitaciones pendientes"></span>
+      }
+      <app-icon class="text-slate-400" [icon]="'unfold_more'" />
+    </button>
+
+    @if (orgMenuOpen) {
+      <div class="absolute left-3 right-3 mt-1 z-10 rounded-xl border border-slate-200 bg-white shadow-elevated p-1.5">
+        <p class="eh-overline px-2 pt-1 pb-1.5">Cambiar de institución</p>
+        @for (o of orgs; track o.id) {
+          <button
+            type="button"
+            class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-slate-50"
+            (click)="switchOrg(o.id)"
+          >
+            <app-icon class="text-slate-400" [icon]="o.id.startsWith('p_') ? 'person' : 'school'" />
+            <span class="flex-1 min-w-0 truncate" [class.font-semibold]="o.id === activeOrgId">{{ o.ref.name }}</span>
+            @if (o.id === activeOrgId) {
+              <app-icon class="text-brand-600" [icon]="'check'" />
+            }
+          </button>
+        }
+        <a
+          routerLink="/org"
+          class="mt-1 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-brand-700 hover:bg-brand-50 border-t border-slate-100"
+        >
+          <app-icon [icon]="'add_business'" /> Crear colegio o aceptar invitación
+          @if (pendingInvites > 0) {
+            <span class="ml-auto text-[10px] font-bold rounded-full bg-red-500 text-white px-1.5">{{ pendingInvites }}</span>
+          }
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- Navegación -->
+  <nav class="mt-5 px-3 flex-1 space-y-0.5 overflow-y-auto">
+    <p class="eh-overline px-3 mb-1.5">Menú</p>
+    @for (item of nav; track item.link) {
+      <a
+        [routerLink]="item.link"
+        routerLinkActive="eh-nav-active"
+        class="eh-nav-link"
+      >
+        <app-icon [icon]="item.icon" />
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <!-- Usuario -->
+  <div class="p-3 border-t border-slate-100 relative">
+    @if (userMenuOpen) {
+      <div class="absolute left-3 right-3 bottom-full mb-1 z-10 rounded-xl border border-slate-200 bg-white shadow-elevated p-1.5">
+        <a routerLink="/preferences" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+          <app-icon [icon]="'tune'" /> Preferencias
+        </a>
+        <button type="button" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50" (click)="openChangePassword()">
+          <app-icon [icon]="'lock'" /> Cambiar contraseña
+        </button>
+        <button type="button" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50" (click)="logout()">
+          <app-icon [icon]="'logout'" /> Cerrar sesión
+        </button>
+      </div>
+    }
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 transition text-left"
+      (click)="userMenuOpen = !userMenuOpen; orgMenuOpen = false"
+    >
+      <span class="shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-semibold flex items-center justify-center">
+        {{ initials }}
+      </span>
+      <span class="flex-1 min-w-0">
+        <span class="block text-sm font-medium text-slate-900 truncate">{{ displayName }}</span>
+        <span class="block text-xs text-slate-500 truncate">{{ user?.email }}</span>
+      </span>
+      <app-icon class="text-slate-400" [icon]="'more_vert'" />
+    </button>
+  </div>
+</aside>
+
+<app-change-password *ngIf="showChangePassword" (close)="closeChangePassword()"></app-change-password>

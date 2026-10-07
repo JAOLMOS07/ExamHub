@@ -76,9 +76,9 @@
     <!-- Título grande + acciones -->
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
           @if (paths.length === 1) {
-            Mi banco de preguntas
+            Banco de preguntas
           } @else {
             {{ paths[paths.length - 1] }}
           }
@@ -87,7 +87,7 @@
           @if (isInsidePassage) {
             Estás dentro de una <span class="font-medium text-amber-700">lectura</span>. Las preguntas que crees acá quedan asociadas a su contexto.
           } @else if (paths.length === 1) {
-            Organiza tu material en carpetas, lecturas y preguntas. Después armás exámenes a medida.
+            El banco de tu institución: organiza preguntas y lecturas en carpetas y arma exámenes con ellas.
           } @else {
             Carpeta dentro de tu banco.
           }
@@ -123,7 +123,7 @@
         <div
           tabindex="0"
           role="button"
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium shadow-sm hover:shadow-md transition cursor-pointer bg-brand-700 hover:bg-brand-800"
+          class="eh-btn eh-btn--primary cursor-pointer"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7 7V5" />
@@ -175,11 +175,11 @@
           <li class="border-t border-slate-100 mt-1 pt-1" (click)="openImportDialog()">
             <a class="flex items-center gap-3 py-2">
               <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <app-icon [icon]="'auto_awesome'" />
+                <app-icon [icon]="'upload_file'" />
               </span>
               <div>
-                <div class="font-medium text-slate-900">Importar con IA</div>
-                <div class="text-xs text-slate-500">Cargá tu banco existente con tu IA preferida</div>
+                <div class="font-medium text-slate-900">Importar preguntas</div>
+                <div class="text-xs text-slate-500">Pega el JSON que preparaste con ChatGPT u otra IA</div>
               </div>
             </a>
           </li>
@@ -394,13 +394,7 @@
   <!-- ====================== LAYOUT PRINCIPAL ====================== -->
   <div class="flex gap-4 items-start">
     <!-- Columna izquierda: banco -->
-    <section
-      [ngClass]="{
-        'hidden lg:block': showCurrentExam,
-        'lg:flex-1': showCurrentExam,
-        'flex-1': !showCurrentExam
-      }"
-    >
+    <section class="flex-1 min-w-0" [class.pb-24]="questionsSelected.length > 0">
       <!-- Loading: skeletons que imitan el layout real (carpetas + preguntas) -->
       @if (isLoading) {
         <div class="space-y-6" aria-busy="true" aria-label="Cargando contenido">
@@ -493,11 +487,7 @@
               <span class="text-slate-400 normal-case font-normal">· {{ filteredFolderCount }}</span>
             </h2>
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
-              [ngClass]="{
-                'xl:grid-cols-4': !showCurrentExam,
-                'xl:grid-cols-3': showCurrentExam
-              }"
+              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3"
             >
               @for (folder of filteredDocuments; track folder.id) { @if (folder.type === objectType.FOLDER) {
                 <article
@@ -566,11 +556,7 @@
               <span class="text-amber-700/60 normal-case font-normal">· {{ filteredPassageCount }}</span>
             </h2>
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 gap-3"
-              [ngClass]="{
-                'xl:grid-cols-3': !showCurrentExam,
-                'xl:grid-cols-2': showCurrentExam
-              }"
+              class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3"
             >
               @for (passage of filteredDocuments; track passage.id) { @if (passage.type === objectType.PASSAGE) {
                 <article
@@ -641,11 +627,7 @@
               <span class="text-indigo-700/60 normal-case font-normal">· {{ filteredQuestionCount }}</span>
             </h2>
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
-              [ngClass]="{
-                'xl:grid-cols-4': !showCurrentExam,
-                'xl:grid-cols-3': showCurrentExam
-              }"
+              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3"
             >
               @for (question of filteredDocuments; track question.id) { @if (question.type === objectType.QUESTION) {
                 <app-item-question
@@ -662,121 +644,77 @@
       }
     </section>
 
-    <!-- ====================== TOGGLE EXAMEN EN CURSO ====================== -->
-    <button
-      (click)="showCurrentExam = !showCurrentExam"
-      class="hidden lg:flex shrink-0 flex-col items-center gap-2 px-2 py-4 rounded-lg hover:bg-slate-100 transition group"
-      title="Mostrar/ocultar examen en curso"
-    >
-      <div class="relative">
-        <svg class="w-5 h-5 text-slate-500 group-hover:text-slate-900 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          @if (!showCurrentExam) {
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          } @else {
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-          }
-        </svg>
-        @if (!showCurrentExam && questionsSelected.length > 0) {
-          <span
-            class="absolute -top-2 -right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center bg-accent-600"
-          >
-            {{ questionsSelected.length }}
-          </span>
-        }
-      </div>
-      @if (!showCurrentExam) {
-        <span class="text-xs font-medium text-slate-500 group-hover:text-slate-900" style="writing-mode: vertical-rl; text-orientation: mixed;">
-          Examen en curso
-        </span>
-      }
-    </button>
-
-    <!-- ====================== PANEL DEL EXAMEN EN CURSO ====================== -->
-    <!--
-      En MÓVIL (lg-): el panel es un overlay fullscreen (`fixed inset-0`)
-      que aparece sobre el contenido cuando showCurrentExam es true.
-      En DESKTOP (lg+): es una columna lateral pegada (`sticky top-20`)
-      que coexiste con la grilla del banco.
-    -->
-    <aside
-      class="transition-all"
-      [ngClass]="{
-        hidden: !showCurrentExam,
-        'fixed inset-0 z-40 bg-slate-50 overflow-y-auto p-4 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:w-[360px] xl:w-[400px] shrink-0 lg:p-0 lg:overflow-visible': showCurrentExam
-      }"
-    >
-      <div class="eh-section lg:sticky lg:top-20">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-              <app-icon [icon]="'assignment'" />
-            </div>
-            <div>
-              <h2 class="font-semibold text-slate-900 text-sm">Examen en curso</h2>
-              <p class="text-xs text-slate-500">
-                {{ questionsSelected.length }} {{ questionsSelected.length === 1 ? 'pregunta' : 'preguntas' }} seleccionada(s)
-              </p>
-            </div>
-          </div>
-          <button
-            class="lg:hidden text-slate-400 hover:text-slate-700"
-            (click)="showCurrentExam = false"
-          >
-            <app-icon [icon]="'close'" />
-          </button>
-        </div>
-
-
-        <!-- Acciones -->
-        <div class="flex gap-2 mb-4">
-          <button
-            [disabled]="questionsSelected.length < 1"
-            (click)="showModalGenerateExam()"
-            class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white font-medium text-sm transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-brand-700 hover:bg-brand-800"
-          >
-            <app-icon [icon]="'picture_as_pdf'" />
-            Generar examen
-          </button>
-          <button
-            [disabled]="questionsSelected.length < 1"
-            class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 text-slate-500 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            (click)="confirmDiscardExam()"
-            title="Descartar examen actual"
-          >
-            <app-icon [icon]="'delete_outline'" />
-          </button>
-        </div>
-        <!-- Lista de preguntas -->
-        <div class="pt-3 border-t border-slate-200" >
-          <question-list />
-        </div>
-
-      </div>
-    </aside>
   </div>
 
-  <!--
-    ====================== FAB MÓVIL ======================
-    Botón flotante que aparece solo en móvil cuando el panel del
-    examen está cerrado y hay preguntas seleccionadas. Click abre el
-    panel como overlay (gracias a showCurrentExam=true + las clases
-    `fixed inset-0` del aside).
-  -->
-  @if (!showCurrentExam && questionsSelected.length > 0) {
-    <button
-      type="button"
-      (click)="showCurrentExam = true"
-      class="lg:hidden fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 px-4 py-3 rounded-full text-white font-semibold shadow-lg hover:shadow-xl transition active:scale-95 bg-brand-700 hover:bg-brand-800"
-      aria-label="Abrir examen en curso"
-    >
-      <app-icon [icon]="'assignment'" />
-      <span class="text-sm">Examen</span>
-      <span
-        class="inline-flex items-center justify-center min-w-[1.4rem] h-[1.4rem] px-1.5 rounded-full text-[11px] font-bold bg-accent-600 text-white"
-      >
-        {{ questionsSelected.length }}
-      </span>
-    </button>
+  <!-- ====================== BANDEJA DEL EXAMEN ====================== -->
+  @if (questionsSelected.length > 0 && !showCurrentExam) {
+    <div class="fixed bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] z-30 flex justify-center pointer-events-none">
+      <div class="pointer-events-auto w-full max-w-3xl flex items-center gap-3 rounded-2xl bg-slate-900 text-white shadow-elevated px-4 py-3">
+        <span class="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-white/10 items-center justify-center">
+          <app-icon [icon]="'assignment'" />
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold">
+            Examen en curso · {{ selectedQuestionCount }} {{ selectedQuestionCount === 1 ? "pregunta" : "preguntas" }}
+          </p>
+          @if (selectedByTest.length > 0) {
+            <p class="text-xs text-white/70 truncate">
+              @for (t of selectedByTest; track t.id; let last = $last) {
+                {{ t.label }} {{ t.count }}{{ last ? "" : " · " }}
+              }
+            </p>
+          }
+        </div>
+        <button type="button" class="eh-btn !h-9 bg-white/10 hover:bg-white/20 text-white" (click)="showCurrentExam = true">
+          Revisar
+        </button>
+        <button type="button" class="eh-btn !h-9 bg-white text-slate-900 hover:bg-slate-100" (click)="showModalGenerateExam()">
+          <app-icon [icon]="'print'" /> <span class="hidden sm:inline">Generar examen</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ====================== PANEL DEL EXAMEN ====================== -->
+  @if (showCurrentExam) {
+    <div class="fixed inset-0 z-40 bg-slate-900/30" (click)="showCurrentExam = false"></div>
+    <aside class="fixed inset-y-0 right-0 z-50 w-full sm:w-[440px] bg-slate-50 shadow-elevated flex flex-col">
+      <header class="px-5 py-4 bg-white border-b border-slate-200 flex items-start gap-3">
+        <div class="flex-1">
+          <h2 class="text-base font-semibold text-slate-900">Examen en curso</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            {{ selectedQuestionCount }} {{ selectedQuestionCount === 1 ? "pregunta" : "preguntas" }}
+            @for (t of selectedByTest; track t.id) {
+              · <span class="eh-test" [ngClass]="'eh-test--' + t.id">{{ t.label }} {{ t.count }}</span>
+            }
+          </p>
+        </div>
+        <button type="button" class="eh-icon-btn" (click)="showCurrentExam = false" aria-label="Cerrar">
+          <app-icon [icon]="'close'" />
+        </button>
+      </header>
+      <div class="flex-1 overflow-y-auto p-4">
+        <question-list />
+      </div>
+      <footer class="p-4 bg-white border-t border-slate-200 flex gap-2">
+        <button
+          type="button"
+          class="eh-btn eh-btn--ghost"
+          [disabled]="questionsSelected.length < 1"
+          (click)="confirmDiscardExam()"
+        >
+          <app-icon [icon]="'delete_sweep'" /> Vaciar
+        </button>
+        <button
+          type="button"
+          class="eh-btn eh-btn--primary flex-1"
+          [disabled]="questionsSelected.length < 1"
+          (click)="showCurrentExam = false; showModalGenerateExam()"
+        >
+          <app-icon [icon]="'print'" /> Generar examen
+        </button>
+      </footer>
+    </aside>
   }
 </main>
 

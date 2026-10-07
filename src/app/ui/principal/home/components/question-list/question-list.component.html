@@ -1,16 +1,15 @@
-<div class="space-y-4">
-  @if (questionsSelected.length === 0) {
-  <div class="text-center p-4 rounded-md bg-gray-100 shadow-inner">
-    <p class="text-gray-600">
-      No hay preguntas disponibles. Por favor, agregue una pregunta para
-      comenzar.
+@if (questionsSelected.length === 0) {
+  <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center">
+    <p class="text-sm font-medium text-slate-700">El examen está vacío</p>
+    <p class="text-xs text-slate-500 mt-1">
+      Agrega preguntas, lecturas o carpetas completas desde el banco con el botón
+      <app-icon [icon]="'playlist_add'" />.
     </p>
   </div>
-  } @for (question of questionsSelected; track $index) {
-  <app-item-list-selected
-    [question]="question"
-    (deleteEvent)="removeQuestion($event)"
-  />
-
-  }
-</div>
+} @else {
+  <div class="space-y-1.5">
+    @for (question of questionsSelected; track question.id; let i = $index) {
+      <app-item-list-selected [question]="question" [index]="numberAt(i)" (deleteEvent)="removeQuestion($event)" />
+    }
+  </div>
+}
