@@ -1,4 +1,5 @@
 import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 import { Component, OnInit } from "@angular/core";
 import { Router, RouterModule } from "@angular/router";
 import { ToastService } from "../../core/services/toast.service";
@@ -18,7 +19,7 @@ import { SharedModule } from "../shared/shared.module";
 @Component({
   selector: "app-grade-list",
   standalone: true,
-  imports: [CommonModule, RouterModule, SharedModule],
+  imports: [CommonModule, FormsModule, RouterModule, SharedModule],
   templateUrl: "./grade-list.component.html",
 })
 export class GradeListComponent implements OnInit {
@@ -26,6 +27,17 @@ export class GradeListComponent implements OnInit {
   /** Ruta del scanner — la dejo expuesta para que el template no
    *  conozca la estructura de paths. */
   readonly scanRoute = MODULES.GRADE.SCAN;
+  search = "";
+  typeFilter: "all" | "simulacro" | "quiz" = "all";
+
+  filter(exams: Assessment[]): Assessment[] {
+    const q = this.search.trim().toLowerCase();
+    return exams.filter(
+      (e) =>
+        (this.typeFilter === "all" || e.type === this.typeFilter) &&
+        (!q || e.title.toLowerCase().includes(q))
+    );
+  }
 
   constructor(
     private gradingService: GradingService,

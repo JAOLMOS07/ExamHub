@@ -1,10 +1,10 @@
 <app-navbar />
 
 <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+  <header class="eh-page-head">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Estudiantes</h1>
-      <p class="text-sm text-slate-500 mt-1">
+      <h1>Estudiantes</h1>
+      <p>
         El código de cada estudiante se rellena en la hoja de respuestas y permite identificarlo
         automáticamente al calificar.
       </p>
@@ -16,10 +16,10 @@
         }
       </select>
       @if (canEdit) {
-        <button class="rounded-lg px-3 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 whitespace-nowrap" (click)="showImport = !showImport">
+        <button class="eh-btn eh-btn--secondary whitespace-nowrap" (click)="showImport = !showImport">
           <app-icon [icon]="'upload_file'" /> Importar
         </button>
-        <button class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 whitespace-nowrap" (click)="editStudent()">
+        <button class="eh-btn eh-btn--primary whitespace-nowrap" (click)="editStudent()">
           <app-icon [icon]="'person_add'" /> Estudiante
         </button>
       }
@@ -57,11 +57,11 @@
           </select>
         </label>
         <div class="flex-1"></div>
-        <button class="rounded-lg px-3 py-2 text-sm border border-slate-300 hover:bg-slate-50" (click)="previewImport()">
+        <button class="eh-btn eh-btn--secondary" (click)="previewImport()">
           Revisar
         </button>
         <button
-          class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50"
+          class="eh-btn eh-btn--primary"
           [disabled]="!importPreview?.rows?.length || isImporting"
           (click)="runImport()"
         >
@@ -131,7 +131,7 @@
           <input class="eh-input" name="gcampus" placeholder="Sede (opcional)" [(ngModel)]="groupForm.campus" />
           <div class="flex justify-end gap-2">
             <button type="button" class="text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100" (click)="showGroupForm = false">Cancelar</button>
-            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg font-semibold text-white bg-brand-700 hover:bg-brand-800">Guardar</button>
+            <button type="submit" class="eh-btn eh-btn--primary">Guardar</button>
           </div>
         </form>
       }
@@ -156,7 +156,7 @@
           </select>
           <div class="flex gap-2">
             <button type="button" class="text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100" (click)="showStudentForm = false">Cancelar</button>
-            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg font-semibold text-white bg-brand-700 hover:bg-brand-800">Guardar</button>
+            <button type="submit" class="eh-btn eh-btn--primary">Guardar</button>
           </div>
         </form>
       }

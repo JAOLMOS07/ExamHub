@@ -317,6 +317,10 @@ export class CreateQuestionDialogComponent {
       this.rationale = this.data.question.rationale ?? "";
     }
     this.aiAvailable = this.ai.enabled;
+    // Pregunta nueva de opción múltiple: 4 opciones listas, como en el ICFES.
+    if (!this.editMode && this.selectedKind === QuestionKind.MULTIPLE_CHOICE_SINGLE && this.options.length === 0) {
+      this.options = [0, 1, 2, 3].map(() => new Option("", "", false));
+    }
   }
 
   /**
@@ -401,10 +405,15 @@ export class CreateQuestionDialogComponent {
    * conserva.
    */
   onKindChange(kind: QuestionKind) {
+    if (kind === this.selectedKind) return;
     this.selectedKind = kind;
     this.options = [];
     this.numericAnswer = null;
     this.numericTolerance = 0;
+
+    if (kind === QuestionKind.MULTIPLE_CHOICE_SINGLE) {
+      this.options = [0, 1, 2, 3].map(() => new Option("", "", false));
+    }
 
     // Para V/F pre-cargamos las dos opciones fijas.
     if (kind === QuestionKind.TRUE_FALSE) {
@@ -417,6 +426,34 @@ export class CreateQuestionDialogComponent {
 
   addOption() {
     this.options.push(new Option("", "", false));
+  }
+
+  letter(i: number): string {
+    return String.fromCharCode(65 + i);
+  }
+
+  /** Opción múltiple con única respuesta: marcar una desmarca las demás. */
+  markCorrect(index: number): void {
+    this.options.forEach((o, i) => (o.correct = i === index));
+  }
+
+  /** Lo que falta para poder guardar (se muestra en el pie). */
+  get missingReason(): string | null {
+    if (!this.newQuestion.name || this.newQuestion.name.trim().length < 10) {
+      return "Escribe el enunciado (mínimo 10 caracteres).";
+    }
+    if (this.selectedKind === QuestionKind.MULTIPLE_CHOICE_SINGLE) {
+      if (this.options.length < 2) return "Agrega al menos 2 opciones.";
+      if (this.options.some((o) => !o.content.trim())) return "Completa todas las opciones.";
+      if (!this.options.some((o) => o.correct)) return "Marca la opción correcta tocando su letra.";
+    }
+    if (this.selectedKind === QuestionKind.TRUE_FALSE && !this.options.some((o) => o.correct)) {
+      return "Elige si la respuesta es Verdadero o Falso.";
+    }
+    if (this.selectedKind === QuestionKind.NUMERIC && (this.numericAnswer === null || isNaN(this.numericAnswer))) {
+      return "Escribe la respuesta numérica esperada.";
+    }
+    return null;
   }
 
   removeOption(index: number) {

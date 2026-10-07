@@ -20,7 +20,7 @@
         <button (click)="goToList()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100">
           Volver a la lista
         </button>
-        <button (click)="goToScan()" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-700 hover:bg-brand-800">
+        <button (click)="goToScan()" class="eh-btn eh-btn--primary">
           Escanear otro
         </button>
       </div>
@@ -86,7 +86,7 @@
         </div>
         <div class="flex flex-col sm:flex-row gap-2 flex-shrink-0">
           <label
-            class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer bg-brand-700 hover:bg-brand-800"
+            class="eh-btn eh-btn--primary cursor-pointer"
             [class.opacity-50]="isOmrRunning"
             [class.pointer-events-none]="isOmrRunning"
           >
@@ -268,7 +268,7 @@
       <button type="button" (click)="goToScan()" [disabled]="isSaving" class="px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-50">
         Escanear QR
       </button>
-      <button type="button" (click)="save()" [disabled]="isSaving" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+      <button type="button" (click)="save()" [disabled]="isSaving" class="eh-btn eh-btn--primary">
         {{ isSaving ? "Guardando…" : "Guardar y calificar el siguiente" }}
       </button>
     </div>

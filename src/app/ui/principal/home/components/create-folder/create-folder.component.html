@@ -1,43 +1,32 @@
-<h2 mat-dialog-title class="text-xl font-bold mb-4">
-  {{ editMode ? "Editar Carpeta" : "Crear Carpeta" }}
-</h2>
-<mat-dialog-content class="mat-typography">
-  <div class="form-control w-full max-w-xs">
-    <label class="label">
-      <span class="label-text">Nombre de la Carpeta</span>
+<form class="w-[min(440px,92vw)] bg-white" (ngSubmit)="!folderNameInput.invalid && addFolder()">
+  <header class="px-6 pt-5 pb-2">
+    <h2 class="text-lg font-semibold text-slate-900">{{ editMode ? "Renombrar carpeta" : "Nueva carpeta" }}</h2>
+    <p class="text-sm text-slate-500 mt-0.5">Organiza por área, grado, periodo o tema.</p>
+  </header>
+  <div class="px-6 py-4">
+    <label class="eh-field">
+      <span>Nombre</span>
+      <input
+        type="text"
+        class="eh-input"
+        placeholder="Matemáticas 11° · Periodo 1"
+        [(ngModel)]="folderName"
+        name="folderName"
+        #folderNameInput="ngModel"
+        required
+        minlength="3"
+        maxlength="60"
+        cdkFocusInitial
+      />
+      @if (folderNameInput.invalid && folderNameInput.touched) {
+        <small class="!text-red-600">Escribe entre 3 y 60 caracteres.</small>
+      }
     </label>
-    <input
-      type="text"
-      placeholder="Nombre de la carpeta"
-      class="input input-bordered w-full max-w-xs"
-      [(ngModel)]="folderName"
-      name="folderName"
-      #folderNameInput="ngModel"
-      required
-      minlength="4"
-      maxlength="39"
-    />
-    <div *ngIf="folderNameInput.invalid && folderNameInput.touched" class="text-red-500">
-      El nombre debe tener entre 4 y 39 caracteres.
-    </div>
   </div>
-</mat-dialog-content>
-<mat-dialog-actions class="mt-4 flex space-x-2">
-  <button
-    class="btn btn-sm btn-outline btn-error flex items-center"
-    mat-button
-    (click)="onNoClick()"
-  >
-    <app-icon [icon]="'cancel'" />
-  </button>
-  <button
-    class="btn btn-sm btn-primary flex items-center"
-    mat-button
-    (click)="addFolder()"
-    [disabled]="folderNameInput.invalid"
-    cdkFocusInitial
-  >
-    <app-icon [icon]="'create'" />
-    {{ editMode ? "Editar Carpeta" : "Crear Carpeta" }}
-  </button>
-</mat-dialog-actions>
+  <footer class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+    <button type="button" class="eh-btn eh-btn--ghost" (click)="onNoClick()">Cancelar</button>
+    <button type="submit" class="eh-btn eh-btn--primary" [disabled]="folderNameInput.invalid">
+      {{ editMode ? "Guardar" : "Crear carpeta" }}
+    </button>
+  </footer>
+</form>

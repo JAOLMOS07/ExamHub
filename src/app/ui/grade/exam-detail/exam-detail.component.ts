@@ -16,6 +16,7 @@ import { ItemAnalysis, analyzeItems, itemFlags } from "../../../core/domain/psyc
 import { SABER11_TESTS, getCompetency, getTest } from "../../../core/domain/taxonomy/saber11";
 import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { MODULES } from "../../routes.constants";
+import { testBarColor } from "../../shared/test-colors";
 import { SharedModule } from "../../shared/shared.module";
 import { exportResultsPdf, exportStudentReports } from "./results-pdf.util";
 import { RosterEntry, pendingFromRoster } from "../../../core/domain/roster";
@@ -46,6 +47,7 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
   readonly ALPHABET = ALPHABET;
   readonly FLAG_LABEL = FLAG_LABEL;
   readonly getTest = getTest;
+  readonly barColor = testBarColor;
 
   exam: Assessment | null = null;
   responses: ResponseDoc[] = [];

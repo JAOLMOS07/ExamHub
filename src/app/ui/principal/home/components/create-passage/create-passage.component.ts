@@ -22,60 +22,51 @@ import { objectType } from "../../../../../core/models/objectType.enum";
   standalone: true,
   imports: [CommonModule, FormsModule, MatDialogModule],
   template: `
-    <h2 mat-dialog-title>
-      {{ editMode ? "Editar lectura" : "Nueva lectura" }}
-    </h2>
-    <mat-dialog-content class="mat-typography">
-      <form (ngSubmit)="save()" class="space-y-4 p-2 min-w-[520px]">
-        <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2">
-            Título de la lectura
-          </label>
+    <form class="flex flex-col max-h-[92vh] w-[min(720px,94vw)] bg-white" (ngSubmit)="isValid() && save()">
+      <header class="px-6 pt-5 pb-3 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">{{ editMode ? "Editar lectura" : "Nueva lectura" }}</h2>
+        <p class="text-sm text-slate-500 mt-0.5">
+          Un texto o contexto común con varias preguntas asociadas. Se imprime una vez, antes de sus preguntas.
+        </p>
+      </header>
+      <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <label class="eh-field">
+          <span>Título</span>
           <input
             type="text"
-            class="input input-bordered w-full border-gray-300 shadow-sm py-2 px-3"
-            placeholder="Ej: La Revolución Francesa / Problema de cinemática 1"
+            class="eh-input"
+            placeholder="El agua en San Rafael"
             [(ngModel)]="title"
             name="title"
             required
             minlength="3"
             maxlength="120"
           />
-          <p class="text-xs text-gray-500 mt-1">
-            Es el nombre que ves en el banco. No se imprime en el examen.
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2">
-            Texto / contexto
-          </label>
+          <small>Se muestra en el banco y como título del texto en el cuadernillo.</small>
+        </label>
+        <label class="eh-field">
+          <span>Texto</span>
           <textarea
-            class="rounded-md shadow-sm w-full resize-y border border-gray-300 py-3 px-4 text-gray-700 leading-relaxed focus:outline-none focus:border-indigo-500 min-h-[180px]"
-            placeholder="Pegá el texto que los estudiantes deben leer antes de responder las preguntas..."
+            class="eh-input min-h-[260px] resize-y leading-relaxed"
+            placeholder="Pega aquí el texto que los estudiantes deben leer…"
             [(ngModel)]="passageText"
             name="passageText"
             required
             minlength="20"
             maxlength="6000"
           ></textarea>
-          <p class="text-xs text-gray-500 mt-1">
-            Este texto se imprime en el examen, antes de sus preguntas asociadas. Hasta 6000 caracteres.
-          </p>
-        </div>
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions class="justify-end gap-2">
-      <button class="btn btn-sm btn-ghost" (click)="cancel()">Cancelar</button>
-      <button
-        class="btn btn-sm btn-primary"
-        (click)="save()"
-        [disabled]="!isValid()"
-      >
-        {{ editMode ? "Guardar cambios" : "Crear lectura" }}
-      </button>
-    </mat-dialog-actions>
+          <small>{{ passageText.length || 0 }} / 6000 caracteres</small>
+        </label>
+      </div>
+      <footer class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+        <button type="button" class="eh-btn eh-btn--ghost" (click)="cancel()">Cancelar</button>
+        <button type="submit" class="eh-btn eh-btn--primary" [disabled]="!isValid()">
+          {{ editMode ? "Guardar cambios" : "Crear lectura" }}
+        </button>
+      </footer>
+    </form>
   `,
+
 })
 export class CreatePassageDialogComponent implements OnInit {
   editMode = false;

@@ -93,7 +93,7 @@
         />
         <button
           type="submit"
-          class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition bg-brand-700 hover:bg-brand-800"
+          class="eh-btn eh-btn--primary"
         >
           <app-icon [icon]="'add'" />
           Agregar
@@ -145,7 +145,7 @@
         />
         <button
           type="submit"
-          class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition bg-brand-700 hover:bg-brand-800"
+          class="eh-btn eh-btn--primary"
         >
           <app-icon [icon]="'add'" />
           Agregar
@@ -190,7 +190,7 @@
         @if (!editingTemplate) {
           <button
             (click)="startNewTemplate()"
-            class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition shrink-0 bg-brand-700 hover:bg-brand-800"
+            class="eh-btn eh-btn--primary shrink-0"
           >
             <app-icon [icon]="'add'" />
             Nueva plantilla
@@ -297,7 +297,7 @@
             <button
               type="button"
               (click)="saveTemplate()"
-              class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition bg-brand-700 hover:bg-brand-800"
+              class="eh-btn eh-btn--primary"
             >
               <app-icon [icon]="'save'" />
               Guardar
@@ -361,7 +361,7 @@
           </p>
           <button
             (click)="startNewTemplate()"
-            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition bg-brand-700 hover:bg-brand-800"
+            class="eh-btn eh-btn--primary"
           >
             <app-icon [icon]="'add'" />
             Crear primera plantilla

@@ -1,466 +1,303 @@
-<h2 mat-dialog-title class="text-xl font-bold mb-4">
-  {{ editMode ? "Editar Pregunta" : "Crear Pregunta" }}
-</h2>
-<mat-dialog-content class="mat-typography">
-  <div class="m-3">
-    <form (ngSubmit)="addQuestion()" class="space-y-6">
-      <!-- Selector de tipo de pregunta -->
-      <div>
-        <label class="block text-gray-700 text-sm font-bold mb-2">
-          Tipo de pregunta
-        </label>
-        <div class="flex flex-wrap gap-2">
-          @for (kind of availableKinds; track kind) {
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-primary]="selectedKind === kind"
-              [class.btn-outline]="selectedKind !== kind"
-              (click)="onKindChange(kind)"
-            >
-              {{ KIND_LABEL[kind] }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Enunciado (común a todos los tipos) -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label
-            class="block text-gray-700 text-sm font-bold"
-            for="question"
-          >
-            Pregunta
-          </label>
-          <button
-            type="button"
-            class="btn btn-xs btn-outline gap-1"
-            (click)="insertEquationInQuestion()"
-            title="Abrir editor visual de ecuaciones"
-          >
-            <app-icon [icon]="'functions'" />
-            Ecuación
+<form (ngSubmit)="addQuestion()" class="flex flex-col max-h-[92vh] w-[min(1040px,94vw)] bg-white">
+  <!-- ===================== Encabezado ===================== -->
+  <header class="px-6 pt-5 pb-4 border-b border-slate-200 flex items-start gap-4">
+    <div class="flex-1">
+      <h2 class="text-xl font-semibold text-slate-900 tracking-tight">
+        {{ editMode ? "Editar pregunta" : "Nueva pregunta" }}
+      </h2>
+      <div class="eh-segmented mt-3">
+        @for (kind of availableKinds; track kind) {
+          <button type="button" [class.is-active]="selectedKind === kind" (click)="onKindChange(kind)">
+            {{ KIND_LABEL[kind] }}
           </button>
-        </div>
-        <textarea
-          #questionTextarea
-          class="rounded-md shadow w-full resize-y appearance-none border py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="question"
-          placeholder="Escribí el enunciado. Para fórmulas usá el botón Ecuación (o tipeá $x^2$ inline)..."
-          [(ngModel)]="newQuestion.name"
-          [ngModelOptions]="{ standalone: true }"
-          minlength="10"
-          maxlength="3999"
-          required
-          #QuestionNameInput="ngModel"
-        ></textarea>
-        <div
-          *ngIf="QuestionNameInput.invalid && QuestionNameInput.touched"
-          class="text-red-500 text-sm"
-        >
-          La pregunta debe tener entre 10 y 3999 caracteres.
-        </div>
-        @if (newQuestion.name && newQuestion.name.includes('$')) {
-          <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
-            <div class="text-xs text-gray-500 mb-1">Vista previa</div>
-            <math-text [content]="newQuestion.name"></math-text>
-          </div>
         }
       </div>
+    </div>
+    <button type="button" class="eh-icon-btn" mat-dialog-close aria-label="Cerrar">
+      <app-icon [icon]="'close'" />
+    </button>
+  </header>
 
-      <!-- ============== CLASIFICACIÓN (opcional pero útil) ============== -->
-      <div class="border-t border-slate-200 pt-4">
-        <label class="block text-gray-700 text-sm font-bold mb-3">
-          Clasificación
-          <span class="text-xs font-normal text-slate-500 ml-1">(opcional)</span>
+  <div class="flex-1 overflow-y-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <!-- ===================== Contenido ===================== -->
+      <div class="p-6 space-y-6">
+        <div class="eh-field">
+          <div class="flex items-center justify-between">
+            <span class="text-[0.8125rem] font-semibold text-slate-700">Enunciado <em class="not-italic text-red-600">*</em></span>
+            <button type="button" class="eh-btn eh-btn--ghost !h-8 !px-2 text-xs" (click)="insertEquationInQuestion()" title="Abrir el editor de ecuaciones">
+              <app-icon [icon]="'functions'" /> Ecuación
+            </button>
+          </div>
+          <textarea
+            #questionTextarea
+            class="eh-input min-h-[120px] resize-y leading-relaxed"
+            placeholder="Escribe el enunciado. Si hay un contexto (situación, tabla, gráfico descrito), inclúyelo aquí o crea una lectura."
+            [(ngModel)]="newQuestion.name"
+            [ngModelOptions]="{ standalone: true }"
+            minlength="10"
+            maxlength="3999"
+            required
+            #QuestionNameInput="ngModel"
+          ></textarea>
+          @if (QuestionNameInput.invalid && QuestionNameInput.touched) {
+            <small class="!text-red-600">El enunciado debe tener al menos 10 caracteres.</small>
+          }
+          @if (newQuestion.name && newQuestion.name.includes("$")) {
+            <div class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+              <p class="eh-overline mb-1">Vista previa</p>
+              <math-text [content]="newQuestion.name"></math-text>
+            </div>
+          }
+        </div>
+
+        <!-- Imagen (detrás del flag enableImages) -->
+        @if (imagesEnabled) {
+          <div class="eh-field">
+            <span>Imagen (opcional)</span>
+            @if (imageUrl) {
+              <div class="flex items-start gap-3">
+                <img [src]="imageUrl" alt="Imagen de la pregunta" class="max-h-40 max-w-full rounded-lg border border-slate-200 bg-slate-50 p-1" />
+                <button type="button" class="eh-btn eh-btn--ghost !h-8 text-red-600" (click)="removeImage()" [disabled]="uploadingImage">
+                  <app-icon [icon]="'delete_outline'" /> Quitar
+                </button>
+              </div>
+            } @else {
+              <label
+                class="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-300 rounded-xl py-5 cursor-pointer hover:border-brand-400 hover:bg-brand-50/40 transition"
+                [class.opacity-50]="uploadingImage"
+                [class.pointer-events-none]="uploadingImage"
+              >
+                @if (uploadingImage) {
+                  <span class="loading loading-spinner loading-md text-brand-500"></span>
+                  <span class="text-sm text-slate-500 mt-2">Subiendo imagen…</span>
+                } @else {
+                  <app-icon class="text-slate-400" [icon]="'add_photo_alternate'" />
+                  <span class="text-sm text-slate-600 mt-1">Subir una imagen</span>
+                  <span class="text-xs text-slate-400">PNG, JPG, WEBP o GIF · máx. 4 MB</span>
+                }
+                <input type="file" accept="image/png, image/jpeg, image/webp, image/gif" class="hidden" (change)="onImageSelected($event)" [disabled]="uploadingImage" />
+              </label>
+            }
+          </div>
+        }
+
+        <!-- Respuesta según el tipo -->
+        @switch (selectedKind) {
+          @case (QuestionKind.MULTIPLE_CHOICE_SINGLE) {
+            <div class="eh-field">
+              <span>Opciones</span>
+              <small class="-mt-1">Toca la letra de la opción correcta.</small>
+              <div class="space-y-2">
+                @for (option of options; track i; let i = $index) {
+                  <div class="flex items-start gap-2">
+                    <button
+                      type="button"
+                      class="shrink-0 w-9 h-9 rounded-full border-2 text-sm font-bold transition flex items-center justify-center"
+                      [class.bg-emerald-500]="option.correct"
+                      [class.border-emerald-500]="option.correct"
+                      [class.text-white]="option.correct"
+                      [class.border-slate-300]="!option.correct"
+                      [class.text-slate-600]="!option.correct"
+                      [class.hover:border-emerald-400]="!option.correct"
+                      (click)="markCorrect(i)"
+                      [title]="option.correct ? 'Respuesta correcta' : 'Marcar como correcta'"
+                    >
+                      {{ letter(i) }}
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <input
+                        #optionInput
+                        type="text"
+                        class="eh-input"
+                        [class.!border-emerald-400]="option.correct"
+                        [placeholder]="'Opción ' + letter(i)"
+                        [(ngModel)]="option.content"
+                        name="optionContent{{ i }}"
+                        required
+                      />
+                      @if (option.content && option.content.includes("$")) {
+                        <div class="mt-1 rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-sm">
+                          <math-text [content]="option.content"></math-text>
+                        </div>
+                      }
+                    </div>
+                    <button type="button" class="eh-icon-btn" (click)="insertEquationInOption(i)" title="Insertar ecuación">
+                      <app-icon [icon]="'functions'" />
+                    </button>
+                    <button type="button" class="eh-icon-btn hover:!text-red-600" (click)="removeOption(i)" title="Quitar opción">
+                      <app-icon [icon]="'remove_circle_outline'" />
+                    </button>
+                  </div>
+                }
+              </div>
+              @if (options.length < 8) {
+                <button type="button" class="eh-btn eh-btn--ghost !h-8 w-fit text-brand-700" (click)="addOption()">
+                  <app-icon [icon]="'add'" /> Agregar opción
+                </button>
+              }
+            </div>
+          }
+
+          @case (QuestionKind.TRUE_FALSE) {
+            <div class="eh-field">
+              <span>Respuesta correcta</span>
+              <div class="grid grid-cols-2 gap-2 max-w-sm">
+                @for (option of options; track i; let i = $index) {
+                  <button type="button" class="eh-option !items-center !py-3" [class.is-active]="option.correct" (click)="selectTrueFalse(i)">
+                    <strong>{{ option.content }}</strong>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          @case (QuestionKind.OPEN) {
+            <p class="eh-note eh-note--brand">
+              <strong>Respuesta abierta.</strong> El estudiante responde en líneas en blanco del cuadernillo y el
+              docente asigna el puntaje (0, ½ o 1) al calificar.
+            </p>
+          }
+
+          @case (QuestionKind.NUMERIC) {
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+              <label class="eh-field">
+                <span>Respuesta esperada</span>
+                <input type="number" step="any" class="eh-input" placeholder="3.14" [(ngModel)]="numericAnswer" name="numericAnswer" />
+              </label>
+              <label class="eh-field">
+                <span>Tolerancia ±</span>
+                <input type="number" step="any" min="0" class="eh-input" placeholder="0 = exacta" [(ngModel)]="numericTolerance" name="numericTolerance" />
+              </label>
+            </div>
+          }
+        }
+
+        <label class="eh-field">
+          <span>Justificación</span>
+          <textarea
+            class="eh-input min-h-[72px] resize-y"
+            name="rationale"
+            maxlength="2000"
+            [(ngModel)]="rationale"
+            placeholder="Por qué la respuesta es correcta y qué error refleja cada opción incorrecta. Se usa en la retroalimentación."
+          ></textarea>
         </label>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <!-- Materia -->
-          <div>
-            <label for="subject" class="block text-xs font-medium text-slate-600 mb-1">
-              Materia
+      </div>
+
+      <!-- ===================== Clasificación ===================== -->
+      <aside class="p-6 bg-slate-50 border-t lg:border-t-0 lg:border-l border-slate-200 space-y-4">
+        <div>
+          <p class="eh-overline mb-2">Alineación ICFES</p>
+          <div class="space-y-3">
+            <label class="eh-field">
+              <span>Prueba</span>
+              <select class="eh-input" name="test" [ngModel]="test" (ngModelChange)="onTestChange($event)">
+                <option value="">Sin alinear</option>
+                @for (t of tests; track t.id) {
+                  <option [value]="t.id">{{ t.label }}</option>
+                }
+              </select>
             </label>
-            <input
-              id="subject"
-              type="text"
-              list="subject-suggestions"
-              placeholder="Matemática, Sociales..."
-              [(ngModel)]="subject"
-              name="subject"
-              maxlength="40"
-              class="input input-bordered input-sm w-full"
-            />
+            <label class="eh-field">
+              <span>Competencia</span>
+              <select class="eh-input" name="competency" [(ngModel)]="competency" [disabled]="!selectedTest">
+                <option value="">—</option>
+                @for (c of selectedTest?.competencies ?? []; track c.id) {
+                  <option [value]="c.id">{{ c.label }}</option>
+                }
+              </select>
+            </label>
+            @if (selectedTest?.components?.length) {
+              <label class="eh-field">
+                <span>Componente</span>
+                <select class="eh-input" name="component" [(ngModel)]="component">
+                  <option value="">—</option>
+                  @for (c of selectedTest?.components ?? []; track c.id) {
+                    <option [value]="c.id">{{ c.label }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (!test) {
+              <small class="block text-xs text-slate-500">
+                Alinear la pregunta permite reportes por prueba y competencia en los simulacros.
+              </small>
+            }
+          </div>
+        </div>
+
+        <div class="eh-field">
+          <span>Dificultad</span>
+          <div class="eh-segmented w-full">
+            @for (level of difficultyOptions; track level) {
+              <button
+                type="button"
+                class="flex-1"
+                [class.is-active]="difficulty === level"
+                (click)="difficulty = difficulty === level ? null : level"
+              >
+                {{ DIFFICULTY_LABEL[level] }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="eh-field">
+            <span>Materia</span>
+            <input class="eh-input" list="subject-suggestions" name="subject" maxlength="40" placeholder="Matemática" [(ngModel)]="subject" />
             <datalist id="subject-suggestions">
               @for (s of subjectSuggestions; track s) {
                 <option [value]="s"></option>
               }
             </datalist>
-          </div>
-
-          <!-- Grado -->
-          <div>
-            <label for="grade" class="block text-xs font-medium text-slate-600 mb-1">
-              Grado
-            </label>
-            <input
-              id="grade"
-              type="text"
-              list="grade-suggestions"
-              placeholder="6°, Primero medio..."
-              [(ngModel)]="grade"
-              name="grade"
-              maxlength="40"
-              class="input input-bordered input-sm w-full"
-            />
+          </label>
+          <label class="eh-field">
+            <span>Grado</span>
+            <input class="eh-input" list="grade-suggestions" name="grade" maxlength="40" placeholder="11°" [(ngModel)]="grade" />
             <datalist id="grade-suggestions">
               @for (g of gradeSuggestions; track g) {
                 <option [value]="g"></option>
               }
             </datalist>
-          </div>
-
-          <!-- Dificultad -->
-          <div>
-            <label class="block text-xs font-medium text-slate-600 mb-1">
-              Dificultad
-            </label>
-            <div class="flex gap-1">
-              @for (level of difficultyOptions; track level) {
-                <button
-                  type="button"
-                  (click)="difficulty = (difficulty === level ? null : level)"
-                  class="flex-1 px-2 py-1 rounded-md text-xs font-medium border transition"
-                  [ngStyle]="{
-                    'background-color': difficulty === level ? (level === 1 ? '#ecfdf5' : level === 2 ? '#fffbeb' : '#fef2f2') : '#fff',
-                    'color': difficulty === level ? (level === 1 ? '#047857' : level === 2 ? '#92400e' : '#b91c1c') : '#64748b',
-                    'border-color': difficulty === level ? (level === 1 ? '#a7f3d0' : level === 2 ? '#fde68a' : '#fecaca') : '#cbd5e1'
-                  }"
-                >
-                  {{ DIFFICULTY_LABEL[level] }}
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Alineación ICFES: habilita reportes por prueba y competencia -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-          <div>
-            <label for="test" class="block text-xs font-medium text-slate-600 mb-1">
-              Prueba ICFES
-            </label>
-            <select
-              id="test"
-              name="test"
-              class="select select-bordered select-sm w-full"
-              [ngModel]="test"
-              (ngModelChange)="onTestChange($event)"
-            >
-              <option value="">Sin alinear</option>
-              @for (t of tests; track t.id) {
-                <option [value]="t.id">{{ t.label }}</option>
-              }
-            </select>
-          </div>
-          <div>
-            <label for="competency" class="block text-xs font-medium text-slate-600 mb-1">
-              Competencia
-            </label>
-            <select
-              id="competency"
-              name="competency"
-              class="select select-bordered select-sm w-full"
-              [(ngModel)]="competency"
-              [disabled]="!selectedTest"
-            >
-              <option value="">—</option>
-              @for (c of selectedTest?.competencies ?? []; track c.id) {
-                <option [value]="c.id">{{ c.label }}</option>
-              }
-            </select>
-          </div>
-          @if (selectedTest?.components?.length) {
-            <div>
-              <label for="component" class="block text-xs font-medium text-slate-600 mb-1">
-                Componente
-              </label>
-              <select
-                id="component"
-                name="component"
-                class="select select-bordered select-sm w-full"
-                [(ngModel)]="component"
-              >
-                <option value="">—</option>
-                @for (c of selectedTest?.components ?? []; track c.id) {
-                  <option [value]="c.id">{{ c.label }}</option>
-                }
-              </select>
-            </div>
-          }
-        </div>
-
-        <div class="mt-3">
-          <label for="rationale" class="block text-xs font-medium text-slate-600 mb-1">
-            Justificación de la respuesta
-            <span class="font-normal text-slate-400">(por qué es correcta y por qué fallan las demás; se usa en la retroalimentación)</span>
           </label>
-          <textarea
-            id="rationale"
-            name="rationale"
-            rows="2"
-            maxlength="2000"
-            class="textarea textarea-bordered textarea-sm w-full"
-            [(ngModel)]="rationale"
-          ></textarea>
         </div>
 
         @if (aiAvailable) {
-          <div class="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              class="btn btn-xs btn-outline"
-              [disabled]="isReviewing"
-              (click)="reviewWithAi()"
-            >
-              <app-icon [icon]="'auto_awesome'" />
-              {{ isReviewing ? "Revisando…" : "Revisar con IA" }}
+          <div class="pt-2 border-t border-slate-200">
+            <button type="button" class="eh-btn eh-btn--secondary w-full" [disabled]="isReviewing" (click)="reviewWithAi()">
+              <app-icon [icon]="'auto_awesome'" /> {{ isReviewing ? "Revisando…" : "Revisar con IA" }}
             </button>
-            <span class="text-xs text-slate-500">Detecta ambigüedades, pistas y sugiere la competencia.</span>
-          </div>
-          @if (aiReview) {
-            <div class="mt-2 rounded-md border border-violet-200 bg-violet-50 p-3 text-sm">
-              <p class="font-medium text-violet-900 mb-1">
-                Calidad estimada: {{ aiReview.qualityScore }}/5
-              </p>
-              @for (issue of aiReview.issues; track $index) {
-                <p class="text-violet-900">
-                  <span class="font-semibold">{{ issue.severity === "alta" ? "(!)" : "-" }}</span>
-                  {{ issue.message }}
-                </p>
-              }
-              @if (aiReview.suggestedAlignment?.test) {
-                <button type="button" class="btn btn-xs mt-2" (click)="applySuggestedAlignment()">
-                  Usar alineación sugerida
-                </button>
-              }
-            </div>
-          }
-        }
-      </div>
-
-      <!-- Subida de imagen (opcional) -->
-      <!--
-        Sección oculta tras feature flag environment.features.enableImages.
-        Requiere Firebase Storage habilitado y plan que lo contemple.
-        Cuando se active, NO hace falta tocar este HTML — basta con
-        cambiar el flag.
-      -->
-      @if (imagesEnabled) {
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-gray-700 text-sm font-bold">
-            Imagen (opcional)
-          </label>
-          @if (imageUrl) {
-            <button
-              type="button"
-              class="btn btn-xs btn-ghost text-red-600"
-              (click)="removeImage()"
-              [disabled]="uploadingImage"
-              title="Quitar imagen"
-            >
-              <app-icon [icon]="'delete_outline'" />
-              Quitar
-            </button>
-          }
-        </div>
-
-        @if (imageUrl) {
-          <!-- Preview de la imagen actual -->
-          <div class="relative inline-block border border-gray-200 rounded-md p-2 bg-gray-50">
-            <img
-              [src]="imageUrl"
-              alt="Imagen de la pregunta"
-              class="max-h-48 max-w-full rounded"
-            />
-          </div>
-        } @else {
-          <!-- Input para subir imagen -->
-          <label
-            class="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-md py-6 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition"
-            [class.opacity-50]="uploadingImage"
-            [class.pointer-events-none]="uploadingImage"
-          >
-            @if (uploadingImage) {
-              <span class="loading loading-spinner loading-md text-indigo-500"></span>
-              <span class="text-sm text-gray-500 mt-2">Subiendo imagen…</span>
-            } @else {
-              <app-icon class="text-gray-400" [icon]="'add_photo_alternate'" />
-              <span class="text-sm text-gray-600 mt-1">
-                Click para subir una imagen
-              </span>
-              <span class="text-xs text-gray-400 mt-1">
-                PNG, JPG, WEBP o GIF — máx. 4&nbsp;MB
-              </span>
-            }
-            <input
-              type="file"
-              accept="image/png, image/jpeg, image/webp, image/gif"
-              class="hidden"
-              (change)="onImageSelected($event)"
-              [disabled]="uploadingImage"
-            />
-          </label>
-        }
-      </div>
-      }
-      <!-- /imagesEnabled -->
-
-      <!-- Formulario específico según el tipo -->
-      @switch (selectedKind) {
-        @case (QuestionKind.MULTIPLE_CHOICE_SINGLE) {
-          <div>
-            <h3 class="text-lg font-medium text-gray-700 mb-2">Opciones</h3>
-            <p class="text-xs text-gray-500 mb-3">
-              Marcá con el toggle verde la opción correcta.
-            </p>
-            @for (option of options; track $index) {
-              <div class="mb-4">
-                <div class="flex items-center space-x-2">
-                  <div
-                    (click)="removeOption($index)"
-                    class="text-red-500 hover:text-red-600 cursor-pointer"
-                  >
-                    <app-icon [icon]="'delete_outline'" />
-                  </div>
-                  <input
-                    #optionInput
-                    type="text"
-                    placeholder="Contenido de la opción"
-                    [(ngModel)]="option.content"
-                    name="optionContent{{ $index }}"
-                    required
-                    class="input input-bordered w-full max-w-xs border-gray-300 shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-base py-2 px-2"
-                  />
-                  <button
-                    type="button"
-                    class="btn btn-xs btn-outline gap-1"
-                    (click)="insertEquationInOption($index)"
-                    title="Insertar ecuación en esta opción"
-                  >
-                    <app-icon [icon]="'functions'" />
+            @if (aiReview) {
+              <div class="mt-2 rounded-lg border border-violet-200 bg-violet-50 p-3 text-sm">
+                <p class="font-semibold text-violet-900 mb-1">Calidad estimada: {{ aiReview.qualityScore }}/5</p>
+                @for (issue of aiReview.issues; track $index) {
+                  <p class="text-violet-900 text-xs mb-1">{{ issue.severity === "alta" ? "(!)" : "·" }} {{ issue.message }}</p>
+                }
+                @if (aiReview.suggestedAlignment?.test) {
+                  <button type="button" class="mt-1 text-xs font-semibold text-violet-800 underline" (click)="applySuggestedAlignment()">
+                    Usar alineación sugerida
                   </button>
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="option.correct"
-                    name="optionCorrect{{ $index }}"
-                    class="toggle toggle-sm md:toggle-md toggle-success text-gray-600 border-gray-300"
-                  />
-                  @if (options.length == $index + 1) {
-                    <div
-                      class="text-blue-500 hover:text-blue-600 cursor-pointer font-bold"
-                      (click)="addOption()"
-                    >
-                      <app-icon [icon]="'add'" />
-                    </div>
-                  }
-                </div>
-                @if (option.content && option.content.includes('$')) {
-                  <div class="mt-1 ml-9 p-2 bg-gray-50 border border-gray-200 rounded text-sm">
-                    <span class="text-xs text-gray-500 mr-2">Vista previa:</span>
-                    <math-text [content]="option.content"></math-text>
-                  </div>
                 }
               </div>
             }
-            @if (options.length == 0) {
-              <div
-                class="text-blue-500 w-full text-center hover:text-blue-600 cursor-pointer font-bold"
-                (click)="addOption()"
-              >
-                <app-icon [icon]="'add'" />
-              </div>
-            }
           </div>
         }
-
-        @case (QuestionKind.TRUE_FALSE) {
-          <div>
-            <h3 class="text-lg font-medium text-gray-700 mb-2">
-              ¿Cuál es la respuesta correcta?
-            </h3>
-            <div class="flex gap-3">
-              @for (option of options; track $index) {
-                <button
-                  type="button"
-                  class="btn flex-1"
-                  [class.btn-success]="option.correct"
-                  [class.btn-outline]="!option.correct"
-                  (click)="selectTrueFalse($index)"
-                >
-                  {{ option.content }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-
-        @case (QuestionKind.OPEN) {
-          <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-            <p class="text-sm text-gray-700">
-              <strong>Respuesta abierta</strong> — el estudiante escribirá su
-              respuesta en líneas en blanco. El profesor corrige a mano.
-            </p>
-          </div>
-        }
-
-        @case (QuestionKind.NUMERIC) {
-          <div class="space-y-4">
-            <div>
-              <label class="block text-gray-700 text-sm font-bold mb-2">
-                Respuesta esperada
-              </label>
-              <input
-                type="number"
-                step="any"
-                placeholder="Ej: 3.14"
-                [(ngModel)]="numericAnswer"
-                name="numericAnswer"
-                class="input input-bordered w-full max-w-xs border-gray-300 shadow-md py-2 px-2"
-              />
-            </div>
-            <div>
-              <label class="block text-gray-700 text-sm font-bold mb-2">
-                Tolerancia ± (opcional)
-              </label>
-              <input
-                type="number"
-                step="any"
-                min="0"
-                placeholder="0 = respuesta exacta"
-                [(ngModel)]="numericTolerance"
-                name="numericTolerance"
-                class="input input-bordered w-full max-w-xs border-gray-300 shadow-md py-2 px-2"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                Acepta respuestas en el rango [respuesta − tolerancia,
-                respuesta + tolerancia].
-              </p>
-            </div>
-          </div>
-        }
-      }
-
-      <div class="flex justify-center">
-        <button
-          type="submit"
-          class="btn btn-sm btn-primary px-6 py-2"
-          [disabled]="QuestionNameInput.invalid"
-        >
-          {{ editMode ? "Editar Pregunta" : "Crear Pregunta" }}
-        </button>
-      </div>
-    </form>
+      </aside>
+    </div>
   </div>
-</mat-dialog-content>
+
+  <!-- ===================== Pie ===================== -->
+  <footer class="px-6 py-4 border-t border-slate-200 bg-white flex items-center gap-3">
+    <p class="flex-1 text-sm text-amber-700">
+      @if (missingReason) {
+        <app-icon [icon]="'info'" /> {{ missingReason }}
+      }
+    </p>
+    <button type="button" class="eh-btn eh-btn--ghost" mat-dialog-close>Cancelar</button>
+    <button type="submit" class="eh-btn eh-btn--primary" [disabled]="QuestionNameInput.invalid">
+      <app-icon [icon]="'check'" /> {{ editMode ? "Guardar cambios" : "Crear pregunta" }}
+    </button>
+  </footer>
+</form>

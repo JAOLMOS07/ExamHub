@@ -26,11 +26,11 @@
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button (click)="goToGrade()" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800">
+        <button (click)="goToGrade()" class="eh-btn eh-btn--primary">
           <app-icon [icon]="'photo_camera'" /> Calificar hojas
         </button>
         <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 cursor-pointer" [class.opacity-50]="isExporting">
+          <div tabindex="0" role="button" class="eh-btn eh-btn--secondary cursor-pointer" [class.opacity-50]="isExporting">
             <app-icon [icon]="'download'" /> Exportar
           </div>
           <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-60 border border-slate-200">
@@ -208,7 +208,9 @@
             @for (t of testSummary; track t.id) {
               <div class="eh-section">
                 <div class="flex items-baseline justify-between mb-2">
-                  <h3 class="font-semibold text-slate-900">{{ t.label }}</h3>
+                  <h3 class="font-semibold text-slate-900 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full" [style.background]="barColor(t.id)"></span>{{ t.label }}
+                  </h3>
                   <span class="text-2xl font-bold text-indigo-700">{{ t.avg }}<span class="text-xs text-slate-400"> / 100</span></span>
                 </div>
                 <p class="text-xs text-slate-500 mb-1">Niveles de desempeño (estimados)</p>
@@ -235,7 +237,7 @@
               @for (c of competencySummary; track c.test + c.label) {
                 <li>
                   <div class="flex justify-between text-sm">
-                    <span><span class="text-xs text-slate-400">{{ getTest(c.test)?.shortLabel }}</span> {{ c.label }}</span>
+                    <span><span class="eh-test mr-1" [ngClass]="'eh-test--' + c.test">{{ getTest(c.test)?.shortLabel }}</span> {{ c.label }}</span>
                     <span class="font-semibold" [class.text-red-700]="c.pct < 50">{{ c.pct }}%</span>
                   </div>
                   <div class="h-2 rounded bg-slate-100 overflow-hidden">

@@ -1,10 +1,9 @@
 <app-navbar />
 
 <main class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-  <header>
-    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-      {{ org?.name ?? "Institución" }}
-    </h1>
+  <header class="eh-page-head !mb-0">
+    <div>
+    <h1>{{ org?.name ?? "Institución" }}</h1>
     @if (org) {
       <div class="flex flex-wrap items-center gap-2 mt-2 text-sm">
         <span class="eh-tag bg-brand-50 text-brand-700 border-brand-200">{{ PLAN_LABEL[org.plan] }}</span>
@@ -21,6 +20,7 @@
         }
       </div>
     }
+    </div>
   </header>
 
   <!-- ================= Invitaciones para mí ================= -->
@@ -38,7 +38,7 @@
               <button class="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100" (click)="declineInvite(inv)">
                 Rechazar
               </button>
-              <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800" (click)="acceptInvite(inv)">
+              <button class="eh-btn eh-btn--primary" (click)="acceptInvite(inv)">
                 Aceptar
               </button>
             </div>
@@ -104,7 +104,7 @@
           <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100" (click)="showCreateSchool = false">
             Cancelar
           </button>
-          <button type="submit" [disabled]="isSaving" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+          <button type="submit" [disabled]="isSaving" class="eh-btn eh-btn--primary">
             Crear colegio
           </button>
         </div>
@@ -146,7 +146,7 @@
         </label>
         @if (isAdmin) {
           <div class="sm:col-span-2 flex justify-end">
-            <button type="submit" [disabled]="isSaving" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 disabled:opacity-50">
+            <button type="submit" [disabled]="isSaving" class="eh-btn eh-btn--primary">
               Guardar
             </button>
           </div>
@@ -171,7 +171,7 @@
             <option [value]="r">{{ ROLE_LABEL[r] }}</option>
           }
         </select>
-        <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800">
+        <button type="submit" class="eh-btn eh-btn--primary">
           Invitar
         </button>
       </form>
@@ -229,7 +229,7 @@
       esta organización. Puedes repetirlo sin duplicar datos.
     </p>
     <button
-      class="rounded-lg px-4 py-2 text-sm font-medium border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+      class="eh-btn eh-btn--secondary"
       [disabled]="isMigrating"
       (click)="migrateLegacy()"
     >
