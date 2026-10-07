@@ -1,5 +1,6 @@
 import { pickCornerSquares, pickMarked } from "./markDetection";
-import { computeSheetLayout, legacySheetPage, SHEET_V2 } from "./answerSheetLayout";
+import { computeSheetLayout, legacySheetPage, SHEET_V2, SHEET_V3 } from "./answerSheetLayout";
+import { assignForms, pendingFromRoster } from "./roster";
 import { parseStudentsCsv } from "./studentsCsv";
 import { decodeQrPayload, encodeQrPayload } from "../utils/qrPayload.util";
 import { FIDUCIAL_POSITIONS } from "../utils/omrLayout.const";
@@ -91,6 +92,12 @@ describe("QR", () => {
     expect(decodeQrPayload(raw.replace("v3", "v4"))).toBeNull();
   });
 
+  it("v3 lleva el estudiante de la hoja personalizada", () => {
+    const raw = encodeQrPayload({ orgId: "o", examId: "e", versionId: "v1", page: 1, totalPages: 2, studentId: "stu9" });
+    expect(raw.startsWith("EH|3|o|e|v1|1|2|stu9|")).toBe(true);
+    expect(decodeQrPayload(raw)).toEqual({ orgId: "o", examId: "e", versionId: "v1", page: 1, totalPages: 2, studentId: "stu9" });
+  });
+
   it("sigue leyendo QR v1", () => {
     const raw = encodeQrPayload({ examId: "a1b2", versionId: "v2", page: 1, totalPages: 1 });
     expect(raw.startsWith("EH|1|a1b2|")).toBe(true);
@@ -112,6 +119,42 @@ describe("parseStudentsCsv", () => {
     const r = parseStudentsCsv("1001,Ana\nabc,Luis\n1001,Repetido");
     expect(r.rows).toEqual([{ code: "1001", fullName: "Ana" }]);
     expect(r.errors).toHaveLength(2);
+  });
+});
+
+describe("geometría v3", () => {
+  it("sin código caben más preguntas y todo queda dentro de los fiduciales", () => {
+    const v3 = computeSheetLayout({ questionLetters: new Array(300).fill(4), letterCount: 4, codeDigits: 0, balanced: true, geometry: 3 });
+    expect(v3.rowsPerColumn * v3.columns).toBeGreaterThanOrEqual(140);
+    for (const b of v3.pages.flatMap((p) => p.questions.flatMap((q) => q.bubbles))) {
+      expect(b.y - SHEET_V2.bubbleR).toBeGreaterThan(SHEET_V3.qr.y + SHEET_V3.qr.fit);
+      expect(b.y + SHEET_V2.bubbleR).toBeLessThan(FIDUCIAL_POSITIONS.bl.y);
+    }
+  });
+
+  it("con código, la grilla empieza debajo del bloque de dígitos", () => {
+    const v3 = computeSheetLayout({ questionLetters: [4], letterCount: 4, codeDigits: 8, geometry: 3 });
+    const lastDigit = v3.pages[0].codeColumns[0][9].y;
+    expect(v3.pages[0].questions[0].bubbles[0].y - SHEET_V2.bubbleR).toBeGreaterThan(lastDigit + SHEET_V2.bubbleR);
+  });
+});
+
+describe("assignForms", () => {
+  it("alterna formas por orden de lista dentro de cada grupo", () => {
+    const r = assignForms(
+      [
+        { id: "3", fullName: "Carlos", groupId: "A" },
+        { id: "1", fullName: "Ana", groupId: "A" },
+        { id: "2", fullName: "Beto", groupId: "A" },
+        { id: "4", fullName: "Diana", groupId: "B" },
+      ],
+      ["A", "B"],
+      ["v1", "v2"]
+    );
+    expect(r.map((e) => [e.name, e.formId])).toEqual([
+      ["Ana", "v1"], ["Beto", "v2"], ["Carlos", "v1"], ["Diana", "v1"],
+    ]);
+    expect(pendingFromRoster(r, ["1", "4"]).map((e) => e.name)).toEqual(["Beto", "Carlos"]);
   });
 });
 
@@ -146,6 +189,15 @@ describe("pickCornerSquares", () => {
     const qrFinder = { ...rot(522, 177), area: 350 };
     const r = pickCornerSquares([qrFinder, br, tl, bl, tr], aspect);
     expect(r).toEqual({ tl, tr, bl, br });
+  });
+
+  it("ignora el contorno interior duplicado de una marca", () => {
+    const inner = { cx: 47, cy: 762, area: 300 };
+    const r = pickCornerSquares(
+      [inner, sq(47, 154), sq(548, 154), sq(47, 762), sq(548, 762), { cx: 380, cy: 190, area: 2500 }],
+      aspect
+    );
+    expect(r?.bl).toEqual(sq(47, 762));
   });
 
   it("rechaza geometrías que no son la hoja", () => {

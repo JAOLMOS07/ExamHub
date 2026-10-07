@@ -97,6 +97,7 @@ export class GradingComponent implements OnInit, OnDestroy {
     const examId = this.route.snapshot.paramMap.get("examId");
     const versionId = this.route.snapshot.queryParamMap.get("versionId");
     const page = Number(this.route.snapshot.queryParamMap.get("page")) || 1;
+    const qrStudentId = this.route.snapshot.queryParamMap.get("studentId");
     if (!examId) {
       this.errorMessage = "Falta el id del examen en la URL.";
       this.isLoading = false;
@@ -106,6 +107,11 @@ export class GradingComponent implements OnInit, OnDestroy {
       ([students, groups]) => {
         this.students = students.filter((s) => s.active);
         this.groups = groups;
+        if (this.pendingQrStudent && this.students.length > 0) {
+          const id = this.pendingQrStudent;
+          this.pendingQrStudent = null;
+          this.applyQrStudent(id);
+        }
       }
     );
     try {
@@ -119,6 +125,7 @@ export class GradingComponent implements OnInit, OnDestroy {
       this.maxScore = assessment.maxScore ?? 5;
       this.selectForm(assessment.forms.find((f) => f.id === versionId) ?? assessment.forms[0]);
       this.currentPage = Math.min(page, this.totalPages);
+      if (qrStudentId) this.applyQrStudent(qrStudentId);
     } catch (err) {
       console.error("Error cargando la evaluación:", err);
       this.errorMessage = "No pudimos cargar la evaluación.";
@@ -245,6 +252,37 @@ export class GradingComponent implements OnInit, OnDestroy {
     return this.groups.find((g) => g.id === groupId)?.name ?? "";
   }
 
+  /**
+   * Hoja personalizada: el QR trae el id del estudiante. Si ya no está
+   * en el listado (lo borraron), se usa el nombre guardado en la
+   * evaluación.
+   */
+  private applyQrStudent(studentId: string): void {
+    this.qrStudentId = studentId;
+    if (this.students.length === 0) {
+      // El listado aún no cargó: se aplica cuando llegue.
+      this.pendingQrStudent = studentId;
+      const entry = this.assessment?.roster?.find((r) => r.studentId === studentId);
+      if (entry) this.studentName = entry.name;
+      return;
+    }
+    const inList = this.students.find((s) => s.id === studentId);
+    if (inList) {
+      this.selectedStudentId = inList.id;
+      this.studentName = "";
+      return;
+    }
+    const entry = this.assessment?.roster?.find((r) => r.studentId === studentId);
+    if (entry) {
+      this.selectedStudentId = null;
+      this.studentName = entry.name;
+    }
+  }
+
+  /** Estudiante de la hoja actual según el QR (para no mezclar hojas). */
+  private qrStudentId: string | null = null;
+  private pendingQrStudent: string | null = null;
+
   private matchStudentByCode(code: string): void {
     const norm = (c: string) => c.replace(/^0+/, "");
     const found = this.students.find((s) => norm(s.code) === norm(code));
@@ -307,6 +345,14 @@ export class GradingComponent implements OnInit, OnDestroy {
         );
         return;
       }
+      if (payload.studentId && this.pagesScanned.size > 0 && this.qrStudentId && payload.studentId !== this.qrStudentId) {
+        this.toast.warning(
+          "Una foto es de la hoja de otro estudiante. Guarda esta calificación primero.",
+          "ExamHub",
+          4500
+        );
+        return;
+      }
       if (payload.versionId !== this.form!.id) {
         if (this.pagesScanned.size > 0) {
           this.toast.warning(
@@ -319,6 +365,7 @@ export class GradingComponent implements OnInit, OnDestroy {
         this.selectFormById(payload.versionId);
       }
       page = payload.page;
+      if (payload.studentId) this.applyQrStudent(payload.studentId);
     }
 
     if (assessment.sheet.version === 1) {
@@ -335,6 +382,7 @@ export class GradingComponent implements OnInit, OnDestroy {
         letterCount: assessment.sheet.letterCount,
         codeDigits: assessment.sheet.codeDigits,
         balanced: assessment.sheet.balanced === true,
+        geometry: assessment.sheet.version === 3 ? 3 : 2,
       });
       const pageLayout = layout.pages[page - 1];
       if (!pageLayout) {
@@ -404,6 +452,7 @@ export class GradingComponent implements OnInit, OnDestroy {
         3500
       );
       this.selectedStudentId = null;
+      this.qrStudentId = null;
       this.studentName = "";
       this.studentSearch = "";
       this.readCode = null;

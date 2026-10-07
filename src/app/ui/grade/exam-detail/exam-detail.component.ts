@@ -18,6 +18,9 @@ import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
 import { exportResultsPdf, exportStudentReports } from "./results-pdf.util";
+import { RosterEntry, pendingFromRoster } from "../../../core/domain/roster";
+import { PDFService } from "../../../core/services/pdfService.service";
+import { SheetRequest, SheetsContext, sheetsDocument } from "../../exam/generate-exam-dialog/answer-sheet.pdf";
 
 type Tab = "results" | "competencies" | "items" | "ai";
 
@@ -70,7 +73,8 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
     private tenant: TenantService,
     private ai: AiService,
     private toast: ToastService,
-    private confirm: ConfirmService
+    private confirm: ConfirmService,
+    private pdfService: PDFService
   ) {
     this.aiEnabled = ai.enabled;
   }
@@ -231,6 +235,73 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
 
   pct(x: number): number {
     return Math.round(x * 100);
+  }
+
+  // ---------------------------------------------------------------------
+  //  Hojas personalizadas: pendientes y reimpresión
+  // ---------------------------------------------------------------------
+
+  /** Estudiantes del listado (según el filtro de grupo). */
+  get rosterInFilter(): RosterEntry[] {
+    const roster = this.exam?.roster ?? [];
+    if (this.groupFilter === "all") return roster;
+    if (this.groupFilter === "none") return roster.filter((r) => !r.groupId);
+    return roster.filter((r) => r.groupId === this.groupFilter);
+  }
+
+  get pending(): RosterEntry[] {
+    const graded = this.responses.map((r) => r.studentId).filter((x): x is string => !!x);
+    return pendingFromRoster(this.rosterInFilter, graded);
+  }
+
+  get gradedFromRoster(): number {
+    return this.rosterInFilter.length - this.pending.length;
+  }
+
+  /** Reimpresión disponible para hojas multipágina (no las v1). */
+  get canPrintSheets(): boolean {
+    return !!this.exam && this.exam.sheet.version !== 1;
+  }
+
+  private sheetsContext(): SheetsContext {
+    const exam = this.exam!;
+    return {
+      orgId: exam.orgId,
+      assessmentId: exam.id,
+      title: exam.title,
+      forms: exam.forms,
+      letterCount: exam.sheet.letterCount,
+      codeDigits: exam.sheet.codeDigits,
+      geometry: exam.sheet.version === 3 ? 3 : 2,
+      balanced: exam.sheet.balanced === true,
+    };
+  }
+
+  private printSheets(requests: SheetRequest[]): void {
+    if (!this.exam || requests.length === 0) return;
+    this.pdfService.open(sheetsDocument(this.sheetsContext(), requests));
+  }
+
+  private toRequest(entry: RosterEntry): SheetRequest {
+    return {
+      formId: entry.formId,
+      studentId: entry.studentId,
+      name: entry.name,
+      groupName: this.groupName(entry.groupId ?? undefined),
+    };
+  }
+
+  reprintSheet(entry: RosterEntry): void {
+    this.printSheets([this.toRequest(entry)]);
+  }
+
+  reprintPending(): void {
+    this.printSheets(this.pending.map((e) => this.toRequest(e)));
+  }
+
+  /** Una hoja en blanco por forma (estudiantes nuevos o hojas dañadas). */
+  printSpareSheets(): void {
+    this.printSheets((this.exam?.forms ?? []).map((f) => ({ formId: f.id })));
   }
 
   // ---------------------------------------------------------------------

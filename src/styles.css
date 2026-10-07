@@ -269,6 +269,241 @@ router-outlet + * {
   color: #64748b;
 }
 
+/* ------------------------------------------------------------------
+   Componentes base del sistema de diseño v2
+   ------------------------------------------------------------------ */
+
+/* Campo: etiqueta arriba, control, ayuda abajo */
+.eh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.eh-field > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+.eh-field > span em {
+  font-style: normal;
+  color: #dc2626;
+}
+.eh-field small,
+.eh-switch-row small,
+.eh-option small {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+/* Título de paso numerado dentro de formularios largos */
+.eh-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.eh-step > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+/* Control segmentado (2–3 opciones excluyentes) */
+.eh-segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 0.6rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  width: fit-content;
+}
+.eh-segmented > button {
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #475569;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+.eh-segmented > button.is-active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* Fila con interruptor y texto explicativo */
+.eh-switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+.eh-switch-row:hover {
+  background: #f8fafc;
+}
+.eh-switch-row strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Chip seleccionable */
+.eh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #334155;
+  transition: all 120ms ease;
+}
+.eh-chip:hover {
+  border-color: #94a3b8;
+}
+.eh-chip.is-active {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: #fff;
+}
+
+/* Tarjeta de opción (radio visual) */
+.eh-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  text-align: left;
+  border-radius: 0.75rem;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.eh-option:hover:not(:disabled) {
+  border-color: #a5b4fc;
+}
+.eh-option strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.eh-option app-icon {
+  color: #64748b;
+}
+.eh-option.is-active {
+  border-color: #4338ca;
+  background: #f5f7ff;
+  box-shadow: 0 0 0 3px #e0e7ff;
+}
+.eh-option.is-active app-icon {
+  color: #4338ca;
+}
+.eh-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Botones */
+.eh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 2.375rem;
+  padding: 0 1rem;
+  border-radius: 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+.eh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.eh-btn--primary {
+  background: #4338ca;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(67, 56, 202, 0.25);
+}
+.eh-btn--primary:hover:not(:disabled) {
+  background: #3730a3;
+}
+.eh-btn--secondary {
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+.eh-btn--secondary:hover:not(:disabled) {
+  background: #f8fafc;
+}
+.eh-btn--ghost {
+  color: #475569;
+}
+.eh-btn--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+.eh-btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+.eh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  color: #64748b;
+}
+.eh-icon-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Avisos */
+.eh-note {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  border: 1px solid;
+}
+.eh-note--amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.eh-note--violet {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #5b21b6;
+}
+.eh-note--brand {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #3730a3;
+}
+
 /* Scroll horizontal sin barra visible — para breadcrumbs en móvil */
 .scrollbar-hide {
   -ms-overflow-style: none;

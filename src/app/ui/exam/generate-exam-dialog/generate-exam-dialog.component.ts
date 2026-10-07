@@ -16,15 +16,16 @@ import { ExamTemplate } from "../../../core/models/preferences.model";
 import { GradingService } from "../../../core/services/grading.service";
 import { TenantService } from "../../../core/services/tenant.service";
 import { OrgService } from "../../../core/services/org.service";
-import { FormDef } from "../../../core/models/assessment.model";
-import { DEFAULT_ORG_SETTINGS, Group } from "../../../core/models/org.model";
+import { FormDef, IdentificationMode } from "../../../core/models/assessment.model";
+import { DEFAULT_ORG_SETTINGS, Group, Student } from "../../../core/models/org.model";
+import { assignForms, RosterEntry } from "../../../core/domain/roster";
 import { ALPHABET } from "../../../core/utils/alphabet.const";
-import { encodeQrPayload } from "../../../core/utils/qrPayload.util";
 import { randomSeed } from "../../../core/domain/rng";
 import { BuiltForm, buildForm, formLabel, hasBubbles } from "../../../core/domain/formBuilder";
 import { computeSheetLayout, questionsPerPage } from "../../../core/domain/answerSheetLayout";
+import { SABER11_TESTS } from "../../../core/domain/taxonomy/saber11";
 import { getTest } from "../../../core/domain/taxonomy/saber11";
-import { buildAnswerSheetPage } from "./answer-sheet.pdf";
+import { SheetRequest, SheetsContext, buildSheetsContent, sheetsDocument } from "./answer-sheet.pdf";
 import {
   LINE_HEIGHT,
   PackBlock,
@@ -51,6 +52,28 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
 
   /** Grupos del año (para asociar la evaluación y filtrar reportes). */
   groups: Group[] = [];
+  /** Estudiantes activos del año (hojas personalizadas). */
+  students: Student[] = [];
+  readonly identificationOptions: { id: IdentificationMode; title: string; text: string; icon: string }[] = [
+    {
+      id: "personalized",
+      title: "Hoja con el nombre de cada estudiante",
+      text: "Recomendado. Cada estudiante recibe su hoja impresa con su nombre y su forma; el QR lo identifica solo.",
+      icon: "badge",
+    },
+    {
+      id: "generic",
+      title: "Hojas en blanco",
+      text: "Sin listado de estudiantes. Al calificar eliges al estudiante o escribes su nombre.",
+      icon: "description",
+    },
+    {
+      id: "code",
+      title: "Código en burbujas",
+      text: "Avanzado. El estudiante rellena su código; útil si no puedes repartir hojas por nombre.",
+      icon: "pin",
+    },
+  ];
   isGenerating = false;
   private subs: Subscription[] = [];
 
@@ -74,66 +97,24 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.examConfigForm = this.formBuilder.group({
       headerType: ["text", Validators.required],
-      institution: [
-        "",
-        [
-          Validators.required,
-          Validators.minLength(10),
-          Validators.maxLength(40),
-        ],
-      ],
-      title: [
-        "",
-        [
-          Validators.required,
-          Validators.minLength(10),
-          Validators.maxLength(46),
-        ],
-      ],
-      place: [
-        "",
-        [
-          Validators.required,
-          Validators.minLength(10),
-          Validators.maxLength(61),
-        ],
-      ],
-      subtitle: [
-        "",
-        [
-          Validators.required,
-          Validators.minLength(10),
-          Validators.maxLength(65),
-        ],
-      ],
-      date: [new Date()],
+      institution: ["", [Validators.maxLength(70)]],
+      title: ["", [Validators.required, Validators.maxLength(70)]],
+      place: ["", [Validators.maxLength(70)]],
+      subtitle: ["", [Validators.maxLength(70)]],
+      /** Fecha impresa en el cuadernillo (YYYY-MM-DD). Vacía = línea en blanco. */
+      date: [toIsoDate(new Date())],
       grade: [""],
-      amount: [4, Validators.required],
-      /**
-       * Layout del cuerpo del examen.
-       *   '1col' — clásico, una columna a página completa.
-       *   '2col' — dos columnas para ahorrar páginas (ideal para
-       *           exámenes con preguntas cortas tipo elección
-       *           múltiple). El encabezado y la hoja de respuestas
-       *           siguen a ancho completo.
-       */
-      layout: ["1col", Validators.required],
-      /** Espaciado vertical entre preguntas en pt. */
+      /** 1 o 2 columnas; el reparto en 2 columnas es automático. */
+      layout: ["2col", Validators.required],
       questionSpacing: [10],
-      /**
-       * Incluir o no la HOJA DE RESPUESTAS DEL MAESTRO (la clave con las
-       * burbujas correctas rellenas) al final del PDF.
-       *   true  — se imprime la clave del maestro (comportamiento previo).
-       *   false — solo va la hoja del alumno (vacía, con QR). La
-       *           calificación automática sigue funcionando porque el
-       *           escáner usa la hoja del alumno, no la del maestro.
-       */
+      /** Hoja con la clave del docente al final de cada cuadernillo. */
       includeTeacherKey: [true],
       /** Simulacro: agrupa por prueba ICFES y reporta puntaje global. */
       simulacro: [false],
-      /** Dígitos del código del estudiante en burbujas (0 = sin código). */
+      identification: ["personalized" as IdentificationMode],
       codeDigits: [DEFAULT_ORG_SETTINGS.studentCodeDigits],
-      /** Grupos a los que se aplica. */
+      /** Hojas en blanco de reserva por forma (estudiantes nuevos, hojas dañadas). */
+      spareSheets: [2],
       groupIds: [[] as string[]],
       maxScore: [DEFAULT_ORG_SETTINGS.maxScore],
     });
@@ -147,7 +128,16 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
           maxScore: org.settings.maxScore,
         });
       }),
-      this.orgService.groups$().subscribe((g) => (this.groups = g.filter((x) => x.year === year)))
+      this.orgService.groups$().subscribe((g) => {
+        this.groups = g.filter((x) => x.year === year);
+        // Sin grupos no hay hojas con nombre posibles.
+        if (this.groups.length === 0 && this.examConfigForm.value.identification === "personalized") {
+          this.examConfigForm.patchValue({ identification: "generic" });
+        }
+      }),
+      this.orgService
+        .students$()
+        .subscribe((st) => (this.students = st.filter((x) => x.active && x.year === year)))
     );
 
     this.amountQuestions = this.exam.length;
@@ -189,10 +179,74 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
     this.examConfigForm.patchValue({ groupIds: next });
   }
 
-  /** ¿Cuántas preguntas por hoja de respuestas con la configuración actual? */
+  /** ¿Cuántas preguntas caben por hoja de respuestas con la configuración actual? */
   get sheetCapacity(): number {
     const letters = this.letterCountFor(this.exam);
-    return questionsPerPage(letters, Number(this.examConfigForm?.value?.codeDigits) || 0);
+    const digits = this.examConfigForm?.value?.identification === "code" ? Number(this.examConfigForm.value.codeDigits) || 0 : 0;
+    return questionsPerPage(letters, digits, 3);
+  }
+
+  get questionCount(): number {
+    return this.exam.filter((d) => d.type === objectType.QUESTION).length;
+  }
+
+  get passageCount(): number {
+    return this.exam.filter((d) => d.type === objectType.PASSAGE).length;
+  }
+
+  /** Pruebas ICFES presentes en la selección (para el resumen). */
+  get testsInExam(): string[] {
+    const present = new Set(this.exam.map((d) => d.test).filter(Boolean));
+    return SABER11_TESTS.filter((t) => present.has(t.id)).map((t) => t.shortLabel);
+  }
+
+  get identification(): IdentificationMode {
+    return this.examConfigForm?.value?.identification ?? "generic";
+  }
+
+  get selectedGroupIds(): string[] {
+    return this.examConfigForm?.value?.groupIds ?? [];
+  }
+
+  studentsIn(groupId: string): number {
+    return this.students.filter((s) => s.groupId === groupId).length;
+  }
+
+  /** Estudiantes que recibirán hoja personalizada. */
+  get rosterStudents(): Student[] {
+    const groups = new Set(this.selectedGroupIds);
+    return this.students.filter((s) => s.groupId && groups.has(s.groupId));
+  }
+
+  get versions(): number {
+    return Math.max(1, Math.min(30, Math.floor(Number(this.amount) || 1)));
+  }
+
+  /** Lo que se va a generar, en palabras (pie del diálogo). */
+  get outputSummary(): string {
+    const forms = this.versions === 1 ? "1 cuadernillo" : `${this.versions} cuadernillos (formas ${ALPHABET.slice(0, this.versions).join(", ")})`;
+    if (this.identification === "personalized") {
+      const spare = Math.max(0, Math.floor(Number(this.examConfigForm.value.spareSheets) || 0)) * this.versions;
+      return `${forms} + ${this.rosterStudents.length} hojas con nombre${spare ? ` + ${spare} de reserva` : ""}`;
+    }
+    return `${forms}, cada uno con su hoja de respuestas`;
+  }
+
+  /** Motivo por el que no se puede generar todavía (null = todo bien). */
+  get blockingReason(): string | null {
+    if (this.questionCount === 0) return "El examen no tiene preguntas.";
+    if (this.examConfigForm.value.headerType === "text" && !this.examConfigForm.value.title?.trim()) {
+      return "Escribe el título del examen.";
+    }
+    if (this.identification === "personalized") {
+      if (this.selectedGroupIds.length === 0) return "Elige los grupos que presentan el examen.";
+      if (this.rosterStudents.length === 0) return "Los grupos elegidos no tienen estudiantes cargados.";
+    }
+    return null;
+  }
+
+  setIdentification(mode: IdentificationMode): void {
+    this.examConfigForm.patchValue({ identification: mode });
   }
 
   /** Preguntas seleccionadas sin alinear a prueba ICFES (aviso en simulacros). */
@@ -210,27 +264,22 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   }
 
   async generate() {
-    if (
-      this.examConfigForm.valid ||
-      this.examConfigForm.value.headerType === "image"
-    ) {
-      const config = this.examConfigForm.value;
-      const ok = await this.generatePDF(config, this.amount, true);
-      if (ok) this.dialogRef.close();
-    } else {
-      this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
+    const reason = this.blockingReason;
+    if (reason) {
+      this.toast.warning(reason, "ExamHub", 3500);
+      return;
     }
+    const ok = await this.generatePDF(this.examConfigForm.value, this.amount, true);
+    if (ok) this.dialogRef.close();
   }
+
+  /** Vista previa: forma A con su hoja (no guarda nada). */
   async preview() {
-    if (
-      this.examConfigForm.valid ||
-      this.examConfigForm.value.headerType === "image"
-    ) {
-      const config = this.examConfigForm.value;
-      await this.generatePDF(config, 1, false);
-    } else {
-      this.toast.danger("Hay campos requeridos", "ExamHub", 3000);
+    if (this.questionCount === 0) {
+      this.toast.warning("El examen no tiene preguntas.", "ExamHub", 3000);
+      return;
     }
+    await this.generatePDF(this.examConfigForm.value, 1, false);
   }
   getBase64ImageFromURL(url: any) {
     return new Promise((resolve, reject) => {
@@ -289,8 +338,10 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
       const assessmentId = uuidv4();
       const versions = Math.max(1, Math.min(30, Math.floor(Number(amount) || 1)));
       const letterCount = this.letterCountFor(this.exam);
-      const codeDigits = Math.min(10, Math.max(0, Math.floor(Number(config.codeDigits) || 0)));
-      const title = config.title || "Evaluación";
+      const mode: IdentificationMode = config.identification ?? "generic";
+      const codeDigits =
+        mode === "code" ? Math.min(10, Math.max(1, Math.floor(Number(config.codeDigits) || 6))) : 0;
+      const title = (config.title || "Evaluación").trim();
       const header = await this.buildHeader(config);
 
       const built: { form: BuiltForm; def: FormDef }[] = [];
@@ -306,15 +357,42 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
           def: { id: `v${i + 1}`, label: formLabel(i + 1), seed, key: form.key },
         });
       }
-      const layouts = built.map(({ form }) =>
-        computeSheetLayout({
-          questionLetters: form.questions.map((q) => this.lettersFor(q)),
-          letterCount,
-          codeDigits,
-          balanced: true,
-        })
+      const forms = built.map((b) => b.def);
+      const sheetCtx: SheetsContext = {
+        orgId,
+        assessmentId,
+        title,
+        forms,
+        letterCount,
+        codeDigits,
+        geometry: 3,
+        balanced: true,
+      };
+      const totalPages = Math.max(
+        ...built.map(
+          ({ form }) =>
+            computeSheetLayout({
+              questionLetters: form.questions.map((q) => this.lettersFor(q)),
+              letterCount,
+              codeDigits,
+              balanced: true,
+              geometry: 3,
+            }).pages.length
+        )
       );
-      const totalPages = Math.max(...layouts.map((l) => l.pages.length));
+
+      // Listado con la forma de cada estudiante (hojas personalizadas).
+      const groupOrder = this.groups
+        .filter((g) => (config.groupIds ?? []).includes(g.id))
+        .map((g) => g.id);
+      const roster: RosterEntry[] =
+        mode === "personalized"
+          ? assignForms(this.rosterStudents, groupOrder, forms.map((f) => f.id))
+          : [];
+      if (persist && mode === "personalized" && roster.length === 0) {
+        this.toast.warning("Los grupos elegidos no tienen estudiantes cargados.", "ExamHub", 4000);
+        return false;
+      }
 
       if (persist) {
         try {
@@ -325,11 +403,13 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
               type: config.simulacro ? "simulacro" : "quiz",
               taxonomyId: "saber11",
               groupIds: config.groupIds ?? [],
-              totalQuestions: Math.max(...built.map((b) => b.def.key.length)),
+              totalQuestions: Math.max(...forms.map((f) => f.key.length)),
               letters: ALPHABET.slice(0, letterCount),
-              sheet: { version: 2, letterCount, codeDigits, totalPages, balanced: true },
-              forms: built.map((b) => b.def),
+              sheet: { version: 3, letterCount, codeDigits, totalPages, balanced: true },
+              forms,
               maxScore: Number(config.maxScore) || DEFAULT_ORG_SETTINGS.maxScore,
+              identification: mode,
+              ...(roster.length ? { roster } : {}),
               ...(config.subtitle ? { subject: config.subtitle } : {}),
               ...(config.grade ? { grade: config.grade } : {}),
             },
@@ -346,68 +426,71 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
         }
       }
 
-      const pdfDefs: { def: any; name: string }[] = [];
-      for (let i = 0; i < built.length; i++) {
-        const { form, def } = built[i];
-        const layout = layouts[i];
-        const sheetNodes = (key?: typeof def.key) =>
-          layout.pages.flatMap((page) => [
-            { text: "", pageBreak: "before" },
-            ...buildAnswerSheetPage(page, {
-              title,
-              formLabel: def.label,
-              key,
-              qrPayload: encodeQrPayload({
-                orgId,
-                examId: assessmentId,
-                versionId: def.id,
-                page: page.page,
-                totalPages: page.totalPages,
-              }),
-            }),
-          ]);
+      const groupName = (id: string | null) => this.groups.find((g) => g.id === id)?.name;
+      const dateText = config.date ? formatDate(config.date) : "_________";
+      const files: { def: any; name: string }[] = [];
 
-        const docDefinition: any = {
-          margin: 10,
-          pageMargins: this.bodyGeometry(config).pageMargins,
-          header,
-          content: [
-            {
-              text: `Nombre: _________________________________    Fecha: ${
-                config.date ? config.date.toLocaleDateString() : " _________ "
-              }   Grado:${config.grade !== "" ? config.grade : " ___ "}   Forma: ${def.label}`,
-              style: "subtitle",
-              alignment: "center",
-              margin: [0, 0, 0, 10],
-            },
-            await this.buildExamBody(form.sequence, config),
-            ...sheetNodes(),
-            ...(config.includeTeacherKey ? sheetNodes(def.key) : []),
-          ],
-          styles: {
-            questionHeader: { fontSize: 12, bold: true },
-            questionAnswer: { margin: [5, 2, 10, 20] },
+      for (const { form, def } of built) {
+        // Hoja del estudiante dentro del cuadernillo: solo en hojas
+        // genéricas o con código. En la vista previa con hojas
+        // personalizadas se muestra la del primer estudiante de la forma.
+        const sample = roster.find((r) => r.formId === def.id);
+        const inlineSheet: SheetRequest[] =
+          mode !== "personalized"
+            ? [{ formId: def.id }]
+            : !persist
+            ? [sample ? { formId: def.id, studentId: sample.studentId, name: sample.name, groupName: groupName(sample.groupId) } : { formId: def.id }]
+            : [];
+        const withPageBreak = (nodes: any[]) => (nodes.length ? [{ text: "", pageBreak: "before" }, ...nodes] : []);
+
+        files.push({
+          name: `${title} - Forma ${def.label}`,
+          def: {
+            pageMargins: this.bodyGeometry(config).pageMargins,
+            header,
+            info: { title: `${title} — Forma ${def.label}`, author: "ExamHub" },
+            content: [
+              {
+                text: `Nombre: _______________________________   Fecha: ${dateText}   Grado: ${config.grade || "____"}   Forma: ${def.label}`,
+                alignment: "center",
+                margin: [0, 0, 0, 10],
+              },
+              await this.buildExamBody(form.sequence, config),
+              ...withPageBreak(buildSheetsContent(sheetCtx, inlineSheet)),
+              ...(config.includeTeacherKey
+                ? withPageBreak(buildSheetsContent(sheetCtx, [{ formId: def.id, withKey: true }]))
+                : []),
+            ],
           },
-        };
-        if (versions > 1) {
-          const prefix = config.grade !== "" ? config.grade : "examen";
-          pdfDefs.push({ def: docDefinition, name: `${prefix}-forma-${def.label}` });
-        } else {
-          this.pdfService.open(docDefinition);
-        }
+        });
       }
-      if (versions > 1) {
-        const date = new Date();
-        this.pdfService.downloadZip(
-          pdfDefs,
-          date.toLocaleDateString() + "_" + date.toLocaleTimeString() + "_exams"
-        );
+
+      if (persist && mode === "personalized") {
+        const spares = Math.max(0, Math.min(50, Math.floor(Number(config.spareSheets) || 0)));
+        const requests: SheetRequest[] = [
+          ...roster.map((r) => ({
+            formId: r.formId,
+            studentId: r.studentId,
+            name: r.name,
+            groupName: groupName(r.groupId),
+          })),
+          ...forms.flatMap((f) => Array.from({ length: spares }, () => ({ formId: f.id }))),
+        ];
+        files.push({ name: `${title} - Hojas de respuesta`, def: sheetsDocument(sheetCtx, requests) });
+      }
+
+      if (files.length === 1) {
+        this.pdfService.open(files[0].def);
+      } else {
+        await this.pdfService.downloadZip(files, title.replace(/[/\\?%*:|"<>]/g, "-"));
       }
       if (persist) {
         this.toast.success(
-          "Evaluación guardada. Ya puedes calificarla desde Calificar.",
+          mode === "personalized"
+            ? `Evaluación guardada. Imprime los cuadernillos y las ${roster.length} hojas con nombre.`
+            : "Evaluación guardada. Ya puedes calificarla desde Calificar.",
           "ExamHub",
-          3500
+          4500
         );
       }
       return true;
@@ -646,4 +729,15 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
       firstPageOffset: 28,
     };
   }
+}
+
+function toIsoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** "2026-10-07" → "7/10/2026" sin desfase de zona horaria. */
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return y && m && d ? `${d}/${m}/${y}` : iso;
 }

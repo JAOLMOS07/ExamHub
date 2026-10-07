@@ -20,6 +20,9 @@
 
 import { QuestionKind } from "./questionKind.enum";
 import { DetectedAnswer } from "./gradedExam.model";
+import { RosterEntry } from "../domain/roster";
+
+export type { RosterEntry };
 
 /** Posición `i` de una forma impresa. */
 export interface KeyEntry {
@@ -49,8 +52,11 @@ export interface FormDef {
 
 /** Configuración de la hoja de respuestas con la que se imprimió. */
 export interface SheetSpec {
-  /** 1 = hoja legacy de 36 preguntas, 2 = hoja multipágina. */
-  version: 1 | 2;
+  /**
+   * 1 = hoja legacy de 36 preguntas, 2 = multipágina, 3 = multipágina
+   * con QR grande y cabecera personalizada (ver answerSheetLayout.ts).
+   */
+  version: 1 | 2 | 3;
   letterCount: number;
   /** Dígitos del código del estudiante en burbujas (0 = sin código). */
   codeDigits: number;
@@ -60,6 +66,14 @@ export interface SheetSpec {
 }
 
 export type AssessmentType = "quiz" | "simulacro";
+
+/**
+ * Cómo se identifica al estudiante en la hoja:
+ *   personalized  hoja impresa con su nombre (el QR lo identifica)
+ *   generic       hoja en blanco; se elige al estudiante al calificar
+ *   code          el estudiante rellena su código en burbujas
+ */
+export type IdentificationMode = "personalized" | "generic" | "code";
 
 export interface Assessment {
   id: string;
@@ -78,6 +92,9 @@ export interface Assessment {
   forms: FormDef[];
   /** Escala de la nota del colegio (ej. 5.0). */
   maxScore: number;
+  identification?: IdentificationMode;
+  /** Hojas personalizadas: estudiante → forma asignada. */
+  roster?: RosterEntry[];
   createdBy: string;
   createdAt: number;
   /** true si vino de la migración de `/exams` (v1). */

@@ -1,331 +1,248 @@
-<h2 mat-dialog-title class="text-xl font-bold mb-4">Configuración de examen</h2>
-<mat-dialog-content class="mat-typography">
-  <!-- Selector de plantilla guardada -->
-  @if (templates.length > 0) {
-    <div class="mb-4 p-3 rounded-lg bg-indigo-50/60 border border-indigo-200">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-sm font-medium text-indigo-900">
-          <app-icon [icon]="'description'" />
-          Cargar plantilla:
-        </span>
-        <select
-          [ngModel]="selectedTemplateId"
-          (ngModelChange)="applyTemplate($event)"
-          [ngModelOptions]="{ standalone: true }"
-          class="flex-1 min-w-[200px] px-3 py-1.5 text-sm rounded-lg border border-indigo-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-        >
-          <option [ngValue]="null">— Seleccionar plantilla —</option>
-          @for (t of templates; track t.id) {
-            <option [ngValue]="t.id">{{ t.name }}</option>
+<div class="flex flex-col max-h-[92vh] bg-white">
+  <!-- ===================== Encabezado del diálogo ===================== -->
+  <header class="px-6 pt-5 pb-4 border-b border-slate-200">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 tracking-tight">Generar examen</h2>
+        <p class="text-sm text-slate-500 mt-0.5">
+          {{ questionCount }} {{ questionCount === 1 ? "pregunta" : "preguntas" }}
+          @if (passageCount > 0) {
+            · {{ passageCount }} {{ passageCount === 1 ? "lectura" : "lecturas" }}
           }
-        </select>
-      </div>
-      <p class="text-xs text-indigo-700/80 mt-1">
-        Las plantillas se gestionan en <a routerLink="/preferences" class="underline">Preferencias</a>.
-      </p>
-    </div>
-  }
-
-  <div>
-    <form
-      [formGroup]="examConfigForm"
-      class="grid grid-cols-1 md:grid-cols-2 gap-4"
-    >
-      <div class="flex flex-col col-span-1 md:col-span-2">
-        <label for="headerType" class="text-sm font-medium"
-          >Tipo de encabezado</label
-        >
-        <mat-radio-group formControlName="headerType" class="mt-1">
-          <mat-radio-button value="text">Texto</mat-radio-button>
-          <mat-radio-button value="image">Imagen</mat-radio-button>
-        </mat-radio-group>
-      </div>
-
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
-        <label for="institution" class="text-sm font-medium">Institución</label>
-        <input
-          id="institution"
-          formControlName="institution"
-          placeholder="Institución"
-          class="mt-1 p-2 input w-full"
-          [ngClass]="{
-            'input-primary':
-              examConfigForm.controls['institution'].valid ||
-              examConfigForm.controls['institution'].untouched,
-            'input-error':
-              examConfigForm.controls['institution'].invalid &&
-              examConfigForm.controls['institution'].touched
-          }"
-        />
-      </div>
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
-        <label for="title" class="text-sm font-medium">Título</label>
-        <input
-          id="title"
-          formControlName="title"
-          placeholder="Título"
-          class="mt-1 p-2 input w-full"
-          [ngClass]="{
-            'input-primary':
-              examConfigForm.controls['title'].valid ||
-              examConfigForm.controls['title'].untouched,
-            'input-error':
-              examConfigForm.controls['title'].invalid &&
-              examConfigForm.controls['title'].touched
-          }"
-        />
-      </div>
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
-        <label for="place" class="text-sm font-medium">Lugar</label>
-        <input
-          id="place"
-          placeholder="Lugar"
-          formControlName="place"
-          class="mt-1 p-2 input w-full"
-          [ngClass]="{
-            'input-primary':
-              examConfigForm.controls['place'].valid ||
-              examConfigForm.controls['place'].untouched,
-            'input-error':
-              examConfigForm.controls['place'].invalid &&
-              examConfigForm.controls['place'].touched
-          }"
-        />
-      </div>
-      <div
-        class="flex flex-col"
-        *ngIf="examConfigForm.value.headerType === 'text'"
-      >
-        <label for="subtitle" class="text-sm font-medium">Subtítulo</label>
-        <input
-          id="subtitle"
-          formControlName="subtitle"
-          placeholder="Subtítulo"
-          class="mt-1 p-2 input w-full"
-          [ngClass]="{
-            'input-primary':
-              examConfigForm.controls['subtitle'].valid ||
-              examConfigForm.controls['subtitle'].untouched,
-            'input-error':
-              examConfigForm.controls['subtitle'].invalid &&
-              examConfigForm.controls['subtitle'].touched
-          }"
-        />
-      </div>
-
-      <div class="flex flex-col">
-        <label for="date" class="text-sm font-medium">Fecha</label>
-        <div class="flex flex-row items-center mt-1 w-full">
-          <input
-            id="date"
-            placeholder="Fecha"
-            [matDatepicker]="picker"
-            formControlName="date"
-            class="p-2 input input-bordered input-primary w-full flex-grow"
-          />
-          <mat-datepicker-toggle
-            matIconSuffix
-            [for]="picker"
-            class="ml-2"
-          ></mat-datepicker-toggle>
-        </div>
-        <mat-datepicker #picker></mat-datepicker>
-      </div>
-
-      <div class="flex flex-col">
-        <label for="grade" class="text-sm font-medium">Grado</label>
-        <input
-          id="grade"
-          placeholder="Grado"
-          formControlName="grade"
-          class="mt-1 p-2 input input-bordered input-primary w-full"
-        />
-      </div>
-
-      <div class="flex flex-col col-span-1 md:col-span-2">
-        <label for="logo" class="text-sm font-medium">{{
-          examConfigForm.value.headerType === "text"
-            ? "Logo del documento"
-            : "Encabezado del documento"
-        }}</label>
-
-        <input
-          type="file"
-          id="logo"
-          (change)="onFileChange($event)"
-          accept="image/png, image/webp, image/jpeg, image/jpg"
-          class="file-input file-input-bordered file-input-sm w-full"
-        />
-      </div>
-
-      <!-- Layout del cuerpo del examen -->
-      <div class="flex flex-col col-span-1 md:col-span-2 border-t border-gray-200 pt-3">
-        <label class="text-sm font-medium mb-1">Disposición del examen</label>
-        <mat-radio-group formControlName="layout" class="flex gap-4">
-          <mat-radio-button value="1col">
-            1 columna (clásico)
-          </mat-radio-button>
-          <mat-radio-button value="2col">
-            2 columnas (ahorra papel)
-          </mat-radio-button>
-        </mat-radio-group>
-        <p class="text-xs text-gray-500 mt-1">
-          2 columnas es ideal para exámenes con muchas preguntas cortas. El encabezado y la hoja de respuestas siempre van a ancho completo.
+          @if (testsInExam.length > 0) {
+            · {{ testsInExam.join(" · ") }}
+          }
         </p>
+      </div>
+      <button type="button" class="eh-icon-btn" (click)="cancel()" aria-label="Cerrar">
+        <app-icon [icon]="'close'" />
+      </button>
+    </div>
+    @if (unreviewedAiCount > 0) {
+      <p class="eh-note eh-note--violet mt-3">
+        {{ unreviewedAiCount }} pregunta(s) generadas con IA aún no fueron revisadas por un docente.
+      </p>
+    }
+  </header>
 
-        @if (examConfigForm.value.layout === '2col') {
-          <p class="mt-2 text-xs text-slate-500">
-            Las preguntas se reparten solas entre las dos columnas según lo que ocupa cada una;
-            las lecturas largas van a ancho completo y ninguna pregunta se parte entre páginas.
-          </p>
+  <form [formGroup]="examConfigForm" class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+    <!-- ===================== 1. Encabezado ===================== -->
+    <section>
+      <div class="eh-step"><span>1</span> Encabezado del cuadernillo</div>
+
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <div class="eh-segmented">
+          <button type="button" [class.is-active]="examConfigForm.value.headerType === 'text'" (click)="examConfigForm.patchValue({ headerType: 'text' })">
+            Texto
+          </button>
+          <button type="button" [class.is-active]="examConfigForm.value.headerType === 'image'" (click)="examConfigForm.patchValue({ headerType: 'image' })">
+            Imagen
+          </button>
+        </div>
+        @if (templates.length > 0) {
+          <select
+            class="eh-input w-auto flex-1 min-w-[200px]"
+            [ngModel]="selectedTemplateId"
+            (ngModelChange)="applyTemplate($event)"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option [ngValue]="null">Usar una plantilla guardada…</option>
+            @for (t of templates; track t.id) {
+              <option [ngValue]="t.id">{{ t.name }}</option>
+            }
+          </select>
         }
       </div>
-      <!-- Hoja de respuestas del maestro (clave) -->
-      <div class="flex flex-col col-span-1 md:col-span-2 border-t border-gray-200 pt-3">
-        <label class="flex items-start gap-3 cursor-pointer">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+        <label class="eh-field md:col-span-2">
+          <span>Título del examen <em>*</em></span>
+          <input class="eh-input" formControlName="title" placeholder="Simulacro Saber 11 — Periodo 1" />
+        </label>
+        @if (examConfigForm.value.headerType === "text") {
+          <label class="eh-field">
+            <span>Institución</span>
+            <input class="eh-input" formControlName="institution" placeholder="I.E. San José" />
+          </label>
+          <label class="eh-field">
+            <span>Sede o lugar</span>
+            <input class="eh-input" formControlName="place" placeholder="Sede principal · Jornada mañana" />
+          </label>
+          <label class="eh-field md:col-span-2">
+            <span>Subtítulo</span>
+            <input class="eh-input" formControlName="subtitle" placeholder="Coordinación académica 2026" />
+          </label>
+        }
+        <label class="eh-field">
+          <span>Fecha</span>
+          <input class="eh-input" type="date" formControlName="date" />
+        </label>
+        <label class="eh-field">
+          <span>Grado</span>
+          <input class="eh-input" formControlName="grade" placeholder="11°" />
+        </label>
+        <label class="eh-field md:col-span-2">
+          <span>{{ examConfigForm.value.headerType === "text" ? "Logo (opcional)" : "Imagen de encabezado" }}</span>
           <input
-            type="checkbox"
-            formControlName="includeTeacherKey"
-            class="toggle toggle-primary mt-0.5"
+            type="file"
+            (change)="onFileChange($event)"
+            accept="image/png, image/webp, image/jpeg"
+            class="file-input file-input-bordered file-input-sm w-full"
           />
-          <span class="flex flex-col">
-            <span class="text-sm font-medium">Incluir hoja de respuestas del maestro</span>
-            <span class="text-xs text-gray-500">
-              Agrega al final una hoja con la clave (las burbujas correctas
-              rellenas) para corregir a mano. La hoja del alumno con el QR
-              siempre se incluye.
-            </span>
-          </span>
         </label>
       </div>
+    </section>
 
-      <!-- Evaluación institucional -->
-      <div class="flex flex-col gap-3 col-span-1 md:col-span-2 border-t border-gray-200 pt-3">
-        <label class="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" formControlName="simulacro" class="toggle toggle-primary mt-0.5" />
-          <span class="flex flex-col">
-            <span class="text-sm font-medium">Simulacro tipo ICFES</span>
-            <span class="text-xs text-gray-500">
-              Ordena las preguntas por prueba (Lectura Crítica, Matemáticas, Sociales, Ciencias, Inglés),
-              baraja dentro de cada prueba y reporta puntaje por prueba y global estimado.
-            </span>
+    <!-- ===================== 2. Cuadernillo ===================== -->
+    <section>
+      <div class="eh-step"><span>2</span> Cuadernillo</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="eh-field">
+          <span>Disposición</span>
+          <div class="eh-segmented">
+            <button type="button" [class.is-active]="examConfigForm.value.layout === '2col'" (click)="examConfigForm.patchValue({ layout: '2col' })">
+              2 columnas
+            </button>
+            <button type="button" [class.is-active]="examConfigForm.value.layout === '1col'" (click)="examConfigForm.patchValue({ layout: '1col' })">
+              1 columna
+            </button>
+          </div>
+          <small>2 columnas ahorra papel; las preguntas se reparten solas y nunca se parten.</small>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="eh-field">
+            <span>Formas distintas</span>
+            <input class="eh-input" type="number" min="1" max="30" [(ngModel)]="amount" [ngModelOptions]="{ standalone: true }" />
+            <small>A, B, C… barajadas.</small>
+          </label>
+          <label class="eh-field">
+            <span>Preguntas por forma</span>
+            <input class="eh-input" type="number" min="1" [max]="exam.length" [(ngModel)]="amountQuestions" [ngModelOptions]="{ standalone: true }" />
+          </label>
+        </div>
+      </div>
+
+      <div class="mt-4 space-y-2">
+        <label class="eh-switch-row">
+          <input type="checkbox" class="toggle toggle-primary toggle-sm" formControlName="simulacro" />
+          <span>
+            <strong>Simulacro tipo ICFES</strong>
+            <small>Ordena por prueba (Lectura Crítica, Matemáticas, Sociales, Ciencias, Inglés) y reporta puntaje por prueba y global.</small>
           </span>
         </label>
         @if (examConfigForm.value.simulacro && unalignedCount > 0) {
-          <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
-            {{ unalignedCount }} pregunta(s) no tienen prueba ICFES asignada: irán al final y no
-            contarán en el puntaje por prueba.
+          <p class="eh-note eh-note--amber">
+            {{ unalignedCount }} pregunta(s) no tienen prueba ICFES asignada: irán al final y no contarán en el puntaje por prueba.
           </p>
         }
-        @if (unreviewedAiCount > 0) {
-          <p class="text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-md p-2">
-            {{ unreviewedAiCount }} pregunta(s) generadas con IA aún no fueron revisadas por un docente.
-          </p>
-        }
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <label class="text-sm">
-            <span class="font-medium">Dígitos del código del estudiante</span>
-            <input type="number" min="0" max="10" formControlName="codeDigits" class="input input-sm input-bordered w-full mt-1" />
-            <span class="text-xs text-gray-500">
-              El estudiante rellena su código y se identifica solo al calificar. Caben
-              {{ sheetCapacity }} preguntas por hoja de respuestas.
-            </span>
-          </label>
-          <label class="text-sm">
-            <span class="font-medium">Nota máxima</span>
-            <input type="number" min="1" max="100" step="0.5" formControlName="maxScore" class="input input-sm input-bordered w-full mt-1" />
-          </label>
-        </div>
-        @if (groups.length > 0) {
-          <div class="text-sm">
-            <span class="font-medium">Grupos que la presentan</span>
-            <div class="flex flex-wrap gap-2 mt-1">
-              @for (g of groups; track g.id) {
-                <label class="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    class="checkbox checkbox-xs"
-                    [checked]="(examConfigForm.value.groupIds ?? []).includes(g.id)"
-                    (change)="toggleGroup(g.id, $any($event.target).checked)"
-                  />
-                  {{ g.name }}
-                </label>
-              }
-            </div>
+        <label class="eh-switch-row">
+          <input type="checkbox" class="toggle toggle-primary toggle-sm" formControlName="includeTeacherKey" />
+          <span>
+            <strong>Incluir la clave del docente</strong>
+            <small>Una hoja con las respuestas correctas al final de cada cuadernillo.</small>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ===================== 3. Aplicación ===================== -->
+    <section>
+      <div class="eh-step"><span>3</span> Aplicación y calificación</div>
+
+      <div class="eh-field mb-4">
+        <span>Grupos que presentan el examen</span>
+        @if (groups.length === 0) {
+          <small>
+            No hay grupos este año. Puedes crearlos en <a routerLink="/students" (click)="cancel()" class="text-brand-700 underline">Estudiantes</a>,
+            o generar con hojas en blanco.
+          </small>
+        } @else {
+          <div class="flex flex-wrap gap-2">
+            @for (g of groups; track g.id) {
+              <button
+                type="button"
+                class="eh-chip"
+                [class.is-active]="selectedGroupIds.includes(g.id)"
+                (click)="toggleGroup(g.id, !selectedGroupIds.includes(g.id))"
+              >
+                {{ g.name }}
+                <span class="opacity-60">· {{ studentsIn(g.id) }}</span>
+              </button>
+            }
           </div>
         }
       </div>
-    </form>
-  </div>
-  <div
-    class="mt-4 flex flex-col lg:flex-row justify-between space-y-2 lg:space-y-0 lg:space-x-2"
-  >
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center">
-      <div class="join">
-        <button
-          class="btn no-animation btn-sm text-gray-500 hover:text-gray-700 join-item"
-        >
-          Pregunta por examen:
-        </button>
-        <input
-          id="amountQuestions"
-          [(ngModel)]="amountQuestions"
-          type="number"
-          min="1"
-          max="{{ exam.length }}"
-          class="join-item w-[100px] input-sm input input-bordered"
-        />
+
+      <div class="eh-field">
+        <span>¿Cómo se identifica cada estudiante?</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          @for (opt of identificationOptions; track opt.id) {
+            <button
+              type="button"
+              class="eh-option"
+              [class.is-active]="identification === opt.id"
+              [disabled]="opt.id === 'personalized' && groups.length === 0"
+              (click)="setIdentification(opt.id)"
+            >
+              <app-icon [icon]="opt.icon" />
+              <strong>{{ opt.title }}</strong>
+              <small>{{ opt.text }}</small>
+            </button>
+          }
+        </div>
       </div>
-      <div class="join">
-        <button
-          class="btn no-animation btn-sm text-gray-500 hover:text-gray-700 join-item"
-        >
-          Formas diferentes:
-        </button>
-        <input
-          id="amount"
-          [(ngModel)]="amount"
-          type="number"
-          min="1"
-          class="join-item w-[100px] input-sm input input-bordered"
-        />
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+        @if (identification === "personalized") {
+          <label class="eh-field">
+            <span>Hojas de reserva por forma</span>
+            <input class="eh-input" type="number" min="0" max="50" formControlName="spareSheets" />
+            <small>En blanco, para estudiantes nuevos o hojas dañadas.</small>
+          </label>
+        }
+        @if (identification === "code") {
+          <label class="eh-field">
+            <span>Dígitos del código</span>
+            <input class="eh-input" type="number" min="1" max="10" formControlName="codeDigits" />
+          </label>
+        }
+        <label class="eh-field">
+          <span>Nota máxima</span>
+          <input class="eh-input" type="number" min="1" max="100" step="0.5" formControlName="maxScore" />
+        </label>
+        <div class="eh-field">
+          <span>Capacidad de la hoja</span>
+          <p class="text-sm text-slate-700 pt-2">{{ sheetCapacity }} preguntas por hoja de respuestas</p>
+        </div>
       </div>
+
+      @if (identification === "personalized" && selectedGroupIds.length > 0) {
+        <p class="eh-note eh-note--brand mt-4">
+          Se imprimirán {{ rosterStudents.length }} hojas con nombre, ordenadas por grupo y apellido. Las formas
+          se alternan por orden de lista para que compañeros vecinos tengan formas distintas; cada hoja indica qué
+          cuadernillo entregar.
+        </p>
+      }
+    </section>
+  </form>
+
+  <!-- ===================== Pie ===================== -->
+  <footer class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center gap-3">
+    <div class="flex-1 min-w-0 text-sm">
+      @if (blockingReason) {
+        <p class="text-amber-700 flex items-center gap-1"><app-icon [icon]="'info'" /> {{ blockingReason }}</p>
+      } @else {
+        <p class="text-slate-600">Se generarán: <strong class="text-slate-900">{{ outputSummary }}</strong></p>
+      }
     </div>
-    <div class="flex items-center space-x-2"></div>
-    <div class="join">
-      <button
-        [disabled]="
-          examConfigForm.invalid &&
-          this.examConfigForm.value.headerType === 'text'
-        "
-        class="btn btn-sm join-item btn-primary"
-        (click)="preview()"
-      >
-        Vista previa
+    <div class="flex gap-2 justify-end">
+      <button type="button" class="eh-btn eh-btn--ghost" (click)="cancel()">Cancelar</button>
+      <button type="button" class="eh-btn eh-btn--secondary" [disabled]="isGenerating" (click)="preview()">
+        <app-icon [icon]="'visibility'" /> Vista previa
       </button>
-      <button
-        [disabled]="
-          examConfigForm.invalid &&
-          this.examConfigForm.value.headerType === 'text'
-        "
-        class="btn btn-sm join-item btn-secondary"
-        [class.btn-disabled]="isGenerating"
-        (click)="generate()"
-      >
-        {{ isGenerating ? "Generando…" : "Generar" }}
-      </button>
-      <button class="btn btn-sm join-item btn-error" (click)="cancel()">
-        Cancelar
+      <button type="button" class="eh-btn eh-btn--primary" [disabled]="isGenerating || !!blockingReason" (click)="generate()">
+        <app-icon [icon]="'print'" /> {{ isGenerating ? "Generando…" : "Generar y guardar" }}
       </button>
     </div>
-  </div>
-</mat-dialog-content>
+  </footer>
+</div>

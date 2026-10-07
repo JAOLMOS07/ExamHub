@@ -43,9 +43,15 @@ export function pickCornerSquares(
   expectedAspect: number,
   tolerance = 0.18
 ): Record<Corner, SquareCandidate> | null {
-  if (candidates.length < 4) return null;
+  // A baja resolución un cuadro relleno puede aparecer dos veces (borde
+  // exterior e interior, mismo centro): se conserva el más grande.
+  const merged: SquareCandidate[] = [];
+  for (const c of [...candidates].sort((a, b) => b.area - a.area)) {
+    if (!merged.some((m) => Math.hypot(m.cx - c.cx, m.cy - c.cy) < 4)) merged.push(c);
+  }
+  if (merged.length < 4) return null;
   const pick = (score: (c: SquareCandidate) => number) =>
-    candidates.reduce((best, c) => (score(c) > score(best) ? c : best));
+    merged.reduce((best, c) => (score(c) > score(best) ? c : best));
   const corners = {
     tl: pick((c) => -(c.cx + c.cy)),
     br: pick((c) => c.cx + c.cy),

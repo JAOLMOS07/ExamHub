@@ -42,6 +42,13 @@
  *  Agrega el orgId para que un docente que pertenece a varias
  *  instituciones abra el examen en la correcta. Los QR v1 se siguen
  *  leyendo (el examen se busca en la organización activa).
+ *
+ *  Protocolo v3 (hojas personalizadas por estudiante):
+ *
+ *       EH|3|<orgId>|<assessmentId>|<formId>|<page>|<totalPages>|<studentId>|<sig>
+ *
+ *  El studentId es el id interno del documento del estudiante: no es
+ *  un dato personal legible fuera de ExamHub.
  * ========================================================================
  */
 
@@ -62,8 +69,10 @@ const SIG_SALT = "examhub-qr-v1";
 
 /** Forma del payload tras decodificar. */
 export interface QrPayload {
-  /** Solo presente en protocolo v2. */
+  /** Presente desde el protocolo v2. */
   orgId?: string;
+  /** Solo en hojas personalizadas (protocolo v3). */
+  studentId?: string;
   examId: string;
   versionId: string;
   page: number;
@@ -74,8 +83,9 @@ export interface QrPayload {
  * Codifica los datos en el string que se imprime en el QR.
  */
 export function encodeQrPayload(data: QrPayload): string {
+  const version = data.studentId && data.orgId ? "3" : data.orgId ? "2" : "1";
   const fields = data.orgId
-    ? [QR_PROTOCOL_MARK, "2", data.orgId]
+    ? [QR_PROTOCOL_MARK, version, data.orgId]
     : [QR_PROTOCOL_MARK, "1"];
   fields.push(
     data.examId,
@@ -83,6 +93,7 @@ export function encodeQrPayload(data: QrPayload): string {
     String(data.page),
     String(data.totalPages)
   );
+  if (version === "3") fields.push(data.studentId!);
   const body = fields.join(FIELD_SEPARATOR);
   const sig = computeSignature(body);
   return `${body}${FIELD_SEPARATOR}${sig}`;
@@ -98,7 +109,8 @@ export function decodeQrPayload(raw: string): QrPayload | null {
   if (parts[0] !== QR_PROTOCOL_MARK) return null;
 
   const protocolVersion = parseInt(parts[1], 10);
-  const expectedParts = protocolVersion === 1 ? 7 : protocolVersion === 2 ? 8 : -1;
+  const expectedParts =
+    protocolVersion === 1 ? 7 : protocolVersion === 2 ? 8 : protocolVersion === 3 ? 9 : -1;
   if (parts.length !== expectedParts) return null;
 
   // Verifica firma (sin esto cualquiera escribiría EH|1|fake|v1|1|1|aaaa)
@@ -106,15 +118,17 @@ export function decodeQrPayload(raw: string): QrPayload | null {
   const body = parts.slice(0, -1).join(FIELD_SEPARATOR);
   if (sig !== computeSignature(body)) return null;
 
-  const rest = protocolVersion === 2 ? parts.slice(2, -1) : [undefined, ...parts.slice(2, -1)];
-  const [orgId, examId, versionId, pageStr, totalStr] = rest;
+  const rest = protocolVersion >= 2 ? parts.slice(2, -1) : [undefined, ...parts.slice(2, -1)];
+  const [orgId, examId, versionId, pageStr, totalStr, studentId] = rest;
   const page = parseInt(pageStr ?? "", 10);
   const totalPages = parseInt(totalStr ?? "", 10);
   if (!Number.isFinite(page) || !Number.isFinite(totalPages)) return null;
   if (page < 1 || totalPages < 1 || page > totalPages) return null;
   if (!examId || !versionId) return null;
-  if (protocolVersion === 2 && !orgId) return null;
+  if (protocolVersion >= 2 && !orgId) return null;
+  if (protocolVersion === 3 && !studentId) return null;
 
+  if (studentId) return { orgId, examId, versionId, page, totalPages, studentId };
   return orgId
     ? { orgId, examId, versionId, page, totalPages }
     : { examId, versionId, page, totalPages };

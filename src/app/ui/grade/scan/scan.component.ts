@@ -69,8 +69,13 @@ export class ScanComponent implements OnDestroy {
     try {
       // facingMode 'environment' = cámara trasera. Si no hay (web en
       // desktop) cae a la frontal.
+      // Resolución alta: el QR se lee desde más lejos y con menos enfoque.
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
       });
       const video = this.videoEl?.nativeElement;
@@ -237,7 +242,11 @@ export class ScanComponent implements OnDestroy {
       this.toast.success("QR detectado.", "ExamHub", 1500);
     }
     this.router.navigate([MODULES.GRADE.EXAM_GRADE(payload.examId)], {
-      queryParams: { versionId: payload.versionId, page: payload.page },
+      queryParams: {
+        versionId: payload.versionId,
+        page: payload.page,
+        ...(payload.studentId ? { studentId: payload.studentId } : {}),
+      },
     });
   }
 }
