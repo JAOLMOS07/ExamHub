@@ -1,0 +1,181 @@
+{
+  "questions": [
+    {
+      "type": "multiple-choice",
+      "question": "Una tienda ofrece un descuento del 20 % sobre un pantalón que cuesta $80.000 y luego cobra un IVA del 19 % sobre el precio con descuento. ¿Cuánto paga el cliente?",
+      "options": [
+        { "text": "$76.160", "correct": true },
+        { "text": "$79.200", "correct": false },
+        { "text": "$80.000", "correct": false },
+        { "text": "$64.000", "correct": false }
+      ],
+      "subject": "Matemática", "grade": "11°", "difficulty": 2,
+      "test": "matematicas", "competency": "formulacion_ejecucion",
+      "rationale": "Con descuento: 80.000 × 0,8 = 64.000; con IVA: 64.000 × 1,19 = 76.160. B resta 1 % neto (error de restar porcentajes), C supone que se compensan, D olvida el IVA."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "En un curso de 40 estudiantes, 15 practican fútbol, 12 practican baloncesto y 5 practican ambos deportes. ¿Cuántos estudiantes no practican ninguno de los dos?",
+      "options": [
+        { "text": "18", "correct": true },
+        { "text": "13", "correct": false },
+        { "text": "8", "correct": false },
+        { "text": "23", "correct": false }
+      ],
+      "subject": "Matemática", "grade": "11°", "difficulty": 2,
+      "test": "matematicas", "competency": "interpretacion_representacion",
+      "rationale": "Practican al menos uno: 15 + 12 − 5 = 22; ninguno: 40 − 22 = 18. B no descuenta los que hacen ambos; C resta dos veces; D usa solo 15 + 12 − 5 sin restar del total."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Juan afirma que si se duplica la medida del lado de un cuadrado, su área también se duplica. ¿Es correcta la afirmación de Juan?",
+      "options": [
+        { "text": "No, porque el área depende del cuadrado del lado y se multiplica por 4.", "correct": true },
+        { "text": "Sí, porque el área y el lado son directamente proporcionales.", "correct": false },
+        { "text": "No, porque el área se triplica al duplicar el lado.", "correct": false },
+        { "text": "Sí, porque el perímetro también se duplica.", "correct": false }
+      ],
+      "subject": "Matemática", "grade": "9°", "difficulty": 1,
+      "test": "matematicas", "competency": "argumentacion",
+      "rationale": "A = l²; con 2l, A = 4l². B confunde proporcionalidad directa con cuadrática; D usa una propiedad del perímetro para justificar el área."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Si $f(x) = 2x^2 - 3$, ¿cuál es el valor de $f(-2)$?",
+      "options": [
+        { "text": "$5$", "correct": true },
+        { "text": "$-11$", "correct": false },
+        { "text": "$11$", "correct": false },
+        { "text": "$-5$", "correct": false }
+      ],
+      "subject": "Matemática", "grade": "10°", "difficulty": 1,
+      "test": "matematicas", "competency": "formulacion_ejecucion",
+      "rationale": "2(−2)² − 3 = 8 − 3 = 5. B eleva mal el signo (−8 − 3); C suma 3; D cambia el signo del resultado."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Al dejar un vaso con agua muy fría sobre una mesa en un día caluroso, se forman gotas en su superficie exterior. Esto ocurre porque",
+      "options": [
+        { "text": "el vapor de agua del aire se condensa al enfriarse en contacto con el vaso.", "correct": true },
+        { "text": "el agua del interior atraviesa lentamente el vidrio.", "correct": false },
+        { "text": "el vidrio produce agua cuando se enfría.", "correct": false },
+        { "text": "el agua del vaso se evapora y cae por los lados.", "correct": false }
+      ],
+      "subject": "Ciencias Naturales", "grade": "9°", "difficulty": 1,
+      "test": "ciencias_naturales", "competency": "explicacion_fenomenos",
+      "rationale": "Condensación del vapor atmosférico al bajar su temperatura. B y D suponen que el agua viene del interior; C atribuye la producción de agua al material."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un estudiante quiere saber si la luz influye en el crecimiento de plantas de fríjol. ¿Cuál de los siguientes experimentos es el más adecuado?",
+      "options": [
+        { "text": "Cultivar dos grupos iguales de plantas, uno con luz y otro en oscuridad, con la misma agua y el mismo suelo.", "correct": true },
+        { "text": "Cultivar una sola planta con luz y medir su altura cada día.", "correct": false },
+        { "text": "Cultivar dos grupos de plantas con luz pero con distinta cantidad de agua.", "correct": false },
+        { "text": "Cultivar plantas de distintas especies bajo la misma luz.", "correct": false }
+      ],
+      "subject": "Ciencias Naturales", "grade": "11°", "difficulty": 2,
+      "test": "ciencias_naturales", "competency": "indagacion",
+      "rationale": "Se necesita un grupo de control y variar solo la luz. B no tiene comparación; C cambia otra variable; D cambia la especie."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "La Constitución Política de Colombia de 1991 define al país como un Estado social de derecho. Esto implica que el Estado debe",
+      "options": [
+        { "text": "garantizar condiciones de vida digna y proteger los derechos de las personas.", "correct": true },
+        { "text": "limitarse a mantener el orden público.", "correct": false },
+        { "text": "tomar las decisiones sin consultar a los ciudadanos.", "correct": false },
+        { "text": "reemplazar a las empresas privadas en toda la economía.", "correct": false }
+      ],
+      "subject": "Sociales", "grade": "11°", "difficulty": 1,
+      "test": "sociales_ciudadanas", "competency": "pensamiento_social",
+      "rationale": "El Estado social de derecho busca la garantía material de los derechos. B describe un Estado mínimo; C contradice la participación; D confunde con economía centralizada."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "En una vereda se discute construir una vía que atravesaría un bosque. Los comerciantes la apoyan porque reduciría los costos de transporte; un grupo ambiental se opone por la pérdida de hábitat de varias especies. ¿Qué afirmación recoge mejor ambas perspectivas?",
+      "options": [
+        { "text": "La vía traería beneficios económicos, pero también costos ambientales que deben evaluarse.", "correct": true },
+        { "text": "Solo debe tenerse en cuenta la opinión de quienes viven más cerca del bosque.", "correct": false },
+        { "text": "Los comerciantes tienen la razón porque generan empleo en la vereda.", "correct": false },
+        { "text": "El grupo ambiental se opone a cualquier forma de desarrollo.", "correct": false }
+      ],
+      "subject": "Sociales", "grade": "11°", "difficulty": 2,
+      "test": "sociales_ciudadanas", "competency": "interpretacion_perspectivas",
+      "rationale": "La clave integra los dos intereses en conflicto. B excluye actores; C y D adoptan una sola postura o la caricaturizan."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Choose the word that completes the sentence: \"I usually ______ to school by bus.\"",
+      "options": [
+        { "text": "go", "correct": true },
+        { "text": "goes", "correct": false },
+        { "text": "going", "correct": false },
+        { "text": "gone", "correct": false }
+      ],
+      "subject": "Inglés", "grade": "9°", "difficulty": 1,
+      "test": "ingles", "competency": "parte_7",
+      "rationale": "Present simple with 'I' uses the base form. 'goes' is third person; 'going' and 'gone' need an auxiliary."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Read the notice: \"Library closed on Monday for cleaning. Open again Tuesday at 8 a.m.\" What does the notice say?",
+      "options": [
+        { "text": "Students cannot use the library on Monday.", "correct": true },
+        { "text": "The library closes every day at 8 a.m.", "correct": false },
+        { "text": "Students must clean the library on Tuesday.", "correct": false },
+        { "text": "The library is open only on Mondays.", "correct": false }
+      ],
+      "subject": "Inglés", "grade": "11°", "difficulty": 1,
+      "test": "ingles", "competency": "parte_1",
+      "rationale": "The notice says it is closed on Monday. The other options misread the time, who cleans, or the days."
+    }
+  ],
+  "passages": [
+    {
+      "title": "El agua en San Rafael",
+      "text": "En el municipio de San Rafael, el acueducto reporta que el consumo de agua por hogar aumentó un 18 % en los últimos cinco años. La alcaldía atribuye el aumento al crecimiento de la población; sin embargo, un estudio de la universidad regional encontró que el número de habitantes creció apenas un 4 % en el mismo periodo. Según los investigadores, la causa principal sería el deterioro de las tuberías dentro de las viviendas, que provoca fugas difíciles de detectar. Por esta razón, proponen que, antes de restringir el consumo, se ofrezcan revisiones gratuitas de las instalaciones domésticas.",
+      "questions": [
+        {
+          "type": "multiple-choice",
+          "question": "Según el texto, ¿cuál es la causa principal del aumento del consumo que plantean los investigadores?",
+          "options": [
+            { "text": "Las fugas causadas por el deterioro de las tuberías de las viviendas.", "correct": true },
+            { "text": "El crecimiento de la población del municipio.", "correct": false },
+            { "text": "Las restricciones de consumo impuestas por la alcaldía.", "correct": false },
+            { "text": "El aumento de las tarifas del acueducto.", "correct": false }
+          ],
+          "subject": "Lenguaje", "grade": "11°", "difficulty": 1,
+          "test": "lectura_critica", "competency": "identificar_entender",
+          "rationale": "El texto lo dice explícitamente. B es la explicación de la alcaldía; C y D no aparecen en el texto."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "En el texto, la expresión \"sin embargo\" introduce",
+          "options": [
+            { "text": "un dato que pone en duda la explicación de la alcaldía.", "correct": true },
+            { "text": "una consecuencia de la propuesta de los investigadores.", "correct": false },
+            { "text": "un ejemplo que confirma lo dicho por la alcaldía.", "correct": false },
+            { "text": "la conclusión general del texto.", "correct": false }
+          ],
+          "subject": "Lenguaje", "grade": "11°", "difficulty": 2,
+          "test": "lectura_critica", "competency": "comprender_articulacion",
+          "rationale": "Es un conector de contraste: el 4 % contradice que la población explique el 18 %."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "¿Cuál de los siguientes hallazgos debilitaría la propuesta de los investigadores?",
+          "options": [
+            { "text": "Que las revisiones a una muestra de viviendas no encontraran fugas significativas.", "correct": true },
+            { "text": "Que la población hubiera crecido un 4 % en cinco años.", "correct": false },
+            { "text": "Que el consumo por hogar hubiera aumentado un 18 %.", "correct": false },
+            { "text": "Que la universidad tuviera experiencia en estudios sobre agua.", "correct": false }
+          ],
+          "subject": "Lenguaje", "grade": "11°", "difficulty": 3,
+          "test": "lectura_critica", "competency": "reflexionar_evaluar",
+          "rationale": "Si no hay fugas, se cae la causa propuesta. B y C son datos del propio texto que la apoyan; D refuerza la credibilidad del estudio."
+        }
+      ]
+    }
+  ]
+}
