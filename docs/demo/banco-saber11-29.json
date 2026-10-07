@@ -1,0 +1,830 @@
+{
+  "questions": [
+    {
+      "type": "multiple-choice",
+      "question": "Un columnista afirma: \"Los jóvenes de hoy no leen, pues pasan horas en el celular\". Esta afirmación supone que",
+      "options": [
+        {
+          "text": "leer en el celular no cuenta como lectura.",
+          "correct": true
+        },
+        {
+          "text": "los jóvenes no tienen acceso a libros.",
+          "correct": false
+        },
+        {
+          "text": "el celular mejora la comprensión lectora.",
+          "correct": false
+        },
+        {
+          "text": "los adultos leen menos que los jóvenes.",
+          "correct": false
+        }
+      ],
+      "subject": "Lenguaje",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "lectura_critica",
+      "competency": "reflexionar_evaluar",
+      "rationale": "Para concluir que no leen por usar el celular, el autor da por hecho que lo que se lee en él no es lectura. B y D no se siguen del enunciado; C lo contradice."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "A la feria de ciencias asistieron 40 estudiantes de 9°, 35 de 10° y 25 de 11°. ¿Qué porcentaje del total de asistentes son de 11°?",
+      "options": [
+        {
+          "text": "25 %",
+          "correct": true
+        },
+        {
+          "text": "35 %",
+          "correct": false
+        },
+        {
+          "text": "40 %",
+          "correct": false
+        },
+        {
+          "text": "75 %",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "11°",
+      "difficulty": 1,
+      "test": "matematicas",
+      "competency": "interpretacion_representacion",
+      "rationale": "Total: 40 + 35 + 25 = 100; 25 de 100 es 25 %. B y C son los porcentajes de otros grados; D es el complemento."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un celular cuesta $900.000 y se paga con una cuota inicial del 20 % y 6 cuotas mensuales iguales sin intereses. ¿Cuál es el valor de cada cuota mensual?",
+      "options": [
+        {
+          "text": "$150.000",
+          "correct": false
+        },
+        {
+          "text": "$120.000",
+          "correct": true
+        },
+        {
+          "text": "$144.000",
+          "correct": false
+        },
+        {
+          "text": "$180.000",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "matematicas",
+      "competency": "formulacion_ejecucion",
+      "rationale": "Saldo: 900.000 × 0,8 = 720.000; 720.000 ÷ 6 = 120.000. A no descuenta la cuota inicial; C divide entre 5; D toma la cuota inicial como cuota mensual."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Laura afirma que si un número es divisible por 6, entonces también es divisible por 3. ¿Es correcta su afirmación?",
+      "options": [
+        {
+          "text": "No, porque 9 es divisible por 3 y no es divisible por 6.",
+          "correct": false
+        },
+        {
+          "text": "Sí, porque todo número par es divisible por 3.",
+          "correct": false
+        },
+        {
+          "text": "Sí, porque 6 = 2 × 3 y todo múltiplo de 6 es también múltiplo de 3.",
+          "correct": true
+        },
+        {
+          "text": "No, porque 12 no es divisible por 3.",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "matematicas",
+      "competency": "argumentacion",
+      "rationale": "Todo múltiplo de 6 es 3 × (2k). A prueba la afirmación recíproca, no la de Laura; B es falso (4 es par); D es falso."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Si $3x - 7 = 2x + 5$, ¿cuál es el valor de $x$?",
+      "options": [
+        {
+          "text": "$-2$",
+          "correct": false
+        },
+        {
+          "text": "$2$",
+          "correct": false
+        },
+        {
+          "text": "$-12$",
+          "correct": false
+        },
+        {
+          "text": "$12$",
+          "correct": true
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "matematicas",
+      "competency": "formulacion_ejecucion",
+      "rationale": "3x − 2x = 5 + 7, luego x = 12. Los distractores provienen de errores de signo al trasponer términos."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un tanque con 1.200 litros de agua pierde agua a razón constante de 50 litros por hora. ¿Qué expresión representa los litros que quedan después de $t$ horas?",
+      "options": [
+        {
+          "text": "$1200 - 50t$",
+          "correct": true
+        },
+        {
+          "text": "$50t - 1200$",
+          "correct": false
+        },
+        {
+          "text": "$1200 + 50t$",
+          "correct": false
+        },
+        {
+          "text": "$1200t - 50$",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "9°",
+      "difficulty": 2,
+      "test": "matematicas",
+      "competency": "interpretacion_representacion",
+      "rationale": "Se parte de 1.200 y se restan 50 por cada hora. B invierte el orden; C suma en vez de restar; D confunde el papel de las cantidades."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "En una bolsa hay 3 balotas rojas y 5 azules. Andrés afirma que es más probable sacar una roja porque son pocas. ¿Por qué es incorrecta su afirmación?",
+      "options": [
+        {
+          "text": "Porque ambos colores tienen probabilidad 1/2.",
+          "correct": false
+        },
+        {
+          "text": "Porque la probabilidad de sacar azul es 5/8, mayor que la de sacar roja, que es 3/8.",
+          "correct": true
+        },
+        {
+          "text": "Porque la probabilidad de sacar roja es 3/5.",
+          "correct": false
+        },
+        {
+          "text": "Porque no se puede calcular sin sacar balotas.",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "10°",
+      "difficulty": 2,
+      "test": "matematicas",
+      "competency": "argumentacion",
+      "rationale": "Hay 8 balotas: P(azul) = 5/8 > P(roja) = 3/8. A supone equiprobabilidad de colores; C usa un denominador incorrecto; D desconoce la probabilidad clásica."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un terreno rectangular mide 30 m de largo y 20 m de ancho. Se quiere cercar con 3 vueltas de alambre. ¿Cuántos metros de alambre se necesitan?",
+      "options": [
+        {
+          "text": "100 m",
+          "correct": false
+        },
+        {
+          "text": "150 m",
+          "correct": false
+        },
+        {
+          "text": "300 m",
+          "correct": true
+        },
+        {
+          "text": "1.800 m",
+          "correct": false
+        }
+      ],
+      "subject": "Matemática",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "matematicas",
+      "competency": "formulacion_ejecucion",
+      "rationale": "Perímetro: 2 × (30 + 20) = 100 m; tres vueltas: 300 m. A es una sola vuelta; B suma los lados una vez y multiplica por 3; D usa el área."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "La acción de tutela, establecida en la Constitución de 1991, sirve para",
+      "options": [
+        {
+          "text": "elegir a los alcaldes y gobernadores.",
+          "correct": false
+        },
+        {
+          "text": "proteger de manera rápida los derechos fundamentales cuando son vulnerados o amenazados.",
+          "correct": true
+        },
+        {
+          "text": "reformar la Constitución.",
+          "correct": false
+        },
+        {
+          "text": "juzgar a quienes cometen delitos.",
+          "correct": false
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 1,
+      "test": "sociales_ciudadanas",
+      "competency": "pensamiento_social",
+      "rationale": "La tutela es un mecanismo para proteger derechos fundamentales. A es la función del voto; C, de los mecanismos de reforma; D, de la justicia penal."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "¿Cuál es la función principal del Congreso de la República?",
+      "options": [
+        {
+          "text": "Administrar justicia en los casos penales.",
+          "correct": false
+        },
+        {
+          "text": "Dirigir la Policía Nacional.",
+          "correct": false
+        },
+        {
+          "text": "Ejecutar el presupuesto de los municipios.",
+          "correct": false
+        },
+        {
+          "text": "Hacer las leyes y ejercer control político sobre el Gobierno.",
+          "correct": true
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 1,
+      "test": "sociales_ciudadanas",
+      "competency": "pensamiento_social",
+      "rationale": "Es la rama legislativa. A corresponde a la rama judicial; B y C, a la ejecutiva."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "En un barrio se propone cerrar una calle los domingos para actividades recreativas. Los comerciantes temen perder ventas y las familias quieren espacios de recreación. ¿Cuál propuesta tiene en cuenta ambas perspectivas?",
+      "options": [
+        {
+          "text": "Cerrar la calle todo el día sin consultar a nadie.",
+          "correct": false
+        },
+        {
+          "text": "No cerrar la calle porque los comerciantes pagan impuestos.",
+          "correct": false
+        },
+        {
+          "text": "Cerrar la calle en horarios acordados e invitar a los comerciantes a participar con puestos de venta.",
+          "correct": true
+        },
+        {
+          "text": "Dejar que la decisión la tome solo la junta de padres del colegio.",
+          "correct": false
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "sociales_ciudadanas",
+      "competency": "interpretacion_perspectivas",
+      "rationale": "Solo C atiende el interés de las familias y el de los comerciantes. A y D excluyen actores; B favorece a una sola parte."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "El aumento del precio del petróleo en el mercado internacional puede elevar el precio de los alimentos en Colombia porque",
+      "options": [
+        {
+          "text": "los alimentos se fabrican con petróleo.",
+          "correct": false
+        },
+        {
+          "text": "el transporte y la producción de alimentos dependen de combustibles derivados del petróleo.",
+          "correct": true
+        },
+        {
+          "text": "Colombia no produce alimentos.",
+          "correct": false
+        },
+        {
+          "text": "el Gobierno fija todos los precios según el valor del petróleo.",
+          "correct": false
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "sociales_ciudadanas",
+      "competency": "pensamiento_reflexivo",
+      "rationale": "El combustible encarece el transporte, los fertilizantes y la maquinaria. A y C son falsos; D desconoce cómo se forman los precios."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un historiador afirma que la independencia de Colombia fue obra exclusiva de los líderes militares. Otro sostiene que la participación de campesinos, indígenas y personas esclavizadas fue decisiva. Estas posturas difieren principalmente en",
+      "options": [
+        {
+          "text": "los actores que consideran protagonistas del proceso.",
+          "correct": true
+        },
+        {
+          "text": "la fecha en que ocurrió la independencia.",
+          "correct": false
+        },
+        {
+          "text": "el país del que Colombia se independizó.",
+          "correct": false
+        },
+        {
+          "text": "si hubo o no enfrentamientos armados.",
+          "correct": false
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "sociales_ciudadanas",
+      "competency": "interpretacion_perspectivas",
+      "rationale": "Ambos aceptan el mismo proceso, pero discrepan sobre quiénes lo protagonizaron. Los demás aspectos no están en discusión."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un municipio construirá una represa para generar energía. ¿Cuál de las siguientes consecuencias debería prever?",
+      "options": [
+        {
+          "text": "El aumento de las lluvias en todo el país.",
+          "correct": false
+        },
+        {
+          "text": "La desaparición de la demanda de energía.",
+          "correct": false
+        },
+        {
+          "text": "La reducción automática de las tarifas en el mundo entero.",
+          "correct": false
+        },
+        {
+          "text": "El desplazamiento de las familias que viven en la zona que será inundada.",
+          "correct": true
+        }
+      ],
+      "subject": "Sociales",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "sociales_ciudadanas",
+      "competency": "pensamiento_reflexivo",
+      "rationale": "La inundación del embalse afecta directamente a quienes viven allí. Los demás efectos no se derivan de una represa local."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "La función principal de los glóbulos rojos es",
+      "options": [
+        {
+          "text": "defender al cuerpo de las infecciones.",
+          "correct": false
+        },
+        {
+          "text": "transportar oxígeno a las células del cuerpo.",
+          "correct": true
+        },
+        {
+          "text": "coagular la sangre cuando hay una herida.",
+          "correct": false
+        },
+        {
+          "text": "producir hormonas.",
+          "correct": false
+        }
+      ],
+      "subject": "Biología",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "ciencias_naturales",
+      "competency": "uso_comprensivo",
+      "rationale": "La hemoglobina de los glóbulos rojos transporta oxígeno. A corresponde a los glóbulos blancos; C, a las plaquetas; D, a las glándulas."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Una cuchara metálica dentro de una taza de chocolate caliente se calienta rápidamente porque",
+      "options": [
+        {
+          "text": "el metal produce calor propio.",
+          "correct": false
+        },
+        {
+          "text": "el chocolate es un aislante térmico.",
+          "correct": false
+        },
+        {
+          "text": "los metales son buenos conductores del calor.",
+          "correct": true
+        },
+        {
+          "text": "el aire calienta la cuchara más rápido que el chocolate.",
+          "correct": false
+        }
+      ],
+      "subject": "Física",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "ciencias_naturales",
+      "competency": "explicacion_fenomenos",
+      "rationale": "El calor pasa del chocolate al metal por conducción. A es falso; B contradice lo observado; D no explica el calentamiento rápido."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Un estudiante quiere saber si la temperatura del agua afecta la rapidez con que se disuelve el azúcar. ¿Qué debe mantener igual en todos los vasos?",
+      "options": [
+        {
+          "text": "La temperatura del agua.",
+          "correct": false
+        },
+        {
+          "text": "El tiempo que tarda en disolverse el azúcar.",
+          "correct": false
+        },
+        {
+          "text": "La cantidad de azúcar y de agua en cada vaso.",
+          "correct": true
+        },
+        {
+          "text": "El color del vaso.",
+          "correct": false
+        }
+      ],
+      "subject": "Química",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "ciencias_naturales",
+      "competency": "indagacion",
+      "rationale": "La temperatura es la variable que se cambia y el tiempo es lo que se mide; las cantidades deben controlarse. D es irrelevante."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "En un ecosistema desaparecen los depredadores de los conejos. Lo más probable es que, al inicio,",
+      "options": [
+        {
+          "text": "disminuya la población de conejos.",
+          "correct": false
+        },
+        {
+          "text": "aumente la población de conejos y disminuya la vegetación que comen.",
+          "correct": true
+        },
+        {
+          "text": "aumente la vegetación de la zona.",
+          "correct": false
+        },
+        {
+          "text": "no cambie nada en el ecosistema.",
+          "correct": false
+        }
+      ],
+      "subject": "Biología",
+      "grade": "11°",
+      "difficulty": 2,
+      "test": "ciencias_naturales",
+      "competency": "explicacion_fenomenos",
+      "rationale": "Sin depredadores los conejos se multiplican y consumen más plantas. A y C invierten el efecto; D desconoce las relaciones tróficas."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "El agua (H₂O) es un compuesto porque",
+      "options": [
+        {
+          "text": "está formada por un solo tipo de átomo.",
+          "correct": false
+        },
+        {
+          "text": "es líquida a temperatura ambiente.",
+          "correct": false
+        },
+        {
+          "text": "se puede separar en sus componentes por filtración.",
+          "correct": false
+        },
+        {
+          "text": "está formada por dos elementos distintos unidos químicamente.",
+          "correct": true
+        }
+      ],
+      "subject": "Química",
+      "grade": "10°",
+      "difficulty": 1,
+      "test": "ciencias_naturales",
+      "competency": "uso_comprensivo",
+      "rationale": "Un compuesto une químicamente elementos diferentes (H y O). A describe un elemento; B es una propiedad física; C corresponde a mezclas."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Para saber si la masa de un péndulo afecta su periodo, un estudiante usa péndulos de igual longitud y distinta masa y mide el tiempo de 10 oscilaciones. El tiempo resulta igual en todos. Puede concluir que",
+      "options": [
+        {
+          "text": "el periodo no depende de la masa en esas condiciones.",
+          "correct": true
+        },
+        {
+          "text": "el periodo depende de la longitud del péndulo.",
+          "correct": false
+        },
+        {
+          "text": "a mayor masa, mayor periodo.",
+          "correct": false
+        },
+        {
+          "text": "el experimento no sirve porque usó la misma longitud.",
+          "correct": false
+        }
+      ],
+      "subject": "Física",
+      "grade": "11°",
+      "difficulty": 3,
+      "test": "ciencias_naturales",
+      "competency": "indagacion",
+      "rationale": "Solo cambió la masa y el periodo no cambió. B puede ser cierto, pero no se deduce de estos datos; C contradice los datos; D: mantener la longitud era necesario."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "Where can you see this sign? \"Please keep your voice down.\"",
+      "options": [
+        {
+          "text": "At a football stadium.",
+          "correct": false
+        },
+        {
+          "text": "In a library.",
+          "correct": true
+        },
+        {
+          "text": "At a rock concert.",
+          "correct": false
+        },
+        {
+          "text": "In a playground.",
+          "correct": false
+        }
+      ],
+      "subject": "Inglés",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "ingles",
+      "competency": "parte_1",
+      "rationale": "Asking for silence is typical in a library; the other places are usually noisy."
+    },
+    {
+      "type": "multiple-choice",
+      "question": "A: \"Would you like some coffee?\" B: \"______\"",
+      "options": [
+        {
+          "text": "I like it every day.",
+          "correct": false
+        },
+        {
+          "text": "It's on the table.",
+          "correct": false
+        },
+        {
+          "text": "Yes, please.",
+          "correct": true
+        },
+        {
+          "text": "No, I don't drink yesterday.",
+          "correct": false
+        }
+      ],
+      "subject": "Inglés",
+      "grade": "9°",
+      "difficulty": 1,
+      "test": "ingles",
+      "competency": "parte_3",
+      "rationale": "An offer is accepted with \"Yes, please\". A and B do not answer the offer; D is ungrammatical."
+    }
+  ],
+  "passages": [
+    {
+      "title": "Las abejas y los cultivos",
+      "text": "Durante la última década, apicultores de varios departamentos de Colombia han reportado la pérdida de colmenas completas. Los investigadores han encontrado que muchas de estas muertes coinciden con la fumigación de cultivos cercanos con insecticidas de amplio espectro. Aunque estos productos protegen las cosechas de algunas plagas, también afectan a insectos polinizadores como las abejas, de las que depende buena parte de la producción de frutas y hortalizas.\nAlgunos agricultores sostienen que sin estos insecticidas sus pérdidas serían mayores. Sin embargo, experiencias en fincas del Eje Cafetero muestran que, cuando se acuerdan horarios de fumigación con los apicultores y se usan productos selectivos, las colmenas se recuperan y la producción de aguacate y café no disminuye.\nPor lo tanto, proteger a las abejas no exige renunciar a la productividad: exige coordinación entre quienes comparten el territorio.",
+      "questions": [
+        {
+          "type": "multiple-choice",
+          "question": "Según el texto, ¿qué encontraron los investigadores?",
+          "options": [
+            {
+              "text": "Que las abejas causan plagas en los cultivos.",
+              "correct": false
+            },
+            {
+              "text": "Que muchas muertes de colmenas coinciden con fumigaciones con insecticidas de amplio espectro.",
+              "correct": true
+            },
+            {
+              "text": "Que la producción de café disminuye cuando hay colmenas cerca.",
+              "correct": false
+            },
+            {
+              "text": "Que los apicultores fumigan sus propias colmenas.",
+              "correct": false
+            }
+          ],
+          "subject": "Lenguaje",
+          "grade": "11°",
+          "difficulty": 1,
+          "test": "lectura_critica",
+          "competency": "identificar_entender",
+          "rationale": "Está dicho explícitamente en el primer párrafo. Los demás no aparecen o contradicen el texto."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "¿Qué función cumple el segundo párrafo dentro del texto?",
+          "options": [
+            {
+              "text": "Definir qué es la polinización.",
+              "correct": false
+            },
+            {
+              "text": "Narrar la historia de la apicultura en Colombia.",
+              "correct": false
+            },
+            {
+              "text": "Presentar una postura contraria y una experiencia que la cuestiona.",
+              "correct": true
+            },
+            {
+              "text": "Repetir las ideas del primer párrafo sin añadir información.",
+              "correct": false
+            }
+          ],
+          "subject": "Lenguaje",
+          "grade": "11°",
+          "difficulty": 2,
+          "test": "lectura_critica",
+          "competency": "comprender_articulacion",
+          "rationale": "Expone la postura de algunos agricultores y la contrasta con las experiencias del Eje Cafetero."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "En el texto, la expresión \"Por lo tanto\" introduce",
+          "options": [
+            {
+              "text": "un ejemplo de las pérdidas de los agricultores.",
+              "correct": false
+            },
+            {
+              "text": "una objeción a la idea de proteger a las abejas.",
+              "correct": false
+            },
+            {
+              "text": "un dato sobre la producción de café.",
+              "correct": false
+            },
+            {
+              "text": "la conclusión que se deriva de las experiencias descritas.",
+              "correct": true
+            }
+          ],
+          "subject": "Lenguaje",
+          "grade": "11°",
+          "difficulty": 2,
+          "test": "lectura_critica",
+          "competency": "comprender_articulacion",
+          "rationale": "Es un conector consecutivo: cierra con la conclusión del autor."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "¿Cuál de los siguientes datos fortalecería la conclusión del texto?",
+          "options": [
+            {
+              "text": "En otras regiones, las fincas que coordinaron la fumigación mantuvieron su producción y sus colmenas.",
+              "correct": true
+            },
+            {
+              "text": "Los insecticidas de amplio espectro son más baratos que los selectivos.",
+              "correct": false
+            },
+            {
+              "text": "Algunos apicultores viven lejos de los cultivos.",
+              "correct": false
+            },
+            {
+              "text": "La producción de aguacate creció en el país por el aumento de la demanda.",
+              "correct": false
+            }
+          ],
+          "subject": "Lenguaje",
+          "grade": "11°",
+          "difficulty": 3,
+          "test": "lectura_critica",
+          "competency": "reflexionar_evaluar",
+          "rationale": "Replica en otros lugares el resultado en que se basa la conclusión. B es un argumento a favor de la otra postura; C y D no se relacionan con ella."
+        }
+      ]
+    },
+    {
+      "title": "New bike path",
+      "text": "The city park will open a new bike path this Saturday. Families can borrow bicycles for free from 8 a.m. to 2 p.m. Children under 12 must wear a helmet and ride with an adult. In case of rain, the opening will move to Sunday.",
+      "questions": [
+        {
+          "type": "multiple-choice",
+          "question": "What will happen if it rains on Saturday?",
+          "options": [
+            {
+              "text": "The bicycles will cost money.",
+              "correct": false
+            },
+            {
+              "text": "The park will close forever.",
+              "correct": false
+            },
+            {
+              "text": "The opening will be on Sunday.",
+              "correct": true
+            },
+            {
+              "text": "Children cannot ride.",
+              "correct": false
+            }
+          ],
+          "subject": "Inglés",
+          "grade": "11°",
+          "difficulty": 1,
+          "test": "ingles",
+          "competency": "parte_5",
+          "rationale": "The text says the opening will move to Sunday in case of rain."
+        },
+        {
+          "type": "multiple-choice",
+          "question": "Who must ride with an adult?",
+          "options": [
+            {
+              "text": "Everyone who wears a helmet.",
+              "correct": false
+            },
+            {
+              "text": "Children under 12.",
+              "correct": true
+            },
+            {
+              "text": "People who borrow bikes after 2 p.m.",
+              "correct": false
+            },
+            {
+              "text": "All families.",
+              "correct": false
+            }
+          ],
+          "subject": "Inglés",
+          "grade": "11°",
+          "difficulty": 1,
+          "test": "ingles",
+          "competency": "parte_5",
+          "rationale": "\"Children under 12 must wear a helmet and ride with an adult.\""
+        },
+        {
+          "type": "multiple-choice",
+          "question": "What is the main purpose of the text?",
+          "options": [
+            {
+              "text": "To announce a new activity in the park.",
+              "correct": true
+            },
+            {
+              "text": "To sell bicycles.",
+              "correct": false
+            },
+            {
+              "text": "To explain how to repair a bike.",
+              "correct": false
+            },
+            {
+              "text": "To complain about the rain.",
+              "correct": false
+            }
+          ],
+          "subject": "Inglés",
+          "grade": "11°",
+          "difficulty": 2,
+          "test": "ingles",
+          "competency": "parte_6",
+          "rationale": "It informs about the opening of the bike path and its rules."
+        }
+      ]
+    }
+  ]
+}
