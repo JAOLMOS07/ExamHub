@@ -10,7 +10,10 @@ import {
   doc,
   docData,
   getDoc,
+  getDocFromServer,
+  getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
   writeBatch,
@@ -25,11 +28,13 @@ import {
 } from "rxjs";
 import {
   catchError,
+  debounceTime,
   distinctUntilChanged,
   filter,
   map,
   retry,
   shareReplay,
+  startWith,
   switchMap,
 } from "rxjs/operators";
 import {
@@ -60,6 +65,8 @@ export class TenantService {
   readonly user$: Observable<User | null>;
   readonly profile$: Observable<UserProfile | null>;
   readonly orgId$: Observable<string | null>;
+  /** uid + organización activa, tomados del mismo perfil. */
+  private readonly context$: Observable<{ uid: string; orgId: string | null } | null>;
   readonly org$: Observable<Organization | null>;
   readonly membership$: Observable<Member | null>;
   readonly role$: Observable<Role | null>;
@@ -89,22 +96,25 @@ export class TenantService {
               catchError((err) => {
                 console.error("[Tenant] No se pudo cargar el perfil:", err);
                 return of(null);
-              })
+              }),
+              // Al cambiar de usuario no se reusa ni un instante el perfil
+              // (ni la organización activa) del usuario anterior.
+              startWith(null)
             )
           : of(null)
       ),
       shareReplay(1)
     );
 
-    this.orgId$ = this.profile$.pipe(
-      map((p) => {
-        if (!p) return null;
-        const ids = Object.keys(p.orgs ?? {});
-        if (p.activeOrgId && ids.includes(p.activeOrgId)) return p.activeOrgId;
-        return ids.includes(personalOrgId(p.uid))
-          ? personalOrgId(p.uid)
-          : ids[0] ?? null;
-      }),
+    // Usuario + organización SIEMPRE del mismo perfil.
+    this.context$ = this.profile$.pipe(
+      map((p) => (p ? { uid: p.uid, orgId: activeOrgOf(p) } : null)),
+      distinctUntilChanged((a, b) => a?.uid === b?.uid && a?.orgId === b?.orgId),
+      shareReplay(1)
+    );
+
+    this.orgId$ = this.context$.pipe(
+      map((c) => c?.orgId ?? null),
       distinctUntilChanged(),
       shareReplay(1)
     );
@@ -123,11 +133,11 @@ export class TenantService {
       shareReplay(1)
     );
 
-    this.membership$ = combineLatest([this.user$, this.orgId$]).pipe(
-      switchMap(([user, orgId]) =>
-        user && orgId
+    this.membership$ = this.context$.pipe(
+      switchMap((ctx) =>
+        ctx?.orgId
           ? (docData(
-              doc(this.firestore, `orgs/${orgId}/members/${user.uid}`)
+              doc(this.firestore, `orgs/${ctx.orgId}/members/${ctx.uid}`)
             ) as Observable<Member | undefined>).pipe(
               map((m) => m ?? null),
               retry({ count: 4, delay: 1000 }),
@@ -158,27 +168,44 @@ export class TenantService {
       shareReplay(1)
     );
 
-    combineLatest([this.user$, this.orgId$, this.role$]).subscribe(
-      ([user, orgId, role]) =>
+    combineLatest([this.user$, this.context$, this.role$]).subscribe(
+      ([user, ctx, role]) => {
+        const consistent = !!user && ctx?.uid === user.uid;
         this.snapshot.next({
           uid: user?.uid ?? null,
           email: user?.email ?? null,
-          orgId,
-          role,
-        })
+          orgId: consistent ? ctx!.orgId : null,
+          role: consistent ? role : null,
+        });
+      }
     );
 
-    // Auto-reparación: si me sacaron de una organización, el caché del
-    // perfil todavía la lista. Volvemos al espacio personal.
-    combineLatest([this.user$, this.orgId$, this.membership$])
-      .pipe(filter(([user, orgId, m]) => !!user && !!orgId && m === null))
-      .subscribe(([user, orgId]) => {
-        if (!user || !orgId || orgId === personalOrgId(user.uid)) return;
-        updateDoc(doc(this.firestore, `users/${user.uid}`), {
-          [`orgs.${orgId}`]: deleteField(),
-          activeOrgId: personalOrgId(user.uid),
-        }).catch(() => undefined);
+    // Auto-reparación: si a este usuario lo sacaron de su organización
+    // activa, volver a su espacio personal. Solo con confirmación del
+    // SERVIDOR y si el perfil es del usuario con sesión: una ausencia
+    // momentánea (cambio de sesión, caché local) no debe mover a nadie.
+    combineLatest([this.context$, this.membership$])
+      .pipe(
+        filter(([ctx, m]) => !!ctx?.orgId && m === null),
+        debounceTime(1500)
+      )
+      .subscribe(([ctx]) => this.leaveIfRemoved(ctx!.uid, ctx!.orgId!));
+  }
+
+  private async leaveIfRemoved(uid: string, orgId: string): Promise<void> {
+    if (orgId === personalOrgId(uid) || this.auth.currentUser?.uid !== uid) return;
+    try {
+      const member = await getDocFromServer(
+        doc(this.firestore, `orgs/${orgId}/members/${uid}`)
+      );
+      if (member.exists() || this.auth.currentUser?.uid !== uid) return;
+      await updateDoc(doc(this.firestore, `users/${uid}`), {
+        [`orgs.${orgId}`]: deleteField(),
+        activeOrgId: personalOrgId(uid),
       });
+    } catch {
+      // Sin red o sin permiso de lectura: no tocar nada.
+    }
   }
 
   get uid(): string | null {
@@ -198,15 +225,15 @@ export class TenantService {
    * sesión (en vez de colgarse para siempre).
    */
   async requireContext(): Promise<{ uid: string; orgId: string }> {
-    const [user, orgId] = await firstValueFrom(
-      combineLatest([this.user$, this.orgId$]).pipe(
-        filter(([user, orgId]) => !user || !!orgId)
+    const [user, ctx] = await firstValueFrom(
+      combineLatest([this.user$, this.context$]).pipe(
+        filter(([user, ctx]) => !user || (ctx?.uid === user.uid && !!ctx.orgId))
       )
     );
-    if (!user || !orgId) {
+    if (!user || !ctx?.orgId) {
       throw new Error("No hay sesión activa. Iniciá sesión para continuar.");
     }
-    return { uid: user.uid, orgId };
+    return { uid: user.uid, orgId: ctx.orgId };
   }
 
   async requireOrgId(): Promise<string> {
@@ -319,7 +346,10 @@ export class TenantService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const snap = await getDoc(userRef);
     const profile = snap.exists() ? (snap.data() as UserProfile) : null;
-    if (profile && Object.keys(profile.orgs ?? {}).length > 0) return;
+    if (profile && Object.keys(profile.orgs ?? {}).length > 0) {
+      await this.syncMemberships(user.uid, profile);
+      return;
+    }
 
     const email = (user.email ?? "").toLowerCase();
     const orgId = personalOrgId(user.uid);
@@ -359,5 +389,42 @@ export class TenantService {
       { merge: true }
     );
     await batch.commit();
+    await this.syncMemberships(user.uid, profile);
   }
+
+  /**
+   * La lista de organizaciones del perfil es solo un caché: la verdad
+   * son los documentos `orgs/{id}/members/{uid}`. Si el caché perdió
+   * alguna (o nunca la tuvo), se recupera aquí. Sin red o sin el índice
+   * desplegado, simplemente no hace nada.
+   */
+  private async syncMemberships(uid: string, profile: UserProfile | null): Promise<void> {
+    try {
+      const snap = await getDocs(
+        query(collectionGroup(this.firestore, "members"), where("uid", "==", uid))
+      );
+      const missing: Record<string, { name: string; role: Role }> = {};
+      for (const m of snap.docs) {
+        const orgId = m.ref.parent.parent?.id;
+        if (!orgId || profile?.orgs?.[orgId]) continue;
+        const org = await getDoc(doc(this.firestore, `orgs/${orgId}`)).catch(() => null);
+        missing[orgId] = {
+          name: (org?.data() as Organization | undefined)?.name ?? "Organización",
+          role: (m.data() as Member).role,
+        };
+      }
+      if (Object.keys(missing).length > 0) {
+        await setDoc(doc(this.firestore, `users/${uid}`), { orgs: missing }, { merge: true });
+      }
+    } catch (err) {
+      console.warn("[Tenant] No se pudieron sincronizar las membresías:", err);
+    }
+  }
+}
+
+/** Organización activa según el perfil (o la personal / la primera). */
+function activeOrgOf(p: UserProfile): string | null {
+  const ids = Object.keys(p.orgs ?? {});
+  if (p.activeOrgId && ids.includes(p.activeOrgId)) return p.activeOrgId;
+  return ids.includes(personalOrgId(p.uid)) ? personalOrgId(p.uid) : ids[0] ?? null;
 }

@@ -250,6 +250,12 @@ service cloud.firestore {
     }
 
     // Invitaciones pendientes del usuario (consulta collectionGroup).
+    // Mis membresías en cualquier organización (consulta collectionGroup
+    // con la que la app reconstruye su lista de organizaciones).
+    match /{path=**}/members/{memberId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
     // La consulta filtra por el campo `email`, así que la regla se
     // evalúa sobre resource.data (no sobre el id del documento).
     match /{path=**}/invites/{inviteId} {
