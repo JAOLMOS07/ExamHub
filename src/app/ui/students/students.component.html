@@ -9,7 +9,7 @@
         automáticamente al calificar.
       </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <select class="eh-input w-28" [(ngModel)]="year" name="year">
         @for (y of years; track y) {
           <option [ngValue]="y">{{ y }}</option>

@@ -655,7 +655,7 @@
         </span>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold">
-            Examen en curso · {{ selectedQuestionCount }} {{ selectedQuestionCount === 1 ? "pregunta" : "preguntas" }}
+            <span class="hidden sm:inline">Examen en curso · </span>{{ selectedQuestionCount }} {{ selectedQuestionCount === 1 ? "pregunta" : "preguntas" }}
           </p>
           @if (selectedByTest.length > 0) {
             <p class="text-xs text-white/70 truncate">
