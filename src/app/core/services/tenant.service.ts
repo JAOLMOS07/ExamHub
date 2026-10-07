@@ -28,6 +28,7 @@ import {
   distinctUntilChanged,
   filter,
   map,
+  retry,
   shareReplay,
   switchMap,
 } from "rxjs/operators";
@@ -113,7 +114,10 @@ export class TenantService {
         orgId
           ? (docData(doc(this.firestore, `orgs/${orgId}`), {
               idField: "id",
-            }) as Observable<Organization>).pipe(catchError(() => of(null)))
+            }) as Observable<Organization>).pipe(
+              retry({ count: 4, delay: 1000 }),
+              catchError(() => of(null))
+            )
           : of(null)
       ),
       shareReplay(1)
@@ -126,6 +130,7 @@ export class TenantService {
               doc(this.firestore, `orgs/${orgId}/members/${user.uid}`)
             ) as Observable<Member | undefined>).pipe(
               map((m) => m ?? null),
+              retry({ count: 4, delay: 1000 }),
               catchError(() => of(null))
             )
           : of(null)
@@ -260,11 +265,14 @@ export class TenantService {
       doc(this.firestore, `users/${uid}`),
       {
         orgs: { [orgRef.id]: { name: org.name, role: "admin" } },
-        activeOrgId: orgRef.id,
       },
       { merge: true }
     );
     await batch.commit();
+    // Se activa DESPUÉS de que el servidor confirmó la membresía; si se
+    // activa en el mismo batch, la UI pide el colegio antes de que las
+    // reglas vean al nuevo miembro y la lectura es rechazada.
+    await this.switchOrg(orgRef.id);
     return orgRef.id;
   }
 
@@ -283,11 +291,11 @@ export class TenantService {
       doc(this.firestore, `users/${uid}`),
       {
         orgs: { [invite.orgId]: { name: invite.orgName, role: invite.role } },
-        activeOrgId: invite.orgId,
       },
       { merge: true }
     );
     await batch.commit();
+    await this.switchOrg(invite.orgId);
     // La invitación se borra después: la regla de alta de miembro la lee.
     await this.declineInvite(invite);
   }

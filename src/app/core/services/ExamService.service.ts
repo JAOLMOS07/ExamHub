@@ -13,7 +13,7 @@ import {
   DocumentReference,
 } from "@angular/fire/firestore";
 import { Observable, combineLatest, of } from "rxjs";
-import { catchError, map, switchMap } from "rxjs/operators";
+import { catchError, map, retry, switchMap } from "rxjs/operators";
 import { Document } from "../models/folder.model";
 import { objectType } from "../models/objectType.enum";
 import { TenantService } from "./tenant.service";
@@ -86,6 +86,7 @@ export class ExamService {
           : of([] as Document[]);
 
         return combineLatest([folders$, stimuli$, looseItems$, passageItems$]).pipe(
+          retry({ count: 4, delay: 1000 }),
           map(([folders, stimuli, loose, inPassage]) => [
             ...folders.sort(byName),
             ...stimuli.sort(byName),

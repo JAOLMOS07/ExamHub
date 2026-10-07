@@ -10,7 +10,7 @@ import {
   writeBatch,
 } from "@angular/fire/firestore";
 import { Observable, of } from "rxjs";
-import { catchError, map, switchMap } from "rxjs/operators";
+import { catchError, map, retry, switchMap } from "rxjs/operators";
 import {
   Group,
   Invite,
@@ -45,6 +45,9 @@ export class OrgService {
           }) as Observable<T[]>
       ),
       map((rows) => (sort ? rows.slice().sort(sort) : rows)),
+      // Permisos recién otorgados (nuevo colegio / invitación aceptada)
+      // pueden tardar un instante en verse en el servidor.
+      retry({ count: 4, delay: 1000 }),
       catchError((err) => {
         console.error(`[OrgService] no se pudo listar ${sub}:`, err);
         return of([] as T[]);
