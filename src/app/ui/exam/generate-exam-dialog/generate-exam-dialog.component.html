@@ -220,8 +220,16 @@
         <p class="eh-note eh-note--brand mt-4">
           Se imprimirán {{ rosterStudents.length }} hojas con nombre, ordenadas por grupo y apellido. Las formas
           se alternan por orden de lista para que compañeros vecinos tengan formas distintas; cada hoja indica qué
-          cuadernillo entregar.
+          cuadernillo entregar. El PDF de hojas empieza con la lista de entrega por grupo.
         </p>
+        @if (printPlan.length > 0) {
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-slate-600">Imprime:</span>
+            @for (p of printPlan; track p.label) {
+              <span class="eh-tag !text-sm !py-1 !px-2.5"><strong class="text-slate-900">{{ p.count }}</strong>&nbsp;de la forma {{ p.label }}</span>
+            }
+          </div>
+        }
       }
     </section>
   </form>

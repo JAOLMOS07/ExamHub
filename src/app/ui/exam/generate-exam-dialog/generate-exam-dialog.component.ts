@@ -18,14 +18,14 @@ import { TenantService } from "../../../core/services/tenant.service";
 import { OrgService } from "../../../core/services/org.service";
 import { FormDef, IdentificationMode } from "../../../core/models/assessment.model";
 import { DEFAULT_ORG_SETTINGS, Group, Student } from "../../../core/models/org.model";
-import { assignForms, RosterEntry } from "../../../core/domain/roster";
+import { assignForms, copiesPerForm, RosterEntry } from "../../../core/domain/roster";
 import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { randomSeed } from "../../../core/domain/rng";
 import { BuiltForm, buildForm, formLabel, hasBubbles } from "../../../core/domain/formBuilder";
 import { computeSheetLayout, questionsPerPage } from "../../../core/domain/answerSheetLayout";
 import { SABER11_TESTS } from "../../../core/domain/taxonomy/saber11";
 import { getTest } from "../../../core/domain/taxonomy/saber11";
-import { SheetRequest, SheetsContext, buildSheetsContent, sheetsDocument } from "./answer-sheet.pdf";
+import { SheetRequest, SheetsContext, buildSheetsContent, deliveryListContent, sheetsDocument } from "./answer-sheet.pdf";
 import {
   LINE_HEIGHT,
   PackBlock,
@@ -226,10 +226,31 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
   get outputSummary(): string {
     const forms = this.versions === 1 ? "1 cuadernillo" : `${this.versions} cuadernillos (formas ${ALPHABET.slice(0, this.versions).join(", ")})`;
     if (this.identification === "personalized") {
-      const spare = Math.max(0, Math.floor(Number(this.examConfigForm.value.spareSheets) || 0)) * this.versions;
+      const spare = this.spareCount * this.versions;
       return `${forms} + ${this.rosterStudents.length} hojas con nombre${spare ? ` + ${spare} de reserva` : ""}`;
     }
     return `${forms}, cada uno con su hoja de respuestas`;
+  }
+
+  get spareCount(): number {
+    return Math.max(0, Math.min(50, Math.floor(Number(this.examConfigForm?.value?.spareSheets) || 0)));
+  }
+
+  /** Orden de los grupos elegidos (como en la pantalla). */
+  private get groupOrder(): string[] {
+    return this.groups.filter((g) => this.selectedGroupIds.includes(g.id)).map((g) => g.id);
+  }
+
+  /**
+   * Cuántos cuadernillos imprimir de cada forma (estudiantes + reservas),
+   * con la misma asignación que se usará al generar.
+   */
+  get printPlan(): { label: string; count: number }[] {
+    if (this.identification !== "personalized" || this.rosterStudents.length === 0) return [];
+    const ids = Array.from({ length: this.versions }, (_, i) => `v${i + 1}`);
+    const roster = assignForms(this.rosterStudents, this.groupOrder, ids);
+    const copies = copiesPerForm(roster, ids, this.spareCount);
+    return ids.map((id, i) => ({ label: formLabel(i + 1), count: copies[id] }));
   }
 
   /** Motivo por el que no se puede generar todavía (null = todo bien). */
@@ -466,7 +487,7 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
       }
 
       if (persist && mode === "personalized") {
-        const spares = Math.max(0, Math.min(50, Math.floor(Number(config.spareSheets) || 0)));
+        const spares = this.spareCount;
         const requests: SheetRequest[] = [
           ...roster.map((r) => ({
             formId: r.formId,
@@ -476,7 +497,17 @@ export class GenerateExamDialogComponent implements OnInit, OnDestroy {
           })),
           ...forms.flatMap((f) => Array.from({ length: spares }, () => ({ formId: f.id }))),
         ];
-        files.push({ name: `${title} - Hojas de respuesta`, def: sheetsDocument(sheetCtx, requests) });
+        const labelOf = (formId: string) => forms.find((f) => f.id === formId)?.label ?? formId;
+        const copies = copiesPerForm(roster, forms.map((f) => f.id), spares);
+        const delivery = deliveryListContent(
+          title,
+          groupOrder.map((gid) => ({
+            groupName: groupName(gid) ?? "",
+            students: roster.filter((r) => r.groupId === gid).map((r) => ({ name: r.name, formLabel: labelOf(r.formId) })),
+          })),
+          forms.map((f) => ({ formLabel: f.label, count: copies[f.id] }))
+        );
+        files.push({ name: `${title} - Hojas de respuesta`, def: sheetsDocument(sheetCtx, requests, delivery) });
       }
 
       if (files.length === 1) {

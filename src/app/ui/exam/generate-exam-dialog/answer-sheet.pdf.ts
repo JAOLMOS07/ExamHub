@@ -318,11 +318,85 @@ export function buildSheetsContent(ctx: SheetsContext, requests: SheetRequest[])
 }
 
 /** Documento pdfmake solo con hojas (márgenes neutros, sin encabezado). */
-export function sheetsDocument(ctx: SheetsContext, requests: SheetRequest[]): any {
+export function sheetsDocument(ctx: SheetsContext, requests: SheetRequest[], intro: any[] = []): any {
   return {
     pageSize: "A4",
     pageMargins: [40, 40, 40, 40],
     info: { title: `Hojas de respuesta — ${ctx.title}`, author: "ExamHub" },
-    content: buildSheetsContent(ctx, requests),
+    content: intro.length
+      ? [...intro, { text: "", pageBreak: "before" }, ...buildSheetsContent(ctx, requests)]
+      : buildSheetsContent(ctx, requests),
+    styles: { th: { bold: true, fontSize: 9, color: "#3730a3" } },
   };
+}
+
+export interface DeliveryGroup {
+  groupName: string;
+  students: { name: string; formLabel: string }[];
+}
+
+/**
+ * Lista de entrega: una tabla por grupo (orden de lista → forma) y el
+ * total de cuadernillos a imprimir por forma. Va al inicio del PDF de
+ * hojas para repartir rápido en el salón.
+ */
+export function deliveryListContent(
+  title: string,
+  groups: DeliveryGroup[],
+  copies: { formLabel: string; count: number }[]
+): any[] {
+  const content: any[] = [
+    { text: "Lista de entrega", fontSize: 16, bold: true },
+    { text: title, fontSize: 11, color: "#475569", margin: [0, 2, 0, 10] },
+    {
+      table: {
+        widths: copies.map(() => "*"),
+        body: [
+          copies.map((c) => ({ text: `Forma ${c.formLabel}`, bold: true, fontSize: 9, color: "#3730a3", alignment: "center" })),
+          copies.map((c) => ({ text: `${c.count} cuadernillos`, fontSize: 11, bold: true, alignment: "center" })),
+        ],
+      },
+      layout: "lightHorizontalLines",
+      margin: [0, 0, 0, 6],
+    },
+    {
+      text: "Incluye las hojas de reserva. Entrega a cada estudiante su hoja y el cuadernillo de la forma indicada.",
+      fontSize: 8,
+      color: "#64748b",
+      margin: [0, 0, 0, 12],
+    },
+  ];
+  for (const g of groups) {
+    content.push(
+      { text: `Grupo ${g.groupName} · ${g.students.length} estudiantes`, fontSize: 11, bold: true, margin: [0, 8, 0, 4] },
+      {
+        table: {
+          headerRows: 1,
+          widths: [22, "*", 50, 40],
+          body: [
+            [
+              { text: "#", style: "th" },
+              { text: "Estudiante", style: "th" },
+              { text: "Forma", style: "th", alignment: "center" },
+              { text: "Entregó", style: "th", alignment: "center" },
+            ],
+            ...g.students.map((st, i) => [
+              { text: String(i + 1), fontSize: 9, color: "#64748b" },
+              { text: st.name, fontSize: 9.5 },
+              { text: st.formLabel, fontSize: 11, bold: true, alignment: "center" },
+              { text: "" },
+            ]),
+          ],
+        },
+        layout: {
+          fillColor: (row: number) => (row === 0 ? "#eef2ff" : row % 2 === 0 ? "#fafafa" : null),
+          hLineColor: () => "#e5e7eb",
+          vLineColor: () => "#e5e7eb",
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+        },
+      }
+    );
+  }
+  return content;
 }

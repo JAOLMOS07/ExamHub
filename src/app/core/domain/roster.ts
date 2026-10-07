@@ -51,3 +51,14 @@ export function pendingFromRoster(
   const done = new Set(gradedStudentIds);
   return roster.filter((r) => !done.has(r.studentId));
 }
+
+/** Copias de cuadernillo a imprimir por forma (estudiantes + reservas). */
+export function copiesPerForm(
+  roster: RosterEntry[],
+  formIds: string[],
+  sparePerForm = 0
+): Record<string, number> {
+  const counts: Record<string, number> = Object.fromEntries(formIds.map((f) => [f, sparePerForm]));
+  for (const r of roster) counts[r.formId] = (counts[r.formId] ?? sparePerForm) + 1;
+  return counts;
+}

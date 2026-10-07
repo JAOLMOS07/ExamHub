@@ -1,6 +1,6 @@
 import { pickCornerSquares, pickMarked } from "./markDetection";
 import { computeSheetLayout, legacySheetPage, SHEET_V2, SHEET_V3 } from "./answerSheetLayout";
-import { assignForms, pendingFromRoster } from "./roster";
+import { assignForms, copiesPerForm, pendingFromRoster } from "./roster";
 import { parseStudentsCsv } from "./studentsCsv";
 import { decodeQrPayload, encodeQrPayload } from "../utils/qrPayload.util";
 import { FIDUCIAL_POSITIONS } from "../utils/omrLayout.const";
@@ -155,6 +155,7 @@ describe("assignForms", () => {
       ["Ana", "v1"], ["Beto", "v2"], ["Carlos", "v1"], ["Diana", "v1"],
     ]);
     expect(pendingFromRoster(r, ["1", "4"]).map((e) => e.name)).toEqual(["Beto", "Carlos"]);
+    expect(copiesPerForm(r, ["v1", "v2"], 2)).toEqual({ v1: 5, v2: 3 });
   });
 });
 
