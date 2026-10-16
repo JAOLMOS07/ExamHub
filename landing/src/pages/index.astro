@@ -1,0 +1,41 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Hero from "../components/Hero.astro";
+import Demo from "../components/Demo.astro";
+import Steps from "../components/Steps.astro";
+import Savings from "../components/Savings.astro";
+import Features from "../components/Features.astro";
+import Pricing from "../components/Pricing.astro";
+import Faq from "../components/Faq.astro";
+import Closing from "../components/Closing.astro";
+---
+
+<Base>
+  <Nav />
+  <main>
+    <Hero />
+    <Demo />
+    <Steps />
+    <Savings />
+    <Features />
+    <Pricing />
+    <Faq />
+  </main>
+  <Closing />
+</Base>
+
+<script>
+  // Aparición suave al entrar en pantalla (una sola vez).
+  const io = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }
+      }),
+    { rootMargin: "0px 0px -8% 0px" }
+  );
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+</script>

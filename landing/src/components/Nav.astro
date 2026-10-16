@@ -1,0 +1,174 @@
+---
+import Logo from "./Logo.astro";
+import { SITE, WA_DEMO } from "../config";
+const links = [
+  ["#demo", "Pruébalo"],
+  ["#como-funciona", "Cómo funciona"],
+  ["#ahorro", "Ahorro"],
+  ["#precios", "Precios"],
+  ["#preguntas", "Preguntas"],
+];
+---
+
+<header class="nav" data-nav>
+  <div class="wrap nav__in">
+    <a href="#" class="nav__logo" aria-label="ExamHub, inicio"><Logo size={34} /></a>
+    <nav class="nav__links" aria-label="Secciones">
+      {links.map(([href, label]) => <a href={href}>{label}</a>)}
+    </nav>
+    <div class="nav__actions">
+      <a class="nav__login" href={`${SITE.appUrl}/login`}>Entrar</a>
+      <a class="btn btn--ink nav__cta" href={WA_DEMO} target="_blank" rel="noopener">Simulacro gratis</a>
+      <details class="nav__menu">
+        <summary aria-label="Abrir menú">
+          <span></span><span></span><span></span>
+        </summary>
+        <div class="nav__sheet">
+          {links.map(([href, label]) => <a href={href}>{label}</a>)}
+          <a href={`${SITE.appUrl}/login`}>Entrar a la app</a>
+          <a class="btn btn--primary" href={WA_DEMO} target="_blank" rel="noopener">Pide tu simulacro gratis</a>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: background 200ms, box-shadow 200ms;
+  }
+  .nav.is-scrolled {
+    background: rgb(246 243 234 / 0.88);
+    backdrop-filter: saturate(1.4) blur(12px);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    box-shadow: 0 1px 0 rgb(22 32 90 / 0.08);
+  }
+  .nav__in {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .nav__logo {
+    text-decoration: none;
+  }
+  .nav__links {
+    display: flex;
+    gap: 28px;
+    margin-left: auto;
+  }
+  .nav__links a {
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--tinta);
+    opacity: 0.8;
+  }
+  .nav__links a:hover {
+    opacity: 1;
+  }
+  .nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .nav__login {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--tinta);
+    text-decoration: none;
+  }
+  .nav__cta {
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+  .nav__menu {
+    display: none;
+    position: relative;
+  }
+  .nav__menu summary {
+    list-style: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-content: center;
+    gap: 5px;
+    cursor: pointer;
+    background: var(--tinta);
+  }
+  .nav__menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .nav__menu summary span {
+    width: 20px;
+    height: 2.5px;
+    border-radius: 2px;
+    background: var(--papel);
+    transition: transform 200ms, opacity 200ms;
+  }
+  .nav__menu[open] summary span:nth-child(1) {
+    transform: translateY(7.5px) rotate(45deg);
+  }
+  .nav__menu[open] summary span:nth-child(2) {
+    opacity: 0;
+  }
+  .nav__menu[open] summary span:nth-child(3) {
+    transform: translateY(-7.5px) rotate(-45deg);
+  }
+  .nav__sheet {
+    position: absolute;
+    right: 0;
+    top: 56px;
+    width: min(86vw, 320px);
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: 20px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 60px -20px rgb(10 15 48 / 0.6);
+  }
+  .nav__sheet a:not(.btn) {
+    padding: 12px 14px;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 12px;
+  }
+  .nav__sheet a:not(.btn):hover {
+    background: rgb(246 243 234 / 0.08);
+  }
+  .nav__sheet .btn {
+    margin-top: 8px;
+  }
+  @media (max-width: 960px) {
+    .nav__links,
+    .nav__login {
+      display: none;
+    }
+    .nav__actions {
+      margin-left: auto;
+    }
+    .nav__menu {
+      display: block;
+    }
+  }
+  @media (max-width: 480px) {
+    .nav__cta {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>("[data-nav]");
+  const menu = nav?.querySelector("details");
+  const onScroll = () => nav?.classList.toggle("is-scrolled", window.scrollY > 8);
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  menu?.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => menu.removeAttribute("open")));
+</script>

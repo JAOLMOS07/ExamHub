@@ -1,0 +1,575 @@
+---
+/**
+ * Mini simulacro jugable: 5 preguntas (una por prueba). Se responde en
+ * las tarjetas o en la hoja; "Calificar" simula el escaneo y muestra
+ * el resultado como lo haría ExamHub.
+ */
+const QUESTIONS = [
+  {
+    test: "Matemáticas",
+    color: "var(--mat)",
+    comp: "Formulación y ejecución",
+    text: "Un tanque con 1.200 litros pierde agua a razón constante de 50 litros por hora. ¿Cuántos litros quedan después de 6 horas?",
+    options: ["300 litros", "900 litros", "1.150 litros", "600 litros"],
+    key: 1,
+    why: "1.200 − 50 × 6 = 900.",
+  },
+  {
+    test: "Lectura Crítica",
+    color: "var(--lc)",
+    comp: "Reflexionar y evaluar",
+    text: "Un columnista afirma: «Los jóvenes no leen porque pasan horas en el celular». Esta afirmación supone que…",
+    options: ["leer en el celular no cuenta como leer", "los adultos leen más que los jóvenes", "el celular es muy costoso", "los jóvenes no tienen celular"],
+    key: 0,
+    why: "Si leer en el celular contara, el argumento se cae: ese es su supuesto.",
+  },
+  {
+    test: "Ciencias Naturales",
+    color: "var(--cn)",
+    comp: "Indagación",
+    text: "Para saber si la masa de un péndulo afecta su periodo, un estudiante debe usar péndulos con…",
+    options: ["distinta longitud y la misma masa", "la misma longitud y distinta masa", "distinta longitud y distinta masa", "la misma longitud y la misma masa"],
+    key: 1,
+    why: "Solo cambia la variable que se estudia (la masa); lo demás se controla.",
+  },
+  {
+    test: "Sociales y Ciudadanas",
+    color: "var(--sc)",
+    comp: "Pensamiento social",
+    text: "En Colombia, ¿qué rama del poder público tiene como función principal hacer las leyes?",
+    options: ["La rama ejecutiva", "La rama legislativa", "La rama judicial", "La organización electoral"],
+    key: 1,
+    why: "El Congreso (rama legislativa) hace las leyes.",
+  },
+  {
+    test: "Inglés",
+    color: "var(--ing)",
+    comp: "Parte 1",
+    text: "Where can you see this sign? «Please keep your voice down».",
+    options: ["In a library", "At a football stadium", "At a rock concert", "In a playground"],
+    key: 0,
+    why: "In a library people must be quiet.",
+  },
+];
+const L = ["A", "B", "C", "D"];
+---
+
+<section class="section demo" id="demo">
+  <div class="wrap">
+    <p class="eyebrow reveal">Pruébalo aquí</p>
+    <h2 class="h2 reveal">Responde 5 preguntas.<br />Califícalas como un profe con ExamHub.</h2>
+    <p class="lead reveal">Una pregunta de cada prueba del Saber 11. Marca en las tarjetas o directamente en la hoja, y dale a <strong>Calificar</strong>.</p>
+
+    <div class="demo__grid" data-demo>
+      <ol class="demo__qs">
+        {QUESTIONS.map((q, i) => (
+          <li class="q reveal" style={`--c:${q.color}`} data-q={i}>
+            <div class="q__meta"><span class="q__dot"></span>{q.test} · {q.comp}</div>
+            <p class="q__text"><b>{i + 1}.</b> {q.text}</p>
+            <div class="q__opts" role="group" aria-label={`Opciones de la pregunta ${i + 1}`}>
+              {q.options.map((o, j) => (
+                <button type="button" class="q__opt" data-pick={`${i}:${j}`} aria-pressed="false">
+                  <span class="q__letter">{L[j]}</span>{o}
+                </button>
+              ))}
+            </div>
+            <p class="q__why" hidden>{q.why}</p>
+          </li>
+        ))}
+      </ol>
+
+      <aside class="demo__side">
+        <div class="paper" data-paper>
+          <div class="paper__head">
+            <div>
+              <b>Hoja de respuestas</b>
+              <span>Tu nombre · Forma A</span>
+            </div>
+            <span class="paper__qr" aria-hidden="true"></span>
+          </div>
+          <div class="paper__rows">
+            {QUESTIONS.map((q, i) => (
+              <div class="paper__row" data-row={i}>
+                <em style={`--c:${q.color}`}>{i + 1}</em>
+                {L.map((l, j) => (
+                  <button type="button" class="bubble" data-pick={`${i}:${j}`} aria-label={`Pregunta ${i + 1}, opción ${l}`} aria-pressed="false">{l}</button>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div class="paper__scan" aria-hidden="true"></div>
+        </div>
+
+        <div class="demo__actions">
+          <button type="button" class="btn btn--ink" data-grade>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M10 18h4" /></svg>
+            Calificar con el celular
+          </button>
+          <button type="button" class="demo__random" data-random>Llenar al azar</button>
+        </div>
+
+        <div class="result" data-result hidden aria-live="polite">
+          <div class="result__top">
+            <div>
+              <small>Nota</small>
+              <strong><span data-score>0</span><i>/5</i></strong>
+            </div>
+            <div>
+              <small>Global estimado*</small>
+              <strong><span data-global>0</span><i>/500</i></strong>
+            </div>
+          </div>
+          <ul class="result__tests">
+            {QUESTIONS.map((q, i) => (
+              <li data-test={i} style={`--c:${q.color}`}><span></span>{q.test}</li>
+            ))}
+          </ul>
+          <p class="result__msg" data-msg></p>
+          <div class="result__actions">
+            <a class="btn btn--primary" href="#precios">Quiero esto para mi colegio</a>
+            <button type="button" class="demo__random" data-reset>Intentar de nuevo</button>
+          </div>
+          <p class="result__note">*Con 5 preguntas es solo un juego: el global real usa todo el simulacro y los pesos del ICFES (×3 y ×1 en Inglés).</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ keys: QUESTIONS.map((q) => q.key) }}>
+  const root = document.querySelector("[data-demo]");
+  const answers = Array(keys.length).fill(null);
+  const weights = [3, 3, 3, 3, 1];
+  let graded = false;
+
+  const sync = () => {
+    root.querySelectorAll("[data-pick]").forEach((el) => {
+      const [i, j] = el.dataset.pick.split(":").map(Number);
+      const on = answers[i] === j;
+      el.setAttribute("aria-pressed", String(on));
+      el.classList.toggle("is-on", on);
+    });
+  };
+
+  const reset = () => {
+    graded = false;
+    answers.fill(null);
+    root.classList.remove("is-graded");
+    root.querySelectorAll(".is-right,.is-wrong,.is-key").forEach((el) => el.classList.remove("is-right", "is-wrong", "is-key"));
+    root.querySelectorAll(".q__why").forEach((el) => (el.hidden = true));
+    root.querySelector("[data-result]").hidden = true;
+    sync();
+  };
+
+  root.addEventListener("click", (e) => {
+    const pick = e.target.closest("[data-pick]");
+    if (pick) {
+      if (graded) reset();
+      const [i, j] = pick.dataset.pick.split(":").map(Number);
+      answers[i] = answers[i] === j ? null : j;
+      sync();
+      return;
+    }
+    if (e.target.closest("[data-random]")) {
+      if (graded) reset();
+      answers.forEach((_, i) => (answers[i] = Math.random() < 0.6 ? keys[i] : Math.floor(Math.random() * 4)));
+      sync();
+      return;
+    }
+    if (e.target.closest("[data-reset]")) {
+      reset();
+      document.getElementById("demo")?.scrollIntoView();
+      return;
+    }
+    if (e.target.closest("[data-grade]")) grade();
+  });
+
+  const countUp = (el, to, decimals) => {
+    const start = performance.now();
+    const dur = 900;
+    const step = (t) => {
+      const k = Math.min(1, (t - start) / dur);
+      const v = to * (1 - Math.pow(1 - k, 3));
+      el.textContent = v.toFixed(decimals).replace(".", ",");
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    // Respaldo: con la pestaña en segundo plano no corren los frames.
+    setTimeout(() => (el.textContent = to.toFixed(decimals).replace(".", ",")), dur + 80);
+  };
+
+  function grade() {
+    const paper = root.querySelector("[data-paper]");
+    paper.classList.remove("is-scanning");
+    void paper.offsetWidth;
+    paper.classList.add("is-scanning");
+    const delay = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1100;
+    setTimeout(() => {
+      graded = true;
+      root.classList.add("is-graded");
+      let right = 0;
+      let weighted = 0;
+      keys.forEach((key, i) => {
+        const ok = answers[i] === key;
+        if (ok) {
+          right++;
+          weighted += weights[i] * 100;
+        }
+        root.querySelectorAll(`[data-pick^="${i}:"]`).forEach((el) => {
+          const j = Number(el.dataset.pick.split(":")[1]);
+          el.classList.toggle("is-key", j === key);
+          el.classList.toggle("is-wrong", j === answers[i] && !ok);
+          el.classList.toggle("is-right", j === answers[i] && ok);
+        });
+        root.querySelector(`[data-test="${i}"]`).classList.toggle("is-ok", ok);
+        root.querySelector(`[data-q="${i}"] .q__why`).hidden = ok;
+      });
+      const result = root.querySelector("[data-result]");
+      result.hidden = false;
+      countUp(result.querySelector("[data-score]"), (right / keys.length) * 5, 1);
+      countUp(result.querySelector("[data-global]"), Math.round((weighted / 13) * 5), 0);
+      const blank = answers.filter((a) => a === null).length;
+      result.querySelector("[data-msg]").textContent =
+        right === keys.length
+          ? "¡Perfecto! En un simulacro real, ExamHub te mostraría además el nivel por prueba y por competencia."
+          : `Acertaste ${right} de ${keys.length}${blank ? ` (${blank} sin responder)` : ""}. Mira la explicación en cada pregunta: así ve ExamHub qué competencia reforzar.`;
+      if (innerWidth < 900) result.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, delay);
+  }
+</script>
+
+<style>
+  .demo {
+    background: #fff;
+    border-radius: clamp(28px, 4vw, 48px);
+    margin: 0 clamp(8px, 1.5vw, 20px);
+  }
+  .demo__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 56px);
+    margin-top: 48px;
+    align-items: start;
+  }
+  .demo__qs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 16px;
+  }
+  .q {
+    background: var(--papel);
+    border-radius: 20px;
+    padding: 20px 22px;
+    border-left: 0;
+  }
+  .q__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .q__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .q__text {
+    margin-top: 8px;
+    font-size: 17px;
+  }
+  .q__opts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .q__opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    min-height: 48px;
+    padding: 8px 12px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: #fff;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1.3;
+    transition: border-color 150ms, background 150ms;
+  }
+  .q__opt:hover {
+    border-color: rgb(22 32 90 / 0.25);
+  }
+  .q__letter {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--grafito);
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    transition: background 150ms, color 150ms;
+  }
+  .q__opt.is-on {
+    border-color: var(--tinta);
+  }
+  .q__opt.is-on .q__letter,
+  .bubble.is-on {
+    background: var(--grafito);
+    color: #fff;
+  }
+  .q__opt.is-key {
+    border-color: var(--aprobado);
+    background: #eaf6f0;
+  }
+  .q__opt.is-wrong {
+    border-color: var(--borrador);
+    background: #fdecf1;
+  }
+  .q__why {
+    margin-top: 12px;
+    font-size: 15px;
+    color: var(--tinta);
+    background: #fff4d6;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+
+  .demo__side {
+    position: sticky;
+    top: 92px;
+    display: grid;
+    gap: 18px;
+  }
+  .paper {
+    position: relative;
+    background: #fff;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 30px 60px -30px rgb(22 32 90 / 0.4), 0 0 0 1px rgb(22 32 90 / 0.08);
+    overflow: hidden;
+  }
+  .paper__head {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--grafito);
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+  .paper__head b {
+    display: block;
+    font-family: var(--display);
+  }
+  .paper__head span {
+    font-size: 14px;
+    color: var(--gris);
+  }
+  .paper__qr {
+    width: 44px;
+    height: 44px;
+    border: 4px solid var(--grafito);
+    background: conic-gradient(var(--grafito) 25%, transparent 0 50%, var(--grafito) 0 75%, transparent 0) 0 0 / 11px 11px;
+  }
+  .paper__rows {
+    display: grid;
+    gap: 10px;
+  }
+  .paper__row {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.6vw, 14px);
+  }
+  .paper__row em {
+    font-style: normal;
+    font-weight: 700;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--c);
+    color: #fff;
+    font-size: 14px;
+  }
+  .bubble {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--grafito);
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gris);
+    transition: transform 120ms, background 150ms;
+  }
+  .bubble:hover {
+    transform: scale(1.06);
+  }
+  .bubble.is-key {
+    box-shadow: 0 0 0 4px var(--aprobado);
+  }
+  .bubble.is-wrong {
+    background: var(--borrador);
+    border-color: var(--borrador);
+    color: #fff;
+  }
+  .paper__scan {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4px;
+    background: var(--lapiz);
+    box-shadow: 0 0 24px 8px rgb(255 197 49 / 0.6);
+    opacity: 0;
+  }
+  .paper.is-scanning .paper__scan {
+    animation: sweep 1.1s var(--ease);
+  }
+  @keyframes sweep {
+    0% {
+      top: 0;
+      opacity: 1;
+    }
+    95% {
+      top: 100%;
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+  .demo__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .demo__random {
+    background: none;
+    border: 0;
+    font-weight: 700;
+    color: var(--tinta);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .result {
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: 22px;
+    padding: 22px;
+    animation: rise 500ms var(--ease);
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+  }
+  .result__top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .result small {
+    font-size: 13px;
+    color: rgb(246 243 234 / 0.7);
+  }
+  .result strong {
+    display: block;
+    font-family: var(--display);
+    font-size: clamp(40px, 5vw, 56px);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--lapiz);
+  }
+  .result strong i {
+    font-style: normal;
+    font-size: 0.4em;
+    color: rgb(246 243 234 / 0.6);
+  }
+  .result__tests {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .result__tests li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgb(246 243 234 / 0.1);
+    opacity: 0.6;
+  }
+  .result__tests li span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .result__tests li.is-ok {
+    opacity: 1;
+    background: rgb(246 243 234 / 0.18);
+  }
+  .result__tests li.is-ok::after {
+    content: "✓";
+    font-weight: 700;
+    color: var(--lapiz);
+  }
+  .result__msg {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+  .result__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 18px;
+  }
+  .result__actions .demo__random {
+    color: var(--papel);
+  }
+  .result__note {
+    margin-top: 14px;
+    font-size: 13px;
+    color: rgb(246 243 234 / 0.6);
+  }
+
+  @media (max-width: 900px) {
+    .demo__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .demo__side {
+      position: static;
+    }
+  }
+  @media (max-width: 520px) {
+    .q__opts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .bubble {
+      width: 40px;
+      height: 40px;
+    }
+  }
+</style>

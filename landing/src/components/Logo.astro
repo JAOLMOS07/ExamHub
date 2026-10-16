@@ -1,0 +1,44 @@
+---
+/** El check de burbujas (docs/brand). */
+interface Props {
+  size?: number;
+  light?: boolean;
+  text?: boolean;
+}
+const { size = 36, light = false, text = true } = Astro.props;
+const tile = light ? "#F6F3EA" : "#16205A";
+const ink = light ? "#16205A" : "#F6F3EA";
+const outlines = [[24, 36], [48, 36], [72, 36], [48, 60], [96, 60], [24, 84], [72, 84], [96, 84]];
+---
+
+<span class:list={["logo", { "logo--light": light }]} style={`--s:${size}px`}>
+  <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
+    <rect width="120" height="120" rx="30" fill={tile} />
+    <g fill="none" stroke={ink} stroke-opacity="0.28" stroke-width="2">
+      {outlines.map(([x, y]) => <circle cx={x} cy={y} r="7" />)}
+    </g>
+    <polyline points="24,60 48,84 72,60 96,36" fill="none" stroke={ink} stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <g fill={ink}><circle cx="24" cy="60" r="8.5" /><circle cx="48" cy="84" r="8.5" /><circle cx="72" cy="60" r="8.5" /></g>
+    <circle cx="96" cy="36" r="9.5" fill="#FFC531" stroke={tile} stroke-width="3" />
+  </svg>
+  {text && <span class="logo__word">examhub</span>}
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--s) * 0.22);
+    color: var(--tinta);
+  }
+  .logo--light {
+    color: var(--papel);
+  }
+  .logo__word {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: calc(var(--s) * 0.78);
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+</style>

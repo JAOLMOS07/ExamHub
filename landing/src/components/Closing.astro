@@ -1,0 +1,164 @@
+---
+import Logo from "./Logo.astro";
+import { SITE, WA_DEMO } from "../config";
+const year = new Date().getFullYear();
+---
+
+<section class="closing">
+  <div class="wrap">
+    <div class="cta reveal">
+      <div class="cta__bubbles" aria-hidden="true">
+        {Array.from({ length: 24 }, (_, i) => <span class:list={{ "is-on": [3, 9, 14, 20].includes(i) }}></span>)}
+      </div>
+      <p class="eyebrow">Colegios fundadores</p>
+      <h2>Tu primer simulacro, gratis.</h2>
+      <p>Para tu grado 10: lo configuramos contigo, tus docentes califican con el celular y recibes el informe por competencia. Cupos limitados.</p>
+      <div class="cta__actions">
+        <a class="btn btn--primary" href={WA_DEMO} target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+        <a class="btn btn--ghost" href={`${SITE.appUrl}/login`}>Probar la app</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer__in">
+    <div class="footer__brand">
+      <Logo size={36} light />
+      <p>{SITE.tagline}</p>
+    </div>
+    <nav class="footer__links" aria-label="Enlaces">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#precios">Precios</a>
+      <a href="#preguntas">Preguntas</a>
+      <a href={`${SITE.appUrl}/login`}>Entrar</a>
+      <a href={SITE.instagram} target="_blank" rel="noopener">Instagram</a>
+      <a href={SITE.tiktok} target="_blank" rel="noopener">TikTok</a>
+    </nav>
+    <p class="footer__legal">
+      © {year} ExamHub · Hecho en Colombia. ExamHub no está afiliado al ICFES; los puntajes son estimaciones con fines de preparación.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .closing {
+    padding: clamp(40px, 6vw, 80px) 0 clamp(64px, 8vw, 104px);
+  }
+  .cta {
+    position: relative;
+    overflow: hidden;
+    background: var(--lapiz);
+    border-radius: clamp(28px, 4vw, 48px);
+    padding: clamp(32px, 6vw, 80px);
+    color: var(--tinta);
+  }
+  .cta h2 {
+    font-size: clamp(40px, 6.4vw, 80px);
+    margin-top: 14px;
+    max-width: 12ch;
+  }
+  .cta > p:not(.eyebrow) {
+    margin-top: 18px;
+    max-width: 560px;
+    font-size: clamp(17px, 1.6vw, 20px);
+  }
+  .cta .eyebrow::before {
+    background: var(--tinta);
+    box-shadow: none;
+  }
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 32px;
+    position: relative;
+  }
+  .cta .btn--primary {
+    background: var(--tinta);
+    color: var(--papel);
+    box-shadow: 0 6px 0 var(--tinta-3);
+  }
+  .cta .btn--ghost {
+    color: var(--tinta);
+  }
+  .cta__bubbles {
+    position: absolute;
+    right: clamp(-80px, -4vw, -20px);
+    top: 50%;
+    transform: translateY(-50%) rotate(-8deg);
+    display: grid;
+    grid-template-columns: repeat(6, 56px);
+    gap: 18px;
+    opacity: 0.9;
+  }
+  .cta__bubbles span {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid rgb(22 32 90 / 0.18);
+  }
+  .cta__bubbles span.is-on {
+    background: var(--tinta);
+    border-color: var(--tinta);
+    animation: blink 3s infinite;
+  }
+  .cta__bubbles span.is-on:nth-child(odd) {
+    animation-delay: 1.5s;
+  }
+  @keyframes blink {
+    50% {
+      transform: scale(0.85);
+    }
+  }
+  @media (max-width: 860px) {
+    .cta__bubbles {
+      display: none;
+    }
+  }
+
+  .footer {
+    background: var(--tinta-3);
+    color: var(--papel);
+    padding: 56px 0 40px;
+  }
+  .footer__in {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 28px 40px;
+  }
+  .footer__brand p {
+    margin-top: 12px;
+    color: rgb(246 243 234 / 0.7);
+  }
+  .footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    align-items: center;
+  }
+  .footer__links a {
+    text-decoration: none;
+    font-weight: 700;
+    opacity: 0.85;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .footer__links a:hover {
+    opacity: 1;
+    color: var(--lapiz);
+  }
+  .footer__legal {
+    grid-column: 1 / -1;
+    font-size: 14px;
+    color: rgb(246 243 234 / 0.55);
+    border-top: 1px solid rgb(246 243 234 / 0.1);
+    padding-top: 24px;
+  }
+  @media (max-width: 760px) {
+    .footer__in {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

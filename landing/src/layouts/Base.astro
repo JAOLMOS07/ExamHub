@@ -1,0 +1,46 @@
+---
+import "@fontsource/sora/600.css";
+import "@fontsource/sora/700.css";
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
+import "../styles/global.css";
+import { SITE } from "../config";
+
+interface Props {
+  title?: string;
+}
+const { title = `${SITE.name} — Simulacros tipo Saber 11 calificados con el celular` } = Astro.props;
+const og = new URL("/og-image.png", Astro.site).href;
+---
+
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={SITE.description} />
+    <meta name="theme-color" content="#16205A" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href={Astro.site} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={SITE.description} />
+    <meta property="og:image" content={og} />
+    <meta property="og:locale" content="es_CO" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: SITE.name,
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "Web, Android, iOS",
+      description: SITE.description,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "COP" },
+    })} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

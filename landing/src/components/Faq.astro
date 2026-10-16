@@ -1,0 +1,100 @@
+---
+const FAQ = [
+  ["¿Necesito un escáner o una lectora óptica?", "No. Basta el celular de cualquier docente. ExamHub lee el QR y las burbujas desde la foto."],
+  ["¿Funciona sin internet?", "Sí. Se instala como app desde el navegador y califica sin señal; las notas se suben solas cuando vuelve la conexión. Solo hay que abrir la evaluación una vez con internet."],
+  ["¿Los resultados son oficiales del ICFES?", "No. ExamHub no está afiliado al ICFES. Los puntajes son estimaciones con la misma estructura del Saber 11 (pruebas, competencias y niveles) para preparar a tus estudiantes."],
+  ["¿Puedo usar mis propias preguntas?", "Sí. Créalas en ExamHub, pégalas desde Word o genera un banco nuevo con tu IA gratis (ChatGPT, Gemini o Claude) usando el prompt que te damos."],
+  ["¿Qué pasa con los datos de los estudiantes?", "Pedimos lo mínimo (nombre, código y grupo). El colegio es dueño de sus datos, que se tratan según la Ley 1581 de 2012 de protección de datos personales."],
+  ["¿Sirve solo para el Saber 11?", "No. También para quices y exámenes de cualquier materia y grado, con preguntas de selección, verdadero o falso, abiertas y numéricas."],
+  ["¿Cuánto cuesta empezar?", "Nada. Un docente puede usarlo gratis y los colegios pueden pedir un simulacro diagnóstico gratis para su grado 10."],
+];
+---
+
+<section class="section faq" id="preguntas">
+  <div class="wrap faq__in">
+    <div>
+      <p class="eyebrow reveal">Preguntas</p>
+      <h2 class="h2 reveal">Lo que nos preguntan los coordinadores.</h2>
+    </div>
+    <div class="faq__list">
+      {FAQ.map(([q, a]) => (
+        <details class="reveal">
+          <summary>{q}<span aria-hidden="true"></span></summary>
+          <p>{a}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq__in {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(32px, 5vw, 72px);
+  }
+  .faq__list {
+    display: grid;
+    gap: 12px;
+  }
+  details {
+    background: #fff;
+    border-radius: 18px;
+    padding: 0 22px;
+  }
+  summary {
+    list-style: none;
+    cursor: pointer;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--tinta);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary span {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--tinta);
+    position: relative;
+    transition: background 200ms;
+  }
+  summary span::before,
+  summary span::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 12px;
+    height: 2.5px;
+    background: var(--tinta);
+    border-radius: 2px;
+    transition: transform 200ms;
+  }
+  summary span::after {
+    transform: rotate(90deg);
+  }
+  details[open] summary span {
+    background: var(--lapiz);
+  }
+  details[open] summary span::after {
+    transform: rotate(0);
+  }
+  details p {
+    padding: 0 0 20px;
+    color: var(--gris);
+  }
+  @media (max-width: 860px) {
+    .faq__in {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

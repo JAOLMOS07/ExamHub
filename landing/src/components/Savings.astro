@@ -1,0 +1,200 @@
+---
+/** Calculadora de tiempo ahorrado al calificar. */
+---
+
+<section class="section savings" id="ahorro">
+  <div class="wrap savings__in">
+    <div>
+      <p class="eyebrow reveal">Haz la cuenta</p>
+      <h2 class="h2 reveal">¿Cuánto tiempo le devuelve ExamHub a tus docentes?</h2>
+      <p class="lead reveal">Mueve los controles con los datos de tu colegio.</p>
+
+      <form class="calc reveal" data-calc onsubmit="return false">
+        <label class="calc__field">
+          <span>Estudiantes que presentan simulacros <output data-out="students">300</output></span>
+          <input type="range" name="students" min="30" max="2000" step="10" value="300" />
+        </label>
+        <label class="calc__field">
+          <span>Simulacros al año <output data-out="sims">4</output></span>
+          <input type="range" name="sims" min="1" max="12" step="1" value="4" />
+        </label>
+        <label class="calc__field">
+          <span>Minutos por hoja calificando a mano <output data-out="minutes">4</output></span>
+          <input type="range" name="minutes" min="1" max="10" step="0.5" value="4" />
+        </label>
+      </form>
+    </div>
+
+    <div class="board reveal" aria-live="polite">
+      <small>Horas que ya no se gastan calificando cada año</small>
+      <strong class="board__big" data-hours>0</strong>
+      <div class="board__row">
+        <div><b data-days>0</b><span>jornadas de 8 horas</span></div>
+        <div><b data-money>$0</b><span>en tiempo docente*</span></div>
+      </div>
+      <div class="board__bars" aria-hidden="true">
+        <div><span>A mano</span><i data-bar-manual></i></div>
+        <div><span>ExamHub</span><i class="is-eh" data-bar-eh></i></div>
+      </div>
+      <p class="board__note">*Calculado con $20.000 por hora docente y unos 15 segundos por hoja con ExamHub (foto y revisión). Sin contar el tiempo de pasar notas y armar informes, que ExamHub hace solo.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .savings__in {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .calc {
+    display: grid;
+    gap: 26px;
+    margin-top: 36px;
+  }
+  .calc__field span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+    color: var(--tinta);
+  }
+  .calc__field output {
+    font-family: var(--display);
+    font-size: 22px;
+    min-width: 3ch;
+    text-align: right;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    cursor: pointer;
+    --p: 50%;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--tinta) var(--p), var(--papel-2) var(--p));
+  }
+  input[type="range"]::-moz-range-track {
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--tinta) var(--p), var(--papel-2) var(--p));
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 30px;
+    height: 30px;
+    margin-top: -10px;
+    border-radius: 50%;
+    background: var(--lapiz);
+    border: 4px solid var(--tinta);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--lapiz);
+    border: 4px solid var(--tinta);
+  }
+  .board {
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: clamp(24px, 3vw, 36px);
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 10px 0 var(--lapiz);
+  }
+  .board small {
+    font-size: 15px;
+    color: rgb(246 243 234 / 0.75);
+  }
+  .board__big {
+    display: block;
+    font-family: var(--display);
+    font-size: clamp(72px, 11vw, 136px);
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--lapiz);
+    margin-top: 8px;
+  }
+  .board__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .board__row b {
+    display: block;
+    font-family: var(--display);
+    font-size: clamp(26px, 3vw, 34px);
+    letter-spacing: -0.03em;
+  }
+  .board__row span {
+    font-size: 14px;
+    color: rgb(246 243 234 / 0.7);
+  }
+  .board__bars {
+    display: grid;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  .board__bars div {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .board__bars i {
+    height: 14px;
+    border-radius: 7px;
+    background: var(--borrador);
+    width: var(--w, 100%);
+    transition: width 400ms var(--ease);
+  }
+  .board__bars i.is-eh {
+    background: var(--lapiz);
+  }
+  .board__note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: rgb(246 243 234 / 0.6);
+  }
+  @media (max-width: 900px) {
+    .savings__in {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-calc]")!;
+  const $ = (s: string) => document.querySelector<HTMLElement>(s)!;
+  const fmt = new Intl.NumberFormat("es-CO");
+  const SECONDS_EH = 15;
+  const HOUR_COST = 20000;
+
+  function update() {
+    const v = (n: string) => Number((form.elements.namedItem(n) as HTMLInputElement).value);
+    const sheets = v("students") * v("sims");
+    const manual = (sheets * v("minutes")) / 60;
+    const eh = (sheets * SECONDS_EH) / 3600;
+    const saved = Math.max(0, manual - eh);
+    form.querySelectorAll<HTMLInputElement>("input").forEach((i) => {
+      const p = ((Number(i.value) - Number(i.min)) / (Number(i.max) - Number(i.min))) * 100;
+      i.style.setProperty("--p", `${p}%`);
+      const out = form.querySelector(`[data-out="${i.name}"]`);
+      if (out) out.textContent = fmt.format(Number(i.value));
+    });
+    $("[data-hours]").textContent = fmt.format(Math.round(saved));
+    $("[data-days]").textContent = fmt.format(Math.round(saved / 8));
+    $("[data-money]").textContent = "$" + fmt.format(Math.round((saved * HOUR_COST) / 1000) * 1000);
+    $("[data-bar-eh]").style.setProperty("--w", `${Math.max(2, (eh / manual) * 100)}%`);
+  }
+  form.addEventListener("input", update);
+  update();
+</script>

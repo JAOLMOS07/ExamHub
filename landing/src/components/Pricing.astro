@@ -1,0 +1,148 @@
+---
+import { PLANS, SITE, waLink } from "../config";
+const href = (p: (typeof PLANS)[number]) =>
+  p.href === "app" ? `${SITE.appUrl}/login` : waLink(`Hola, quiero información del plan ${p.name} de ExamHub.`);
+---
+
+<section class="section pricing" id="precios">
+  <div class="wrap">
+    <p class="eyebrow reveal">Precios</p>
+    <h2 class="h2 reveal">Menos de lo que cuesta un pin de simulacro.</h2>
+    <p class="lead reveal">Precios de lanzamiento en pesos colombianos. Los <strong>colegios fundadores</strong> tienen 50 % de descuento el primer año.</p>
+
+    <div class="plans">
+      {PLANS.map((p) => (
+        <article class:list={["plan reveal", { "plan--featured": p.featured }]}>
+          {p.featured && <span class="plan__tag">Recomendado para colegios</span>}
+          <h3>{p.name}</h3>
+          <p class="plan__pitch">{p.pitch}</p>
+          <p class="plan__price"><strong>{p.price}</strong><span>{p.unit}</span></p>
+          <ul>
+            {p.features.map((f) => <li>{f}</li>)}
+          </ul>
+          <a class:list={["btn", p.featured ? "btn--primary" : "btn--ghost"]} href={href(p)} target={p.href === "wa" ? "_blank" : undefined} rel="noopener">{p.cta}</a>
+        </article>
+      ))}
+    </div>
+    <p class="pricing__note reveal">¿Eres secretaría de educación o una red de colegios? Tenemos planes a la medida.</p>
+  </div>
+</section>
+
+<style>
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 48px;
+    align-items: stretch;
+  }
+  .plan {
+    position: relative;
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--tinta);
+  }
+  .plan h3 {
+    font-size: 24px;
+  }
+  .plan__pitch {
+    color: var(--gris);
+    font-size: 15px;
+    min-height: 2.6em;
+  }
+  .plan__price {
+    display: flex;
+    flex-direction: column;
+    margin: 8px 0 6px;
+  }
+  .plan__price strong {
+    font-family: var(--display);
+    font-size: 40px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .plan__price span {
+    font-size: 14px;
+    color: var(--gris);
+    margin-top: 4px;
+  }
+  .plan ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: grid;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--grafito);
+    flex-grow: 1;
+  }
+  .plan li {
+    display: flex;
+    gap: 10px;
+  }
+  .plan li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: var(--lapiz);
+    box-shadow: 0 0 0 2px var(--tinta);
+  }
+  .plan .btn--ghost {
+    color: var(--tinta);
+  }
+  .plan--featured {
+    background: var(--tinta);
+    color: var(--papel);
+    transform: translateY(-12px);
+    box-shadow: 0 30px 60px -30px rgb(22 32 90 / 0.7);
+  }
+  .plan--featured h3,
+  .plan--featured li {
+    color: var(--papel);
+  }
+  .plan--featured .plan__pitch,
+  .plan--featured .plan__price span {
+    color: rgb(246 243 234 / 0.75);
+  }
+  .plan--featured .plan__price strong {
+    color: var(--lapiz);
+  }
+  .plan__tag {
+    position: absolute;
+    top: -14px;
+    left: 24px;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--lapiz);
+    color: var(--tinta);
+  }
+  .pricing__note {
+    margin-top: 28px;
+    text-align: center;
+    color: var(--gris);
+  }
+  @media (max-width: 1060px) {
+    .plans {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px 16px;
+    }
+    .plan--featured {
+      transform: none;
+    }
+  }
+  @media (max-width: 600px) {
+    .plans {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

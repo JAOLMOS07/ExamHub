@@ -1,0 +1,236 @@
+---
+---
+
+<section class="section features">
+  <div class="wrap">
+    <p class="eyebrow reveal">Lo que hace por tu colegio</p>
+    <h2 class="h2 reveal">Pensado para el aula colombiana.</h2>
+
+    <div class="bento">
+      <article class="tile tile--wide tile--ink reveal">
+        <div class="tile__copy">
+          <h3>Cada hoja con nombre propio</h3>
+          <p>Imprime una hoja por estudiante con su nombre y un QR. Nadie rellena códigos, nadie se equivoca de hoja y tú no transcribes nada.</p>
+        </div>
+        <div class="namecards" aria-hidden="true">
+          <span>Valentina Rodríguez <i>11-A · B</i></span>
+          <span>Samuel Gómez <i>11-A · A</i></span>
+          <span>Mariana Ospina <i>11-B · C</i></span>
+        </div>
+      </article>
+
+      <article class="tile tile--yellow reveal">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true"><path d="M4 18a30 30 0 0 1 40 0M10 25a21 21 0 0 1 28 0M16 32a12 12 0 0 1 16 0M8 6l32 36" /></svg>
+        <h3>Funciona sin internet</h3>
+        <p>Califica en el salón sin señal. Las notas se suben solas cuando vuelve la conexión.</p>
+      </article>
+
+      <article class="tile reveal">
+        <div class="levels" aria-hidden="true">
+          <i style="--h:30%;--c:var(--borrador)"></i><i style="--h:55%;--c:var(--lapiz)"></i><i style="--h:80%;--c:var(--mat)"></i><i style="--h:45%;--c:var(--aprobado)"></i>
+        </div>
+        <h3>Informe por competencia</h3>
+        <p>Niveles de desempeño, competencias más débiles y plan de mejora sugerido. El que tu rector sí va a leer.</p>
+      </article>
+
+      <article class="tile reveal">
+        <span class="badge">IA gratis</span>
+        <h3>Banco de preguntas con IA</h3>
+        <p>ExamHub te da el prompt: genera preguntas tipo Saber 11 de cualquier tema con ChatGPT o Gemini y se guardan en carpetas.</p>
+      </article>
+
+      <article class="tile reveal">
+        <span class="forms" aria-hidden="true"><b>A</b><b>B</b><b>C</b></span>
+        <h3>Varias formas, sin copia</h3>
+        <p>El mismo simulacro en formas A, B y C, con las preguntas y las opciones en distinto orden.</p>
+      </article>
+
+      <article class="tile tile--wide reveal">
+        <div class="tile__copy">
+          <h3>Boletines, Excel y app en el celular</h3>
+          <p>Boletín por estudiante para las familias, libro de Excel para la plataforma del colegio y una app que se instala desde el navegador, sin tiendas.</p>
+        </div>
+        <ul class="chips" aria-hidden="true">
+          <li>Boletín PDF</li><li>Excel .xlsx</li><li>Modo oscuro</li><li>Android y iPhone</li><li>Color de tu colegio</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 48px;
+  }
+  .tile {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: clamp(22px, 3vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--tinta);
+    transition: transform 250ms var(--ease), box-shadow 250ms;
+  }
+  .tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 50px -30px rgb(22 32 90 / 0.4);
+  }
+  .tile h3 {
+    font-size: clamp(22px, 2.2vw, 28px);
+  }
+  .tile p {
+    color: var(--gris);
+    font-size: 16px;
+  }
+  .tile--wide {
+    grid-column: span 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+  }
+  .tile__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .tile--ink {
+    background: var(--tinta);
+    color: var(--papel);
+  }
+  .tile--ink h3 {
+    color: var(--papel);
+  }
+  .tile--ink p {
+    color: rgb(246 243 234 / 0.78);
+  }
+  .tile--yellow {
+    background: var(--lapiz);
+  }
+  .tile--yellow p {
+    color: var(--tinta);
+  }
+  .namecards {
+    position: relative;
+    flex: 0 0 46%;
+    height: 170px;
+  }
+  .namecards span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: #fff;
+    color: var(--grafito);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.4);
+    transition: transform 300ms var(--ease);
+  }
+  .namecards span i {
+    font-style: normal;
+    color: var(--gris);
+    font-family: var(--body);
+    font-weight: 400;
+  }
+  .namecards span:nth-child(1) {
+    top: 0;
+    transform: rotate(-3deg);
+  }
+  .namecards span:nth-child(2) {
+    top: 56px;
+    transform: rotate(2deg);
+  }
+  .namecards span:nth-child(3) {
+    top: 112px;
+    transform: rotate(-1deg);
+  }
+  .tile--ink:hover .namecards span {
+    transform: none;
+  }
+  .levels {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 64px;
+  }
+  .levels i {
+    width: 22px;
+    height: var(--h);
+    border-radius: 6px;
+    background: var(--c);
+    transform-origin: bottom;
+    transition: transform 500ms var(--ease);
+  }
+  .tile:hover .levels i {
+    transform: scaleY(1.2);
+  }
+  .badge {
+    align-self: flex-start;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--lapiz);
+  }
+  .forms {
+    display: flex;
+    gap: 8px;
+  }
+  .forms b {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--display);
+    border: 3px solid var(--tinta);
+  }
+  .forms b:nth-child(2) {
+    background: var(--tinta);
+    color: var(--papel);
+  }
+  .chips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 0 0 40%;
+  }
+  .chips li {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--papel);
+  }
+  @media (max-width: 960px) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .bento {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tile--wide {
+      grid-column: auto;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .namecards {
+      flex: none;
+    }
+  }
+</style>
