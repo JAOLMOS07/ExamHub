@@ -548,9 +548,13 @@ function buildPalette() {
   png(svgDoc(1800, 300, sw), 1800, path.join(dir, "paleta.png"));
 }
 
-buildLogos();
-buildAppIcons();
-buildTemplates();
-buildCards();
-buildPalette();
-console.log("Kit de marca generado en docs/brand/");
+module.exports = { C, F, T, measure, textPath, mark, svgDoc, png, writeFile, inlineLogo, bubbleRow, WORD, TRACK, ROOT };
+
+if (require.main === module) {
+  buildLogos();
+  buildAppIcons();
+  buildTemplates();
+  buildCards();
+  buildPalette();
+  console.log("Kit de marca generado en docs/brand/");
+}
