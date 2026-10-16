@@ -15,7 +15,7 @@ export interface ThemePrefs {
 const STORAGE_KEY = "eh-theme";
 /** Variables ya calculadas: las aplica el script de index.html antes de arrancar. */
 const BOOT_KEY = "eh-theme-boot";
-const DEFAULT: ThemePrefs = { mode: "system", brand: "indigo" };
+const DEFAULT: ThemePrefs = { mode: "system", brand: "tinta" };
 
 /**
  * Modo claro/oscuro y color de marca, guardados en este dispositivo.

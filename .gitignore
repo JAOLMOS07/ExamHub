@@ -45,3 +45,6 @@ Thumbs.db
 .firebase
 *-debug.log
 .runtimeconfig.json
+
+# Herramientas del kit de marca
+scripts/brand/node_modules/

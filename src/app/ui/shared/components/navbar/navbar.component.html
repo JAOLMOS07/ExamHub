@@ -3,7 +3,7 @@
   <button type="button" class="eh-icon-btn -ml-2" (click)="mobileOpen = true" aria-label="Abrir menú">
     <app-icon [icon]="'menu'" />
   </button>
-  <a routerLink="/home" class="flex items-center"><eh-logo [size]="26" /></a>
+  <a routerLink="/home" class="flex items-center"><eh-logo [size]="28" /></a>
   <span class="flex-1 min-w-0 text-right text-xs font-medium text-slate-500 truncate">{{ activeOrgName }}</span>
   <button type="button" class="eh-icon-btn -mr-2" (click)="theme.toggleDark()" [attr.aria-label]="theme.isDark ? 'Modo claro' : 'Modo oscuro'">
     <app-icon [icon]="theme.isDark ? 'light_mode' : 'dark_mode'" />
@@ -22,7 +22,7 @@
   [class.translate-x-0]="mobileOpen"
 >
   <div class="h-16 px-5 flex items-center justify-between">
-    <a routerLink="/home"><eh-logo [size]="28" /></a>
+    <a routerLink="/home"><eh-logo [size]="32" /></a>
     <button type="button" class="lg:hidden eh-icon-btn" (click)="closeMenus()" aria-label="Cerrar menú">
       <app-icon [icon]="'close'" />
     </button>

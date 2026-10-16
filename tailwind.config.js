@@ -21,13 +21,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: [
-          "Inter",
-          "Roboto",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
+        // Marca: Atkinson Hyperlegible para textos, Sora para títulos.
+        sans: ["'Atkinson Hyperlegible'", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Sora", "ui-sans-serif", "system-ui", "sans-serif"],
         // Serif para textos editoriales (lecturas largas)
         serif: ["'Source Serif Pro'", "'Times New Roman'", "serif"],
       },
@@ -46,18 +42,18 @@ module.exports = {
     themes: [
       {
         examhub: {
-          primary: "#4338ca",
+          primary: "#1e2b74",
           "primary-content": "#ffffff",
-          secondary: "#d97706",
+          secondary: "#ffc531",
           "secondary-content": "#ffffff",
           accent: "#10b981",
           "accent-content": "#ffffff",
           neutral: "#1f2937",
           "neutral-content": "#f1f5f9",
           "base-100": "#ffffff",
-          "base-200": "#f8fafc",
-          "base-300": "#e2e8f0",
-          "base-content": "#0f172a",
+          "base-200": "#f6f3ea",
+          "base-300": "#e6e1d3",
+          "base-content": "#1c1e26",
           info: "#0ea5e9",
           success: "#10b981",
           warning: "#f59e0b",
@@ -71,7 +67,7 @@ module.exports = {
       },
       {
         "examhub-dark": {
-          primary: "#6366f1",
+          primary: "#4352ae",
           "primary-content": "#ffffff",
           secondary: "#f59e0b",
           "secondary-content": "#0f172a",

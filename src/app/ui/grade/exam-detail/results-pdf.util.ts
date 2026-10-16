@@ -107,7 +107,7 @@ export async function exportResultsPdf(
       },
       ...(tests.length ? [{ text: DISCLAIMER, fontSize: 8, italics: true, color: "#6b7280", margin: [0, 12, 0, 0] }] : []),
     ] as any,
-    styles: { th: { bold: true, fontSize: 9, color: "#3730a3" } },
+    styles: { th: { bold: true, fontSize: 9, color: "#16205A" } },
     defaultStyle: { fontSize: 10 },
   };
   await download(def, `Resultados - ${assessment.title}.pdf`);
@@ -289,7 +289,7 @@ export function studentReportsDoc(
           ],
         ],
       },
-      layout: { fillColor: () => "#3730a3", hLineWidth: () => 0, vLineWidth: () => 0 },
+      layout: { fillColor: () => "#16205A", hLineWidth: () => 0, vLineWidth: () => 0 },
       margin: [0, 0, 0, 14],
     });
 
@@ -446,7 +446,7 @@ export function institutionalReportDoc(input: InstitutionalReportInput): TDocume
   const content: any[] = [];
 
   content.push(
-    { text: (input.institution || "ExamHub").toUpperCase(), fontSize: 9, bold: true, color: "#4338ca", characterSpacing: 0.6 },
+    { text: (input.institution || "ExamHub").toUpperCase(), fontSize: 9, bold: true, color: "#16205A", characterSpacing: 0.6 },
     { text: "Informe institucional de resultados", fontSize: 20, bold: true, margin: [0, 4, 0, 2] },
     {
       text: `${assessment.title}${input.scope ? ` · ${input.scope}` : ""} · ${formatDay(assessment.createdAt)}`,
@@ -717,7 +717,7 @@ export function institutionalReportDoc(input: InstitutionalReportInput): TDocume
     info: { title: `Informe institucional — ${assessment.title}`, author: "ExamHub" },
     content,
     footer: footer(`Informe institucional · ${assessment.title}`) as any,
-    styles: { th: { bold: true, fontSize: 8, color: "#3730a3" } },
+    styles: { th: { bold: true, fontSize: 8, color: "#16205A" } },
     defaultStyle: { fontSize: 10, color: INK },
   };
   return def;

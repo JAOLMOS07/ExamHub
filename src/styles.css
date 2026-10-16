@@ -770,3 +770,23 @@ html.dark :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]
 html.dark :is(input, textarea)::placeholder {
   color: rgb(var(--c-slate-400));
 }
+
+/* Marca: títulos en Sora (ver docs/brand/README.md). Material fija
+   Roboto en .mat-typography: se sobreescribe con más especificidad. */
+h1,
+h2,
+.mat-typography h1,
+.mat-typography h2,
+.mat-typography h3,
+.mat-mdc-dialog-container h2,
+.eh-page-head h1,
+.eh-step,
+.font-display {
+  font-family: Sora, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+.mat-typography,
+.mat-typography p,
+.mat-mdc-dialog-container .mat-mdc-dialog-content {
+  font-family: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+}

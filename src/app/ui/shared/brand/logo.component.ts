@@ -2,140 +2,78 @@ import { Component, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
 /**
- * Logo "ExamHub" — un libro abierto estilizado con un tilde de
- * "completado" arriba. Combinación de los dos significantes del
- * producto: lectura/estudio + corrección/aprobación.
- *
- * El logo es 100% SVG inline; no depende de ningún asset externo,
- * escala perfecto a cualquier tamaño y respeta el color de marca.
+ * Logo de ExamHub: "el check de burbujas". Una cuadrícula de 4 × 3
+ * burbujas de hoja de respuestas donde cuatro marcadas dibujan un ✓;
+ * la última, en amarillo lápiz, es el momento en que ExamHub lee la
+ * marca. Guía completa y archivos: docs/brand/.
  *
  * Uso:
- *   <eh-logo />                            (size 28px, con wordmark)
- *   <eh-logo [size]="40" [showText]="false" />  (solo isotipo)
- *   <eh-logo [size]="48" variant="light" /> (sobre fondos oscuros)
+ *   <eh-logo />                                 (32 px, con el nombre)
+ *   <eh-logo [size]="40" [showText]="false" />  (solo el símbolo)
+ *   <eh-logo [size]="48" variant="light" />     (sobre fondos oscuros)
+ *
+ * Por debajo de 32 px usa el símbolo simplificado (sin las burbujas
+ * vacías), como pide la guía.
  */
 @Component({
   selector: "eh-logo",
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="inline-flex items-center gap-2 select-none">
-      <svg
-        [attr.width]="size"
-        [attr.height]="size"
-        viewBox="0 0 48 48"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        [class.text-white]="variant === 'light'"
-        [class.text-brand-700]="variant !== 'light'"
-        aria-hidden="true"
-      >
-        <!-- Libro abierto (dos páginas) -->
-        <path
-          d="M6 12c0-1.1.9-2 2-2h13c1.66 0 3 1.34 3 3v25c0-1.66-1.34-3-3-3H8a2 2 0 01-2-2V12z"
-          fill="currentColor"
-          opacity="0.18"
-        />
-        <path
-          d="M42 12c0-1.1-.9-2-2-2H27c-1.66 0-3 1.34-3 3v25c0-1.66 1.34-3 3-3h13a2 2 0 002-2V12z"
-          fill="currentColor"
-          opacity="0.28"
-        />
-        <!-- Líneas internas (texto) -->
-        <line
-          x1="10"
-          y1="16"
-          x2="20"
-          y2="16"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          opacity="0.55"
-        />
-        <line
-          x1="10"
-          y1="20"
-          x2="20"
-          y2="20"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          opacity="0.55"
-        />
-        <line
-          x1="10"
-          y1="24"
-          x2="18"
-          y2="24"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          opacity="0.55"
-        />
-        <line
-          x1="28"
-          y1="16"
-          x2="38"
-          y2="16"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          opacity="0.55"
-        />
-        <line
-          x1="28"
-          y1="20"
-          x2="38"
-          y2="20"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          opacity="0.55"
-        />
-        <!-- Check mark "aprobado" — distintivo del producto -->
-        <circle
-          cx="36"
-          cy="12"
-          r="7"
-          fill="#10b981"
-          stroke="#fff"
-          stroke-width="1.5"
-        />
-        <path
-          d="M33 12.5l2 2 4-4"
-          stroke="#fff"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
+    <div class="inline-flex items-center select-none" [style.gap.px]="size * 0.22">
+      <svg [attr.width]="size" [attr.height]="size" viewBox="0 0 120 120" aria-hidden="true">
+        <rect width="120" height="120" rx="30" [attr.fill]="tile" />
+        @if (size >= 32) {
+          <g fill="none" [attr.stroke]="ink" [attr.stroke-opacity]="variant === 'light' ? 0.22 : 0.28" stroke-width="2">
+            <circle cx="24" cy="36" r="7" /><circle cx="48" cy="36" r="7" /><circle cx="72" cy="36" r="7" />
+            <circle cx="48" cy="60" r="7" /><circle cx="96" cy="60" r="7" />
+            <circle cx="24" cy="84" r="7" /><circle cx="72" cy="84" r="7" /><circle cx="96" cy="84" r="7" />
+          </g>
+          <polyline points="24,60 48,84 72,60 96,36" fill="none" [attr.stroke]="ink" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+          <g [attr.fill]="ink"><circle cx="24" cy="60" r="8.5" /><circle cx="48" cy="84" r="8.5" /><circle cx="72" cy="60" r="8.5" /></g>
+          <circle cx="96" cy="36" r="9.5" fill="#FFC531" [attr.stroke]="tile" stroke-width="3" />
+        } @else {
+          <polyline points="24,60 48,84 72,60 96,36" fill="none" [attr.stroke]="ink" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="96" cy="36" r="14" fill="#FFC531" />
+        }
       </svg>
       @if (showText) {
-        <span
-          class="font-bold text-lg tracking-tight"
-          [class.text-white]="variant === 'light'"
-          [class.text-brand-700]="variant !== 'light'"
-        >
-          Exam<span class="text-accent-600">Hub</span>
-        </span>
+        <span class="eh-wordmark" [class.eh-wordmark--light]="variant === 'light'" [style.font-size.px]="size * 0.81">examhub</span>
       }
     </div>
   `,
   styles: [
     `
-      .text-brand-700 {
-        color: rgb(var(--c-brand-700));
+      .eh-wordmark {
+        font-family: Sora, ui-sans-serif, system-ui, sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.045em;
+        line-height: 1;
+        color: rgb(var(--c-brand-800));
       }
-      .text-accent-600 {
-        color: rgb(var(--c-accent-600));
+      .eh-wordmark--light {
+        color: #f6f3ea;
+      }
+      :host-context(html.dark) .eh-wordmark:not(.eh-wordmark--light) {
+        color: rgb(var(--c-slate-900));
       }
     `,
   ],
 })
 export class LogoComponent {
-  /** Tamaño en píxeles del isotipo (libro + check). */
-  @Input() size: number = 28;
-  /** Mostrar el wordmark "ExamHub" al lado del isotipo. */
+  /** Alto del símbolo en píxeles. */
+  @Input() size: number = 32;
+  /** Mostrar el nombre "examhub" al lado del símbolo. */
   @Input() showText: boolean = true;
-  /** Variante de color: 'default' (sobre fondos claros) o 'light' (oscuros). */
+  /** 'default' sobre fondos claros, 'light' sobre fondos oscuros. */
   @Input() variant: "default" | "light" = "default";
+
+  /** Baldosa: Tinta (o el color de marca elegido); Papel sobre oscuros. */
+  get tile(): string {
+    return this.variant === "light" ? "#F6F3EA" : "rgb(var(--c-brand-800))";
+  }
+
+  get ink(): string {
+    return this.variant === "light" ? "#16205A" : "#F6F3EA";
+  }
 }

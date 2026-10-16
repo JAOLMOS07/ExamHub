@@ -24,6 +24,13 @@ const DARK_COLORED = { 50: 950, 100: 900, 200: 800, 300: 700, 400: 400, 500: 500
 /** La marca se usa mucho como fondo de botones con texto blanco: no aclarar tanto. */
 const DARK_BRAND = { 50: 950, 100: 900, 200: 800, 300: 700, 400: 400, 500: 400, 600: 500, 700: 500, 800: 600, 900: 300, 950: 200 };
 
+/** Tinta: el azul de ExamHub (#16205A en el 800). */
+const TINTA = {
+  50: "#eff1fb", 100: "#dfe3f6", 200: "#c0c7ec", 300: "#97a3dd", 400: "#6877c8", 500: "#4352ae",
+  600: "#2b3a91", 700: "#1e2b74", 800: "#16205a", 900: "#10184a", 950: "#0a0f30",
+};
+const palette = (src) => (src === "tinta" ? TINTA : colors[src]);
+
 const rgb = (hex) => {
   const h = hex.replace("#", "");
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(" ");
@@ -39,15 +46,15 @@ for (const name of [...NEUTRALS, ...COLORED]) {
     dark.push(`  --c-${name}-${s}: ${rgb(colors[name][map[s]])};`);
   }
 }
-// Marca por defecto (índigo) y acento (ámbar).
+// Marca por defecto (Tinta) y acento (ámbar).
 for (const s of SHADES) {
-  light.push(`  --c-brand-${s}: ${rgb(colors.indigo[s])};`);
-  dark.push(`  --c-brand-${s}: ${rgb(colors.indigo[DARK_BRAND[s]])};`);
+  light.push(`  --c-brand-${s}: ${rgb(TINTA[s])};`);
+  dark.push(`  --c-brand-${s}: ${rgb(TINTA[DARK_BRAND[s]])};`);
   light.push(`  --c-accent-${s}: ${rgb(colors.amber[s])};`);
   dark.push(`  --c-accent-${s}: ${rgb(colors.amber[DARK_COLORED[s]])};`);
 }
 // Superficies (lo que en claro es blanco) y fondo de página.
-light.push("  --c-surface: 255 255 255;", "  --c-page: 248 250 252;", "  --c-ink: 15 23 42;");
+light.push("  --c-surface: 255 255 255;", "  --c-page: 246 243 234;", "  --c-ink: 28 30 38;");
 dark.push(`  --c-surface: ${rgb(colors.slate[900])};`, `  --c-page: ${rgb(colors.slate[950])};`, `  --c-ink: ${rgb(colors.slate[50])};`);
 
 lines.push("/* Generado por scripts/gen-theme.js — no editar a mano. */");
@@ -64,6 +71,7 @@ fs.writeFileSync(path.join(__dirname, "..", "src", "theme-colors.css"), lines.jo
 
 // Paletas de marca para la personalización.
 const PRESETS = [
+  ["tinta", "Tinta ExamHub", "tinta"],
   ["indigo", "Índigo", "indigo"],
   ["blue", "Azul", "blue"],
   ["sky", "Cielo", "sky"],
@@ -85,7 +93,7 @@ const ts = [
   "/** Paletas de marca: tono → \"r g b\". */",
   "export const BRAND_PRESETS: { id: string; label: string; scale: Scale }[] = [",
   ...PRESETS.map(([id, label, src]) => {
-    const scale = Object.fromEntries(SHADES.map((s) => [s, rgb(colors[src][s])]));
+    const scale = Object.fromEntries(SHADES.map((s) => [s, rgb(palette(src)[s])]));
     return `  { id: ${JSON.stringify(id)}, label: ${JSON.stringify(label)}, scale: ${JSON.stringify(scale)} },`;
   }),
   "];",

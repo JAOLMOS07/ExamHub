@@ -91,7 +91,7 @@ export class PreferencesComponent implements OnInit {
   }
 
   resetTheme(): void {
-    this.theme.set({ mode: "system", brand: "indigo", custom: undefined });
+    this.theme.set({ mode: "system", brand: "tinta", custom: undefined });
     this.toast.success("Apariencia restablecida.", "ExamHub", 2000);
   }
 
