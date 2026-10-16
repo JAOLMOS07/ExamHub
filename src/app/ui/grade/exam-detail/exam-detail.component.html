@@ -33,10 +33,11 @@
           <div tabindex="0" role="button" class="eh-btn eh-btn--secondary cursor-pointer" [class.opacity-50]="isExporting">
             <app-icon [icon]="'download'" /> Exportar
           </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-60 border border-slate-200">
-            <li><a (click)="exportPdf('planilla')">Planilla de resultados (PDF)</a></li>
-            <li><a (click)="exportPdf('boletines')">Boletines por estudiante (PDF)</a></li>
-            <li><a (click)="exportCsv()">Resultados para Excel (CSV)</a></li>
+          <ul tabindex="0" class="menu menu-sm dropdown-content mt-2 z-[40] p-2 shadow-card bg-white rounded-box w-72 border border-slate-200">
+            <li><a (click)="exportPdf('informe')"><app-icon [icon]="'insights'" /> Informe para rectoría (PDF)</a></li>
+            <li><a (click)="exportPdf('boletines')"><app-icon [icon]="'badge'" /> Boletines por estudiante (PDF)</a></li>
+            <li><a (click)="exportPdf('planilla')"><app-icon [icon]="'list_alt'" /> Planilla de resultados (PDF)</a></li>
+            <li><a (click)="exportExcel()"><app-icon [icon]="'table_view'" /> Libro de Excel completo (.xlsx)</a></li>
           </ul>
         </div>
       </div>
@@ -184,7 +185,10 @@
                   }
                   <td class="py-2 px-3 text-right font-bold" [class.text-red-700]="r.score < exam.maxScore * 0.6">{{ r.score }}</td>
                   <td class="py-2 px-3 text-xs text-slate-500 hidden md:table-cell">{{ formatDateTime(r.scannedAt) }}</td>
-                  <td class="py-2 px-3 text-right">
+                  <td class="py-2 px-3 text-right whitespace-nowrap">
+                    <button class="text-slate-400 hover:text-brand-700 mr-1" title="Boletín del estudiante (PDF)" [disabled]="isExporting" (click)="exportBulletin(r)">
+                      <app-icon [icon]="'badge'" />
+                    </button>
                     <button class="text-slate-400 hover:text-red-600" title="Borrar" (click)="deleteResult(r)">
                       <app-icon [icon]="'delete'" />
                     </button>

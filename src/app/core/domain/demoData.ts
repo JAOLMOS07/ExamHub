@@ -53,7 +53,7 @@ export function demoStudents(groups: string[], perGroup: number, seed = 2026): D
         group,
         // Cada grupo con un nivel medio distinto para que el reporte
         // por grupo muestre diferencias.
-        ability: normal(rng) * 0.9 + (g === 0 ? 0.35 : -0.25),
+        ability: normal(rng) * 0.75 + (g === 0 ? 0.3 : -0.1),
       });
     }
   });
@@ -77,7 +77,8 @@ export function simulateAnswers(
 ): DetectedAnswer[] {
   return key.map((entry) => {
     if (!entry.letter) return null;
-    const b = (difficultyOf(entry.itemId) - 2) * 0.9;
+    // +0.8: promedios cercanos a los de un colegio típico (no al 80 %).
+    const b = (difficultyOf(entry.itemId) - 2) * 0.9 + 0.8;
     const p = 1 / (1 + Math.exp(-1.7 * (ability + shift - b)));
     const r = rng();
     if (r < p) return entry.letter;

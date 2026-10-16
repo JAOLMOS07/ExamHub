@@ -18,7 +18,8 @@ import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { MODULES } from "../../routes.constants";
 import { testBarColor } from "../../shared/test-colors";
 import { SharedModule } from "../../shared/shared.module";
-import { exportResultsPdf, exportStudentReports } from "./results-pdf.util";
+import { exportInstitutionalReport, exportResultsPdf, exportStudentReports } from "./results-pdf.util";
+import { buildXlsx, downloadBlob, Sheet } from "../../../core/utils/xlsx.util";
 import { RosterEntry, pendingFromRoster } from "../../../core/domain/roster";
 import { PDFService } from "../../../core/services/pdfService.service";
 import { SheetRequest, SheetsContext, sheetsDocument } from "../../exam/generate-exam-dialog/answer-sheet.pdf";
@@ -354,7 +355,7 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
     return this.groupName(this.groupFilter);
   }
 
-  async exportPdf(kind: "planilla" | "boletines"): Promise<void> {
+  async exportPdf(kind: "planilla" | "boletines" | "informe"): Promise<void> {
     if (!this.exam || this.filtered.length === 0) {
       this.toast.warning("Todavía no hay resultados para exportar.", "ExamHub", 3000);
       return;
@@ -363,8 +364,22 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
     try {
       if (kind === "planilla") {
         await exportResultsPdf(this.exam, this.filtered, this.groupName, this.filterLabel);
+      } else if (kind === "boletines") {
+        await exportStudentReports(this.exam, this.filtered, this.groupName, {
+          institution: this.institution,
+          allResponses: this.responses,
+        });
       } else {
-        await exportStudentReports(this.exam, this.filtered, this.groupName, this.institution);
+        await exportInstitutionalReport({
+          assessment: this.exam,
+          responses: this.filtered,
+          groupName: this.groupName,
+          institution: this.institution,
+          scope: this.filterLabel,
+          expected: this.rosterInFilter.length || undefined,
+          items: this.itemAnalysis,
+          stemOf: (id) => this.stemOf(id),
+        });
       }
     } catch (err) {
       console.error("Error exportando PDF:", err);
@@ -374,34 +389,189 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** CSV (separador ;, compatible con Excel en español). */
-  exportCsv(): void {
+  /** Boletín de un solo estudiante. */
+  async exportBulletin(r: ResponseDoc): Promise<void> {
     if (!this.exam) return;
-    const tests = this.testsPresent;
-    const head = ["Estudiante", "Código", "Grupo", "Forma", "Aciertos", "Total", ...tests.map((t) => getTest(t)?.label ?? t), "Global", "Nota", "Fecha"];
-    const rows = this.sortedFiltered.map((r) => [
-      r.studentName ?? "",
-      r.studentCode ?? "",
-      this.groupName(r.groupId),
-      this.formLabel(r.formId),
-      r.breakdown?.correct ?? 0,
-      r.breakdown?.total ?? 0,
-      ...tests.map((t) => r.breakdown?.byTest?.[t]?.score ?? ""),
-      r.breakdown?.global ?? "",
-      String(r.score ?? 0).replace(".", ","),
-      new Date(r.scannedAt).toLocaleDateString("es-CO"),
-    ]);
-    const esc = (v: unknown) => {
-      const s = String(v ?? "");
-      return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const csv = "﻿" + [head, ...rows].map((r) => r.map(esc).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Resultados - ${this.exam.title}.csv`.replace(/[/\\?%*:|"<>]/g, "-");
-    a.click();
-    URL.revokeObjectURL(url);
+    this.isExporting = true;
+    try {
+      await exportStudentReports(this.exam, [r], this.groupName, {
+        institution: this.institution,
+        allResponses: this.responses,
+      });
+    } catch (err) {
+      console.error("Error exportando boletín:", err);
+      this.toast.danger("No pudimos generar el boletín.", "ExamHub", 3500);
+    } finally {
+      this.isExporting = false;
+    }
+  }
+
+  /**
+   * Libro de Excel con resultados, competencias, respuestas por
+   * pregunta, análisis de ítems y resumen por grupo.
+   */
+  async exportExcel(): Promise<void> {
+    const exam = this.exam;
+    if (!exam || this.filtered.length === 0) {
+      this.toast.warning("Todavía no hay resultados para exportar.", "ExamHub", 3000);
+      return;
+    }
+    this.isExporting = true;
+    try {
+      const rows = this.sortedFiltered;
+      const tests = this.testsPresent;
+      const testLabel = (t: string) => getTest(t)?.label ?? t;
+      const levelOf = (t: string, l: number | null | undefined) =>
+        l === null || l === undefined ? "" : getTest(t)?.levelLabels[l] ?? String(l + 1);
+      const hasGlobal = rows.some((r) => typeof r.breakdown?.global === "number");
+      const avgOf = (xs: number[]) =>
+        xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null;
+      const nums = (xs: (number | null | undefined)[]) => xs.filter((x): x is number => typeof x === "number");
+
+      const results: Sheet = {
+        name: "Resultados",
+        rows: [
+          [
+            "Estudiante",
+            "Código",
+            "Grupo",
+            "Forma",
+            "Aciertos",
+            "Total",
+            ...tests.flatMap((t) => [testLabel(t), `Nivel ${getTest(t)?.shortLabel ?? t}`]),
+            ...(hasGlobal ? ["Global"] : []),
+            "Nota",
+            "Fecha",
+          ],
+          ...rows.map((r) => [
+            r.studentName ?? "",
+            r.studentCode ?? "",
+            this.groupName(r.groupId),
+            this.formLabel(r.formId),
+            r.breakdown?.correct ?? 0,
+            r.breakdown?.total ?? 0,
+            ...tests.flatMap((t) => {
+              const s = r.breakdown?.byTest?.[t];
+              return [s?.score ?? null, levelOf(t, s?.level)];
+            }),
+            ...(hasGlobal ? [r.breakdown?.global ?? null] : []),
+            r.score ?? 0,
+            new Date(r.scannedAt).toLocaleDateString("es-CO"),
+          ]),
+        ],
+      };
+
+      const testIndex = (k: string) => SABER11_TESTS.findIndex((t) => t.id === k.split(":")[0]);
+      const compKeys = [...new Set(rows.flatMap((r) => Object.keys(r.breakdown?.byCompetency ?? {})))].sort(
+        (a, b) => testIndex(a) - testIndex(b)
+      );
+      const compLabel = (k: string) => {
+        const [t, c] = k.split(":");
+        return `${getTest(t)?.shortLabel ?? t} · ${getCompetency(t, c)?.label ?? c}`;
+      };
+      const competencies: Sheet = {
+        name: "Competencias (%)",
+        rows: [
+          ["Estudiante", "Grupo", ...compKeys.map(compLabel)],
+          ...rows.map((r) => [
+            r.studentName ?? "",
+            this.groupName(r.groupId),
+            ...compKeys.map((k) => {
+              const c = r.breakdown?.byCompetency?.[k];
+              return c && c.total ? Math.round((c.correct / c.total) * 100) : null;
+            }),
+          ]),
+        ],
+      };
+
+      const maxQ = Math.max(...exam.forms.map((f) => f.key.length));
+      const cols = Array.from({ length: maxQ }, (_, i) => `P${i + 1}`);
+      const answers: Sheet = {
+        name: "Respuestas",
+        boldRows: [0, ...exam.forms.map((_, i) => i + 1)],
+        rows: [
+          ["Estudiante", "Forma", "Aciertos", ...cols],
+          ...exam.forms.map((f) => [`CLAVE forma ${f.label}`, f.label, null, ...f.key.map((k) => k.letter ?? "abierta")]),
+          ...rows.map((r) => {
+            const key = exam.forms.find((f) => f.id === r.formId)?.key ?? [];
+            return [
+              r.studentName ?? "",
+              this.formLabel(r.formId),
+              r.breakdown?.correct ?? 0,
+              ...cols.map((_, i) => {
+                const a = r.answers[i];
+                if (key[i]?.letter === null) return r.manualScores?.[i] ?? null;
+                if (a === null || a === undefined) return "—";
+                if (a === "MULTI") return "doble";
+                // Mayúscula = acierto, minúscula = error.
+                return a === key[i]?.letter ? a : a.toLowerCase();
+              }),
+            ];
+          }),
+        ],
+      };
+
+      const letters = ALPHABET.slice(0, exam.letters.length);
+      const items: Sheet = {
+        name: "Análisis de preguntas",
+        rows: [
+          [
+            "Posición (forma A)",
+            "Prueba",
+            "Competencia",
+            "Pregunta",
+            "% acierto",
+            "Discriminación",
+            "Omitidas",
+            "Respuestas",
+            ...letters.map((l) => `% opción ${l} (banco)`),
+            "Clave (banco)",
+            "Alertas",
+          ],
+          ...this.itemAnalysis.map((it) => [
+            it.position + 1,
+            getTest(it.test)?.shortLabel ?? "",
+            it.competency ? getCompetency(it.test, it.competency)?.label ?? it.competency : "",
+            this.stemOf(it.itemId),
+            Math.round(it.pValue * 100),
+            it.discrimination === null ? null : Math.round(it.discrimination * 100) / 100,
+            it.omitted,
+            it.n,
+            ...letters.map((_, i) => (it.optionShare[i] === undefined ? null : Math.round(it.optionShare[i] * 100))),
+            it.correctOption === null ? "" : ALPHABET[it.correctOption],
+            this.flagsOf(it)
+              .map((f) => FLAG_LABEL[f])
+              .join("; "),
+          ]),
+        ],
+      };
+
+      const groupIds = [...new Set(rows.map((r) => r.groupId ?? ""))];
+      const byGroup: Sheet = {
+        name: "Por grupo",
+        rows: [
+          ["Grupo", "Evaluados", ...tests.map(testLabel), ...(hasGlobal ? ["Global"] : []), "Nota promedio"],
+          ...groupIds.map((gid) => {
+            const rs = rows.filter((r) => (r.groupId ?? "") === gid);
+            return [
+              this.groupName(gid || undefined) || "Sin grupo",
+              rs.length,
+              ...tests.map((t) => avgOf(nums(rs.map((r) => r.breakdown?.byTest?.[t]?.score)))),
+              ...(hasGlobal ? [avgOf(nums(rs.map((r) => r.breakdown?.global)))] : []),
+              avgOf(rs.map((r) => r.score ?? 0)),
+            ];
+          }),
+        ],
+      };
+
+      const blob = await buildXlsx([results, competencies, answers, items, byGroup]);
+      downloadBlob(blob, `Resultados - ${exam.title}${this.filterLabel ? " - " + this.filterLabel : ""}.xlsx`);
+    } catch (err) {
+      console.error("Error exportando Excel:", err);
+      this.toast.danger("No pudimos generar el archivo de Excel.", "ExamHub", 3500);
+    } finally {
+      this.isExporting = false;
+    }
   }
 
   async generateAiReport(): Promise<void> {
