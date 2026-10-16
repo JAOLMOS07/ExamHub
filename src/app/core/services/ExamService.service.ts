@@ -14,7 +14,8 @@ import {
 } from "@angular/fire/firestore";
 import { Observable, combineLatest, of } from "rxjs";
 import { catchError, map, retry, switchMap } from "rxjs/operators";
-import { Document } from "../models/folder.model";
+import { Document, Option } from "../models/folder.model";
+import { ImportFolder, ImportQuestion, TreeCount } from "../domain/bankImport";
 import { objectType } from "../models/objectType.enum";
 import { TenantService } from "./tenant.service";
 
@@ -248,6 +249,92 @@ export class ExamService {
     }
   }
 
+  /**
+   * Importa un árbol de carpetas → lecturas → preguntas en lotes.
+   * Si ya existe una carpeta con el mismo nombre en ese nivel se
+   * reutiliza: así un banco generado por partes queda junto.
+   */
+  public async importTree(
+    path: string[],
+    root: ImportFolder,
+    source: Document["source"] = "import"
+  ): Promise<TreeCount> {
+    const { uid, orgId } = await this.tenant.requireContext();
+    const count: TreeCount = { folders: 0, passages: 0, questions: 0 };
+    let clock = Date.now();
+    const audit = () => {
+      const t = clock++;
+      return { createdBy: uid, createdAt: t, updatedAt: t };
+    };
+
+    let batch = writeBatch(this.firestore);
+    let pending = 0;
+    const set = async (ref: DocumentReference, data: Record<string, any>) => {
+      batch.set(ref, data);
+      if (++pending >= BATCH_LIMIT) {
+        await batch.commit();
+        batch = writeBatch(this.firestore);
+        pending = 0;
+      }
+    };
+
+    const writeQuestion = (q: ImportQuestion, folderId: string | null, stimulusId: string | null) => {
+      const id = crypto.randomUUID();
+      count.questions++;
+      return set(doc(this.col(orgId, "items"), id), {
+        ...documentToItem(importQuestionToDocument(id, q, source)),
+        folderId,
+        stimulusId,
+        source,
+        ...(source === "ai" ? { reviewed: false } : {}),
+        ...audit(),
+      });
+    };
+
+    const writeFolder = async (f: ImportFolder, folderId: string | null) => {
+      for (const q of f.questions) await writeQuestion(q, folderId, null);
+      for (const p of f.passages) {
+        const sid = crypto.randomUUID();
+        count.passages++;
+        await set(doc(this.col(orgId, "stimuli"), sid), {
+          id: sid,
+          name: p.title,
+          text: p.text,
+          folderId,
+          ...audit(),
+        });
+        for (const q of p.questions) await writeQuestion(q, folderId, sid);
+      }
+      if (f.folders.length === 0) return;
+      const existing = await getDocs(
+        query(this.col(orgId, "folders"), where("parentId", "==", folderId))
+      );
+      const byName = new Map(
+        existing.docs.map((d) => [String(d.data()["name"]).trim().toLowerCase(), d.id])
+      );
+      for (const sub of f.folders) {
+        const key = sub.name.trim().toLowerCase();
+        let id = byName.get(key);
+        if (!id) {
+          id = crypto.randomUUID();
+          byName.set(key, id);
+          count.folders++;
+          await set(doc(this.col(orgId, "folders"), id), {
+            id,
+            name: sub.name.trim(),
+            parentId: folderId,
+            ...audit(),
+          });
+        }
+        await writeFolder(sub, id);
+      }
+    };
+
+    await writeFolder(root, ExamService.parentOf(path));
+    if (pending > 0) await batch.commit();
+    return count;
+  }
+
   /** Marca un ítem generado por IA como revisado por el docente. */
   public async markReviewed(itemId: string): Promise<void> {
     const orgId = await this.tenant.requireOrgId();
@@ -282,6 +369,30 @@ export function documentToItem(d: Document): Record<string, any> {
   delete plain.passageContext;
   delete plain.passageId;
   return plain;
+}
+
+/** Pregunta del importador → Document del banco. */
+export function importQuestionToDocument(
+  id: string,
+  q: ImportQuestion,
+  source: Document["source"] = "import"
+): Document {
+  const d = new Document(id, q.text, objectType.QUESTION);
+  d.kind = q.kind;
+  if (q.options) d.options = q.options.map((o) => new Option(crypto.randomUUID(), o.text, o.correct));
+  if (q.numericAnswer !== undefined) {
+    d.numericAnswer = q.numericAnswer;
+    d.numericTolerance = q.numericTolerance ?? 0;
+  }
+  d.subject = q.subject;
+  d.grade = q.grade;
+  d.difficulty = q.difficulty;
+  d.test = q.test;
+  d.competency = q.competency;
+  d.component = q.component;
+  d.rationale = q.rationale;
+  d.source = source;
+  return d;
 }
 
 function folderToDocument(row: any): Document {

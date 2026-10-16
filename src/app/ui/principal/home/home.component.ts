@@ -419,9 +419,13 @@ export class HomeComponent implements OnDestroy {
    */
   openImportDialog(): void {
     const ref = this.dialog.open(ImportBankDialogComponent, {
-      width: "680px",
-      maxWidth: "95vw",
-      data: { path: this.currentPath },
+      width: "820px",
+      maxWidth: "96vw",
+      autoFocus: false,
+      data: {
+        path: [...this.currentPath],
+        folderName: this.paths.length > 1 ? this.paths[this.paths.length - 1] : "Inicio",
+      },
     });
     ref.afterClosed().subscribe((result) => {
       if (result?.imported) {

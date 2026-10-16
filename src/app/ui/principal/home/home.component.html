@@ -135,7 +135,7 @@
         </div>
         <ul
           tabindex="0"
-          class="dropdown-content menu mt-2 z-30 p-2 shadow-card bg-white rounded-xl w-56 border border-slate-200"
+          class="dropdown-content menu mt-2 z-30 p-2 shadow-card bg-white rounded-xl w-72 border border-slate-200"
         >
           <li (click)="createQuestionDialog()">
             <a class="flex items-center gap-3 py-2">
@@ -172,17 +172,19 @@
               </a>
             </li>
           }
-          <li class="border-t border-slate-100 mt-1 pt-1" (click)="openImportDialog()">
-            <a class="flex items-center gap-3 py-2">
-              <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <app-icon [icon]="'upload_file'" />
-              </span>
-              <div>
-                <div class="font-medium text-slate-900">Importar preguntas</div>
-                <div class="text-xs text-slate-500">Pega el JSON que preparaste con ChatGPT u otra IA</div>
-              </div>
-            </a>
-          </li>
+          @if (!isInsidePassage) {
+            <li class="border-t border-slate-100 mt-1 pt-1" (click)="openImportDialog()">
+              <a class="flex items-center gap-3 py-2">
+                <span class="w-8 h-8 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center">
+                  <app-icon [icon]="'auto_awesome'" />
+                </span>
+                <div>
+                  <div class="font-medium text-slate-900">Crear banco con IA</div>
+                  <div class="text-xs text-slate-500">Genera de cualquier tema con ChatGPT o Gemini, o pega desde Word</div>
+                </div>
+              </a>
+            </li>
+          }
           @if (aiEnabled && !isInsidePassage) {
             <li (click)="openAiGenerateDialog()">
               <a class="flex items-center gap-3 py-2">

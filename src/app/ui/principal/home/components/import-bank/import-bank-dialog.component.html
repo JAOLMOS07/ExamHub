@@ -1,299 +1,445 @@
-<h2 mat-dialog-title class="flex items-center gap-2">
-  <span class="w-8 h-8 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center">
-    <app-icon [icon]="'auto_awesome'" />
-  </span>
-  Importar banco con IA
-</h2>
-
-<mat-dialog-content class="mat-typography">
-  <!-- Stepper visual -->
-  <nav class="flex items-center justify-between mb-5 px-2">
-    <button
-      type="button"
-      (click)="step = 1"
-      class="flex flex-col items-center gap-1 group"
-    >
-      <span
-        class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition"
-        [ngStyle]="step >= 1
-          ? { 'background': '#4338ca', 'color': '#fff' }
-          : { 'background': '#e2e8f0', 'color': '#64748b' }"
-      >1</span>
-      <span class="text-xs text-slate-600">Copiar prompt</span>
-    </button>
-    <div class="flex-1 h-0.5 mx-2" [style.background]="step >= 2 ? '#4338ca' : '#e2e8f0'"></div>
-    <button
-      type="button"
-      (click)="step = 2"
-      class="flex flex-col items-center gap-1 group"
-    >
-      <span
-        class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition"
-        [ngStyle]="step >= 2
-          ? { 'background': '#4338ca', 'color': '#fff' }
-          : { 'background': '#e2e8f0', 'color': '#64748b' }"
-      >2</span>
-      <span class="text-xs text-slate-600">Pegar resultado</span>
-    </button>
-    <div class="flex-1 h-0.5 mx-2" [style.background]="step >= 3 ? '#4338ca' : '#e2e8f0'"></div>
-    <div class="flex flex-col items-center gap-1">
-      <span
-        class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition"
-        [ngStyle]="step >= 3
-          ? { 'background': '#4338ca', 'color': '#fff' }
-          : { 'background': '#e2e8f0', 'color': '#64748b' }"
-      >3</span>
-      <span class="text-xs text-slate-600">Confirmar</span>
+<div class="flex flex-col max-h-[92vh] bg-white">
+  <!-- ===================== Encabezado ===================== -->
+  <header class="px-5 sm:px-6 pt-5 pb-4 border-b border-slate-200">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <span class="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-violet-50 text-violet-700 items-center justify-center">
+          <app-icon [icon]="'auto_awesome'" />
+        </span>
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900 tracking-tight">Crea tu banco con IA</h2>
+          <p class="text-sm text-slate-500 mt-0.5">
+            Usa ChatGPT, Gemini o Claude, incluso en su versión gratuita: ExamHub te da el prompt exacto
+            y organiza la respuesta en carpetas.
+          </p>
+        </div>
+      </div>
+      <button type="button" class="eh-icon-btn" (click)="cancel()" aria-label="Cerrar">
+        <app-icon [icon]="'close'" />
+      </button>
     </div>
-  </nav>
 
-  <!-- =========== PASO 1: Copiar prompt =========== -->
-  @if (step === 1) {
-    <div class="space-y-3 min-w-[520px]">
-      <p class="text-sm text-slate-700 leading-relaxed">
-        Esta función te permite cargar tu banco de preguntas existente sin re-tipearlo.
-        El flujo es:
-      </p>
-      <ol class="text-sm text-slate-700 space-y-2 pl-5 list-decimal">
-        <li>Copia el prompt de abajo.</li>
-        <li>
-          Abre tu IA preferida (<a class="text-indigo-700 underline" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>,
-          <a class="text-indigo-700 underline" href="https://claude.ai" target="_blank" rel="noopener">Claude</a>,
-          <a class="text-indigo-700 underline" href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a>, etc.).
-        </li>
-        <li>Pega el prompt y, donde dice <code class="px-1 bg-slate-100 rounded">[PEGA ACÁ TU BANCO]</code>, pega tu material crudo (Word, lista, lo que tengas).</li>
-        <li>Copia el JSON que la IA te devuelva y volvé acá al paso 2.</li>
-      </ol>
-
-      <div class="relative">
-        <textarea
-          class="w-full min-h-[260px] font-mono text-xs p-3 rounded-lg border border-slate-300 bg-slate-50 text-slate-700 resize-y focus:outline-none"
-          readonly
-        >{{ prompt }}</textarea>
-        <button
-          (click)="copyPrompt()"
-          class="absolute top-2 right-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-white shadow-sm transition"
-          [style.background-color]="promptCopied ? '#10b981' : '#4338ca'"
-        >
-          @if (promptCopied) {
-            <app-icon [icon]="'check'" />
-            Copiado
-          } @else {
-            <app-icon [icon]="'content_copy'" />
-            Copiar prompt
+    <ol class="flex items-center gap-2 mt-4 text-xs font-medium">
+      @for (s of [{ n: 1, label: "Preparar" }, { n: 2, label: "Pegar respuesta" }, { n: 3, label: "Revisar y guardar" }]; track s.n) {
+        <li class="flex items-center gap-2" [class.flex-1]="s.n < 3">
+          <span
+            class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+            [ngClass]="step >= s.n ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-500'"
+          >{{ s.n }}</span>
+          <span [ngClass]="step === s.n ? 'text-slate-900' : 'text-slate-500'" class="whitespace-nowrap">{{ s.label }}</span>
+          @if (s.n < 3) {
+            <span class="flex-1 h-px min-w-[12px]" [ngClass]="step > s.n ? 'bg-brand-700' : 'bg-slate-200'"></span>
           }
+        </li>
+      }
+    </ol>
+  </header>
+
+  <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5">
+    <!-- =========================== PASO 1 =========================== -->
+    @if (step === 1) {
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
+        <button type="button" class="eh-option" [class.is-active]="mode === 'generate'" (click)="setMode('generate')">
+          <app-icon [icon]="'auto_awesome'" />
+          <strong>Generar preguntas nuevas</strong>
+          <small>De cualquier tema, tipo Saber 11 o libre.</small>
+        </button>
+        <button type="button" class="eh-option" [class.is-active]="mode === 'convert'" (click)="setMode('convert')">
+          <app-icon [icon]="'description'" />
+          <strong>Convertir mi material</strong>
+          <small>Guías, Word o PDF que ya tienes.</small>
+        </button>
+        <button type="button" class="eh-option" [class.is-active]="mode === 'text'" (click)="setMode('text')">
+          <app-icon [icon]="'content_paste'" />
+          <strong>Pegar desde Word</strong>
+          <small>Sin IA: preguntas numeradas con a), b), c).</small>
         </button>
       </div>
 
-      <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
-        <strong>Tip:</strong> el prompt está diseñado para que la IA devuelva
-        <strong>únicamente</strong> el JSON. Si la IA te agrega comentarios
-        antes o después, copia solo desde el primer <code>{{ '{' }}</code> hasta
-        el último <code>{{ '}' }}</code>.
-      </div>
-    </div>
-  }
+      <!-- ---------- Generar ---------- -->
+      @if (mode === "generate") {
+        <div class="space-y-4">
+          <label class="eh-field">
+            <span>¿Sobre qué tema(s)? <em>*</em></span>
+            <textarea
+              class="eh-input min-h-[70px]"
+              [(ngModel)]="gen.topic"
+              placeholder="Ej.: Funciones lineales y pendiente&#10;Interpretación de gráficas de movimiento"
+            ></textarea>
+            <small>Uno por línea. Puede ser cualquier tema: también sirve para quices de primaria o de tu materia.</small>
+          </label>
 
-  <!-- =========== PASO 2: Pegar resultado =========== -->
-  @if (step === 2) {
-    <div class="space-y-3 min-w-[520px]">
-      <p class="text-sm text-slate-700">
-        Pega acá <strong>el JSON exacto</strong> que te devolvió la IA. Vamos a validarlo y mostrarte un preview editable antes de importar.
-      </p>
+          <div class="eh-field">
+            <span>Prueba Saber 11</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="eh-chip" [class.is-active]="gen.test === ''" (click)="setTest('')">Tema libre</button>
+              @for (t of tests; track t.id) {
+                <button
+                  type="button"
+                  class="eh-chip"
+                  [class.is-active]="gen.test === t.id"
+                  [style.background]="gen.test === t.id ? TEST_COLOR[t.id].fg : null"
+                  [style.border-color]="gen.test === t.id ? TEST_COLOR[t.id].fg : null"
+                  (click)="setTest(t.id)"
+                >{{ t.label }}</button>
+              }
+            </div>
+          </div>
 
-      <textarea
-        [(ngModel)]="jsonText"
-        placeholder='{ "questions": [...], "passages": [...] }'
-        class="w-full min-h-[260px] font-mono text-xs p-3 rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none resize-y"
-      ></textarea>
-
-      @if (parseResult && parseResult.errors.length > 0) {
-        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-900 space-y-1">
-          <strong class="text-sm">Encontramos errores:</strong>
-          <ul class="list-disc pl-5 space-y-0.5">
-            @for (e of parseResult.errors; track $index) {
-              <li>{{ e }}</li>
-            }
-          </ul>
-        </div>
-      }
-    </div>
-  }
-
-  <!-- =========== PASO 3: Preview =========== -->
-  @if (step === 3 && parseResult) {
-    <div class="space-y-3 min-w-[520px] max-h-[60vh] overflow-y-auto">
-      <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">
-        <strong>JSON validado.</strong> Detectamos
-        <strong>{{ totalToImport }}</strong> elemento(s) para importar.
-        Revisá antes de confirmar — podés quitar lo que no quieras.
-      </div>
-
-      <!-- Preguntas sueltas -->
-      @if (parseResult.looseQuestions.length > 0) {
-        <section>
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Preguntas sueltas · {{ parseResult.looseQuestions.length }}
-          </h3>
-          <div class="space-y-2">
-            @for (q of parseResult.looseQuestions; track q.id; let i = $index) {
-              <div class="p-2 rounded-lg border border-slate-200 bg-white">
-                <div class="flex items-start gap-2">
-                  <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0 mt-0.5">
-                    {{ kindLabel(q) }}
-                  </span>
-                  <p class="flex-1 text-sm text-slate-800 line-clamp-2">{{ q.name }}</p>
-                  <button
-                    (click)="removeLooseQuestion(i)"
-                    class="w-6 h-6 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center shrink-0"
-                    title="Quitar de la importación"
-                  >
-                    <app-icon [icon]="'close'" />
+          @if (selectedTest; as t) {
+            <div class="eh-field">
+              <span>Competencias <small class="font-normal">(si no eliges ninguna, se reparten entre todas)</small></span>
+              <div class="flex flex-wrap gap-1.5">
+                @for (c of t.competencies; track c.id) {
+                  <button type="button" class="eh-chip" [class.is-active]="gen.competencies.includes(c.id)" (click)="toggleCompetency(c.id)">
+                    {{ c.label }}
                   </button>
-                </div>
-                @if (q.subject || q.grade || q.difficulty) {
-                  <div class="flex gap-1 mt-1 ml-1">
-                    @if (q.subject) {
-                      <span class="text-[10px] px-1 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {{ q.subject }}
-                      </span>
-                    }
-                    @if (q.grade) {
-                      <span class="text-[10px] px-1 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {{ q.grade }}
-                      </span>
-                    }
-                    @if (q.difficulty) {
-                      <span class="text-[10px] px-1 py-0.5 rounded bg-slate-100 text-slate-600">
-                        Dif. {{ q.difficulty }}
-                      </span>
-                    }
-                  </div>
                 }
+              </div>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            @if (!selectedTest) {
+              <label class="eh-field col-span-2 md:col-span-1">
+                <span>Materia</span>
+                <input class="eh-input" [(ngModel)]="gen.subject" placeholder="Biología" />
+              </label>
+            }
+            <label class="eh-field">
+              <span>Grado</span>
+              <input class="eh-input" [(ngModel)]="gen.grade" placeholder="11" />
+            </label>
+            <label class="eh-field">
+              <span>Cantidad</span>
+              <input class="eh-input" type="number" min="1" max="60" [(ngModel)]="gen.count" />
+            </label>
+            <div class="eh-field col-span-2" [ngClass]="selectedTest ? 'md:col-span-2' : 'md:col-span-1'">
+              <span>Dificultad</span>
+              <div class="eh-segmented">
+                @for (d of [{ v: 0, l: "Mezcla" }, { v: 1, l: "Fácil" }, { v: 2, l: "Media" }, { v: 3, l: "Difícil" }]; track d.v) {
+                  <button type="button" [class.is-active]="gen.difficulty === d.v" (click)="gen.difficulty = $any(d.v)">{{ d.l }}</button>
+                }
+              </div>
+            </div>
+          </div>
+          @if (gen.count > 25) {
+            <p class="eh-note eh-note--amber">
+              Las IA gratuitas suelen cortar respuestas largas. Si se corta, escribe "continúa" y pega cada parte
+              por separado: las carpetas con el mismo nombre se juntan solas.
+            </p>
+          }
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <label class="eh-field">
+              <span>Lecturas</span>
+              <input class="eh-input" type="number" min="0" max="10" [(ngModel)]="gen.passages" />
+            </label>
+            <label class="eh-field">
+              <span>Preguntas por lectura</span>
+              <input class="eh-input" type="number" min="1" max="8" [(ngModel)]="gen.questionsPerPassage" [disabled]="gen.passages === 0" />
+            </label>
+            <label class="eh-field col-span-2">
+              <span>Organizar en carpetas</span>
+              <select class="eh-input" [(ngModel)]="gen.folderBy">
+                @for (o of folderByOptions; track o.id) {
+                  @if (o.id !== "competency" || selectedTest) {
+                    <option [ngValue]="o.id">{{ o.label }}</option>
+                  }
+                }
+              </select>
+            </label>
+          </div>
+          @if (gen.passages > 0 && passageQuestions > gen.count) {
+            <p class="eh-note eh-note--amber">
+              Las lecturas suman {{ passageQuestions }} preguntas, más que las {{ gen.count }} pedidas: se usarán solo {{ gen.count }}.
+            </p>
+          }
+
+          <label class="eh-field">
+            <span>Nombre de la carpeta principal</span>
+            <input class="eh-input" [(ngModel)]="gen.folderName" placeholder="Se arma con la prueba y el tema" />
+          </label>
+
+          <div>
+            <button type="button" class="text-sm font-medium text-brand-700 hover:underline inline-flex items-center gap-1" (click)="showSource = !showSource">
+              <app-icon [icon]="showSource ? 'expand_less' : 'expand_more'" />
+              Basar las preguntas en un texto o guía e indicaciones extra (opcional)
+            </button>
+            @if (showSource) {
+              <div class="grid gap-3 mt-3">
+                <label class="eh-field">
+                  <span>Material base</span>
+                  <textarea class="eh-input min-h-[90px]" [(ngModel)]="gen.source" placeholder="Pega aquí un texto, una guía o el temario del periodo"></textarea>
+                </label>
+                <label class="eh-field">
+                  <span>Indicaciones para la IA</span>
+                  <input class="eh-input" [(ngModel)]="gen.notes" placeholder="Ej.: contextos de Bogotá, usar tablas de datos, evitar fórmulas" />
+                </label>
               </div>
             }
           </div>
-        </section>
-      }
-
-      <!-- Lecturas -->
-      @if (parseResult.passages.length > 0) {
-        <section>
-          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-2">
-            Lecturas · {{ parseResult.passages.length }}
-          </h3>
-          <div class="space-y-2">
-            @for (block of parseResult.passages; track block.passage.id; let pi = $index) {
-              <div class="rounded-lg border border-amber-200 bg-amber-50/50">
-                <div class="p-2 flex items-start gap-2">
-                  <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0 mt-0.5">
-                    <app-icon [icon]="'menu_book'" /> Lectura
-                  </span>
-                  <div class="flex-1">
-                    <p class="text-sm font-semibold text-slate-900">{{ block.passage.name }}</p>
-                    <p class="text-xs text-slate-600 line-clamp-2 mt-0.5">{{ block.passage.passageText }}</p>
-                  </div>
-                  <button
-                    (click)="removePassage(pi)"
-                    class="w-6 h-6 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center shrink-0"
-                    title="Quitar lectura y todas sus preguntas"
-                  >
-                    <app-icon [icon]="'close'" />
-                  </button>
-                </div>
-                <!-- Preguntas hijas -->
-                @if (block.questions.length > 0) {
-                  <div class="pl-4 pr-2 pb-2 space-y-1.5">
-                    @for (q of block.questions; track q.id; let qi = $index) {
-                      <div class="p-1.5 rounded border border-slate-200 bg-white flex items-start gap-2">
-                        <span class="text-[10px] font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0 mt-0.5">
-                          {{ kindLabel(q) }}
-                        </span>
-                        <p class="flex-1 text-xs text-slate-700 line-clamp-2">{{ q.name }}</p>
-                        <button
-                          (click)="removePassageQuestion(pi, qi)"
-                          class="w-5 h-5 rounded text-slate-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center shrink-0"
-                        >
-                          <app-icon [icon]="'close'" />
-                        </button>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </section>
-      }
-
-      @if (parseResult.errors.length > 0) {
-        <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 space-y-1">
-          <strong class="text-sm">Algunas advertencias:</strong>
-          <ul class="list-disc pl-5 space-y-0.5">
-            @for (e of parseResult.errors; track $index) {
-              <li>{{ e }}</li>
-            }
-          </ul>
-          <p class="mt-1">Las preguntas válidas igual se pueden importar.</p>
         </div>
       }
-    </div>
-  }
-</mat-dialog-content>
 
-<mat-dialog-actions class="justify-between">
-  <button
-    type="button"
-    (click)="cancel()"
-    class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
-  >
-    Cancelar
-  </button>
+      <!-- ---------- Convertir ---------- -->
+      @if (mode === "convert") {
+        <div class="space-y-3">
+          <p class="text-sm text-slate-600">
+            Copia el prompt, pégalo en tu IA y, donde dice <code class="px-1 bg-slate-100 rounded">[PEGA AQUÍ TU MATERIAL]</code>,
+            pega tus preguntas. También puedes adjuntarle el archivo Word o PDF directamente.
+          </p>
+          <label class="eh-switch-row !px-0">
+            <input type="checkbox" class="checkbox checkbox-sm mt-0.5" [(ngModel)]="convertFolders" />
+            <span>
+              <strong>Organizar en carpetas</strong>
+              <small>La IA crea carpetas por tema o unidad según tu material.</small>
+            </span>
+          </label>
+        </div>
+      }
 
-  <div class="flex gap-2">
-    @if (step > 1) {
-      <button
-        type="button"
-        (click)="step = step - 1"
-        class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 border border-slate-300 hover:bg-slate-50 transition"
-      >
-        Atrás
-      </button>
+      <!-- ---------- Word ---------- -->
+      @if (mode === "text") {
+        <div class="space-y-3">
+          <p class="text-sm text-slate-600">
+            Copia tus preguntas desde Word y pégalas en el siguiente paso. Solo necesitan este formato:
+          </p>
+          <pre class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-700 overflow-x-auto leading-relaxed"># Matemáticas            ← carpeta (## para subcarpeta)
+LECTURA: La tienda       ← opcional: texto compartido
+Doña Rosa vende…
+1. ¿Cuánto paga Juan?
+a) $ 2.000
+b) $ 3.500
+c) $ 4.000
+Respuesta: B
+Justificación: …         ← opcional
+FIN LECTURA</pre>
+          <p class="text-xs text-slate-500">
+            También sirve marcar la correcta con * (<code>*b)</code>) o escribiendo "(correcta)" al final. Sin opciones
+            es pregunta abierta; con "Respuesta: 25" y sin opciones, numérica.
+          </p>
+        </div>
+      }
+
+      @if (mode !== "text") {
+        <div class="mt-5 rounded-xl border border-slate-200 overflow-hidden">
+          <div class="flex flex-wrap items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+            <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide mr-auto">Prompt</span>
+            <button type="button" class="eh-btn eh-btn--secondary !h-8 !px-3 text-xs" [disabled]="!canCopy" (click)="copyPrompt()">
+              <app-icon [icon]="promptCopied ? 'check' : 'content_copy'" />
+              {{ promptCopied ? "Copiado" : "Copiar" }}
+            </button>
+            @for (l of aiLinks; track l.label) {
+              <button type="button" class="eh-btn eh-btn--ghost !h-8 !px-2.5 text-xs" [disabled]="!canCopy" (click)="copyAndOpen(l.url)" [title]="'Copiar y abrir ' + l.label">
+                {{ l.label }} <app-icon [icon]="'open_in_new'" />
+              </button>
+            }
+          </div>
+          <textarea class="w-full h-44 font-mono text-[11px] leading-relaxed p-3 text-slate-700 bg-white resize-y focus:outline-none" readonly [value]="prompt"></textarea>
+        </div>
+        @if (!canCopy) {
+          <p class="text-xs text-slate-500 mt-2">Escribe un tema (o pega un material base) para armar el prompt.</p>
+        }
+      }
     }
+
+    <!-- =========================== PASO 2 =========================== -->
+    @if (step === 2) {
+      <div class="space-y-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-sm text-slate-600 mr-auto">
+            @if (mode === "text") {
+              Pega aquí las preguntas copiadas de Word.
+            } @else {
+              Pega la respuesta completa de la IA. No importa si trae texto antes o después del JSON.
+            }
+          </p>
+          <button type="button" class="eh-btn eh-btn--secondary !h-8 !px-3 text-xs" (click)="pasteFromClipboard()">
+            <app-icon [icon]="'content_paste'" /> Pegar
+          </button>
+        </div>
+        <textarea
+          class="eh-input font-mono text-xs min-h-[300px]"
+          [(ngModel)]="pasted"
+          (ngModelChange)="parse = null"
+          [placeholder]="mode === 'text' ? '1. Enunciado de la pregunta\na) opción\nb) opción\nRespuesta: A' : '{ &quot;folders&quot;: [ … ] }'"
+        ></textarea>
+        @if (detected) {
+          <p class="text-xs text-slate-500">
+            Formato detectado: <strong>{{ detected === "json" ? "JSON de IA" : "texto de Word" }}</strong>
+          </p>
+        }
+        @if (parse && parse.errors.length > 0) {
+          <div class="eh-note border-red-200 bg-red-50 text-red-800">
+            <strong>No pudimos leer preguntas:</strong>
+            <ul class="list-disc pl-5 mt-1 space-y-0.5 text-xs">
+              @for (e of parse.errors.slice(0, 12); track $index) {
+                <li>{{ e }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- =========================== PASO 3 =========================== -->
+    @if (step === 3 && parse) {
+      <div class="space-y-4">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="rounded-xl border border-slate-200 p-3">
+            <p class="text-2xl font-semibold text-slate-900">{{ counts.questions }}</p>
+            <p class="text-xs text-slate-500">preguntas</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 p-3">
+            <p class="text-2xl font-semibold text-slate-900">{{ counts.passages }}</p>
+            <p class="text-xs text-slate-500">lecturas</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 p-3">
+            <p class="text-2xl font-semibold text-slate-900">{{ counts.folders + (wrap ? 1 : 0) }}</p>
+            <p class="text-xs text-slate-500">carpetas</p>
+          </div>
+        </div>
+
+        @if (parse.errors.length > 0) {
+          <details class="eh-note eh-note--amber">
+            <summary class="cursor-pointer">
+              {{ parse.errors.length }} pregunta(s) o línea(s) no se pudieron leer y se omitirán. Ver detalle
+            </summary>
+            <ul class="list-disc pl-5 mt-2 space-y-0.5 text-xs">
+              @for (e of parse.errors; track $index) {
+                <li>{{ e }}</li>
+              }
+            </ul>
+          </details>
+        }
+        @if (mode === "generate") {
+          <p class="eh-note eh-note--violet">
+            Las preguntas generadas quedan marcadas "IA · sin revisar" hasta que un docente las edite. Revisa la clave de cada una.
+          </p>
+        }
+
+        <div class="rounded-xl border border-slate-200 p-3 space-y-2">
+          <p class="text-sm text-slate-700">
+            Se guardará en <strong>{{ data.folderName || "la carpeta actual" }}</strong>.
+          </p>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" class="checkbox checkbox-sm" [(ngModel)]="wrap" />
+            Agrupar todo en una carpeta nueva
+          </label>
+          @if (wrap) {
+            <input class="eh-input" [(ngModel)]="wrapName" placeholder="Nombre de la carpeta" />
+          }
+        </div>
+
+        <div class="space-y-2">
+          <ng-container *ngTemplateOutlet="folderTpl; context: { $implicit: parse.root, depth: 0 }" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ===================== Acciones ===================== -->
+  <footer class="flex items-center justify-between gap-2 px-5 sm:px-6 py-3 border-t border-slate-200 bg-slate-50/60">
+    <button type="button" class="eh-btn eh-btn--ghost" (click)="step === 1 ? cancel() : back()">
+      {{ step === 1 ? "Cancelar" : "Atrás" }}
+    </button>
     @if (step === 1) {
-      <button
-        type="button"
-        (click)="step = 2"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition bg-brand-700 hover:bg-brand-800"
-      >
-        Ya copié, siguiente
+      <button type="button" class="eh-btn eh-btn--primary" (click)="next()" [disabled]="mode === 'generate' && !canCopy">
+        {{ mode === "text" ? "Pegar mis preguntas" : "Ya tengo la respuesta" }}
         <app-icon [icon]="'arrow_forward'" />
       </button>
     } @else if (step === 2) {
-      <button
-        type="button"
-        (click)="validate()"
-        [disabled]="!jsonText.trim()"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed bg-brand-700 hover:bg-brand-800"
-      >
-        Validar y previsualizar
-        <app-icon [icon]="'arrow_forward'" />
+      <button type="button" class="eh-btn eh-btn--primary" (click)="next()" [disabled]="!pasted.trim()">
+        Revisar <app-icon [icon]="'arrow_forward'" />
       </button>
-    } @else if (step === 3) {
-      <button
-        type="button"
-        (click)="confirmImport()"
-        [disabled]="importing || totalToImport === 0"
-        class="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg text-white font-medium text-sm transition disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500"
-      >
+    } @else {
+      <button type="button" class="eh-btn eh-btn--primary" (click)="confirmImport()" [disabled]="importing || counts.questions === 0">
         @if (importing) {
-          <span class="loading loading-spinner loading-xs"></span>
-          Importando...
+          <span class="loading loading-spinner loading-xs"></span> Guardando…
         } @else {
-          <app-icon [icon]="'check'" />
-          Importar {{ totalToImport }} elemento(s)
+          <app-icon [icon]="'check'" /> Guardar {{ counts.questions }} pregunta(s)
         }
       </button>
     }
+  </footer>
+</div>
+
+<!-- ===================== Árbol de revisión ===================== -->
+<ng-template #folderTpl let-f let-depth="depth">
+  @for (sub of f.folders; track sub; let i = $index) {
+    <details class="rounded-xl border border-slate-200 bg-white" [open]="depth < 1">
+      <summary class="flex items-center gap-2 px-3 py-2 cursor-pointer select-none">
+        <app-icon class="text-amber-500" [icon]="'folder'" />
+        <span class="font-medium text-sm text-slate-900 flex-1 min-w-0 truncate">{{ sub.name }}</span>
+        <span class="text-xs text-slate-500">{{ folderCount(sub) }}</span>
+        <button type="button" class="eh-icon-btn !w-7 !h-7" title="Quitar carpeta" (click)="$event.preventDefault(); removeAt(f.folders, i)">
+          <app-icon [icon]="'close'" />
+        </button>
+      </summary>
+      <div class="px-3 pb-3 pl-5 space-y-2">
+        <ng-container *ngTemplateOutlet="folderTpl; context: { $implicit: sub, depth: depth + 1 }" />
+      </div>
+    </details>
+  }
+  @for (p of f.passages; track p; let i = $index) {
+    <div class="rounded-xl border border-amber-200 bg-amber-50/40">
+      <div class="flex items-start gap-2 px-3 py-2">
+        <app-icon class="text-amber-600 mt-0.5" [icon]="'menu_book'" />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-900">{{ p.title }}</p>
+          <p class="text-xs text-slate-600 line-clamp-2 whitespace-pre-line">{{ p.text }}</p>
+        </div>
+        <button type="button" class="eh-icon-btn !w-7 !h-7" title="Quitar lectura y sus preguntas" (click)="removeAt(f.passages, i)">
+          <app-icon [icon]="'close'" />
+        </button>
+      </div>
+      <div class="px-3 pb-3 space-y-1.5">
+        @for (q of p.questions; track q; let j = $index) {
+          <ng-container *ngTemplateOutlet="questionTpl; context: { $implicit: q, list: p.questions, index: j }" />
+        }
+      </div>
+    </div>
+  }
+  @for (q of f.questions; track q; let i = $index) {
+    <ng-container *ngTemplateOutlet="questionTpl; context: { $implicit: q, list: f.questions, index: i }" />
+  }
+</ng-template>
+
+<ng-template #questionTpl let-q let-list="list" let-index="index">
+  <div class="rounded-lg border border-slate-200 bg-white px-3 py-2">
+    <div class="flex items-start gap-2">
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+          <span class="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{{ KIND_LABEL[q.kind] }}</span>
+          @if (q.test) {
+            <span class="eh-test" [ngClass]="'eh-test--' + q.test">{{ testLabel(q) }}</span>
+          }
+          @if (q.difficulty) {
+            <span class="text-[10px] text-slate-500">Dificultad {{ q.difficulty }}</span>
+          }
+        </div>
+        <p class="text-sm text-slate-800 line-clamp-3 whitespace-pre-line">{{ q.text }}</p>
+        @if (q.options) {
+          <ul class="mt-1.5 grid sm:grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+            @for (o of q.options; track $index) {
+              <li class="flex gap-1.5 min-w-0" [ngClass]="o.correct ? 'text-emerald-700 font-semibold' : 'text-slate-600'">
+                <span class="shrink-0">{{ letters[$index] }})</span>
+                <span class="truncate">{{ o.text }}</span>
+                @if (o.correct) {
+                  <app-icon class="shrink-0 !text-sm" [icon]="'check'" />
+                }
+              </li>
+            }
+          </ul>
+        }
+        @if (q.numericAnswer !== undefined) {
+          <p class="text-xs text-emerald-700 mt-1">Respuesta: {{ q.numericAnswer }}</p>
+        }
+      </div>
+      <button type="button" class="eh-icon-btn !w-7 !h-7 shrink-0" title="Quitar pregunta" (click)="removeAt(list, index)">
+        <app-icon [icon]="'close'" />
+      </button>
+    </div>
   </div>
-</mat-dialog-actions>
+</ng-template>
