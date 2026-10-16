@@ -14,6 +14,7 @@ import {
 } from "../../../core/domain/reportStats";
 import { ItemAnalysis } from "../../../core/domain/psychometrics";
 import { testBarColor } from "../../shared/test-colors";
+import { pdfToBlob, saveFile } from "../../../core/utils/fileShare.util";
 
 (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
@@ -39,10 +40,7 @@ function levelLabel(testId: string, level: number | null): string {
 }
 
 async function download(def: TDocumentDefinitions, name: string): Promise<void> {
-  const fileName = name.replace(/[/\\?%*:|"<>]/g, "-");
-  await new Promise<void>((resolve) => {
-    (pdfMake as any).createPdf(def).download(fileName, resolve);
-  });
+  await saveFile(await pdfToBlob((pdfMake as any).createPdf(def)), name);
 }
 
 /**

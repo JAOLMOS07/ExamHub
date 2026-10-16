@@ -3,6 +3,7 @@ import { RouterOutlet } from "@angular/router";
 import { PrincipalModule } from "./principal/principal.module";
 import { ToastContainerComponent } from "./shared/feedback/toast-container.component";
 import { ConfirmDialogComponent } from "./shared/feedback/confirm-dialog.component";
+import { PwaService } from "../core/services/pwa.service";
 
 @Component({
   selector: "app-root",
@@ -19,4 +20,7 @@ import { ConfirmDialogComponent } from "./shared/feedback/confirm-dialog.compone
 })
 export class AppComponent {
   title = "examhub";
+
+  // Se crea al arrancar para no perder el aviso de instalación.
+  constructor(_pwa: PwaService) {}
 }

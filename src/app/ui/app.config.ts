@@ -1,10 +1,13 @@
-import { ApplicationConfig } from "@angular/core";
+import { ApplicationConfig, isDevMode } from "@angular/core";
+import { provideServiceWorker } from "@angular/service-worker";
 import { provideRouter } from "@angular/router";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { getApp, initializeApp, provideFirebaseApp } from "@angular/fire/app";
 import { getAuth, provideAuth } from "@angular/fire/auth";
 import {
   initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   provideFirestore,
 } from "@angular/fire/firestore";
 import { getStorage, provideStorage } from "@angular/fire/storage";
@@ -28,7 +31,15 @@ export const appConfig: ApplicationConfig = {
      * omiten del documento.
      */
     provideFirestore(() =>
-      initializeFirestore(getApp(), { ignoreUndefinedProperties: true })
+      initializeFirestore(getApp(), {
+        ignoreUndefinedProperties: true,
+        /**
+         * Caché persistente (IndexedDB): evaluaciones, estudiantes y
+         * banco quedan disponibles sin internet y las calificaciones
+         * hechas sin conexión se suben solas al volver la red.
+         */
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      })
     ),
     /**
      * Firebase Storage para subir imágenes de preguntas.
@@ -42,5 +53,10 @@ export const appConfig: ApplicationConfig = {
     provideStorage(() => getStorage()),
     /** Cloud Functions de IA (functions/src/index.ts). */
     provideFunctions(() => getFunctions(getApp(), "us-central1")),
+    /** App instalable y sin conexión (ngsw-config.json). Solo en producción. */
+    provideServiceWorker("ngsw-worker.js", {
+      enabled: !isDevMode(),
+      registrationStrategy: "registerWhenStable:30000",
+    }),
   ],
 };

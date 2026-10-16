@@ -362,3 +362,26 @@ requiere Cloud Functions, plan Blaze ni API de IA.
 Formato del JSON del importador (ver `FORMAT_SPEC` en `bankImport.ts`):
 `{ "folders": [{ "name", "questions": [...], "passages": [{ "title", "text", "questions" }], "folders": [...] }] }`.
 Se siguen aceptando `questions` y `passages` en la raíz (bancos de demo).
+
+## 12. App en el celular (PWA, paso 1)
+
+- **Instalable**: `src/manifest.webmanifest`, íconos en `src/assets/icons/`
+  y service worker de Angular (`ngsw-config.json`, solo en producción).
+  Al instalarla abre en **Escanear**. Accesos directos: Escanear,
+  Evaluaciones y Banco. En el menú lateral aparece "Instalar la app"
+  (en iPhone muestra la guía de Safari).
+- **Sin conexión**: Firestore usa caché persistente (IndexedDB). La
+  pantalla Escanear mantiene en el dispositivo las evaluaciones
+  recientes, los estudiantes y los grupos; las calificaciones guardadas
+  sin señal se suben solas. `ConnectivityService` cuenta las pendientes
+  y la app muestra el aviso "Sin conexión · N por subir".
+  Requisito: abrir la evaluación (o Escanear) al menos una vez con internet.
+- **OpenCV, KaTeX y fuentes** se guardan en caché del service worker
+  la primera vez (`dataGroups` con `cacheOpaqueResponses`).
+- **Archivos**: `core/utils/fileShare.util.ts` comparte con el menú del
+  sistema en el celular (WhatsApp, Drive) y descarga en el computador.
+  Es el único punto a cambiar para Capacitor (Filesystem + Share).
+- **Actualizaciones**: cuando hay versión nueva aparece "Actualizar".
+
+Para probar el service worker: `npm run build`, servir
+`dist/exam-hub/browser` y abrir en Chrome › DevTools › Application.

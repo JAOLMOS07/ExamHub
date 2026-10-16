@@ -650,7 +650,7 @@
 
   <!-- ====================== BANDEJA DEL EXAMEN ====================== -->
   @if (questionsSelected.length > 0 && !showCurrentExam) {
-    <div class="fixed bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] z-30 flex justify-center pointer-events-none">
+    <div class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] z-30 flex justify-center pointer-events-none">
       <div class="pointer-events-auto w-full max-w-3xl flex items-center gap-3 rounded-2xl bg-slate-900 text-white shadow-elevated px-4 py-3">
         <span class="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-white/10 items-center justify-center">
           <app-icon [icon]="'assignment'" />

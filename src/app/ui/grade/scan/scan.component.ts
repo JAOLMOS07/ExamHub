@@ -4,6 +4,7 @@ import {
   ElementRef,
   NgZone,
   OnDestroy,
+  OnInit,
   ViewChild,
 } from "@angular/core";
 import { Router, RouterModule } from "@angular/router";
@@ -13,7 +14,11 @@ import { decodeQrPayload, QrPayload } from "../../../core/utils/qrPayload.util";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
 import { TenantService } from "../../../core/services/tenant.service";
-import { firstValueFrom } from "rxjs";
+import { Subscription, combineLatest, firstValueFrom } from "rxjs";
+import { GradingService } from "../../../core/services/grading.service";
+import { OrgService } from "../../../core/services/org.service";
+import { ConnectivityService } from "../../../core/services/connectivity.service";
+import { Assessment } from "../../../core/models/assessment.model";
 
 /**
  * Pantalla del scanner de QR.
@@ -36,7 +41,16 @@ import { firstValueFrom } from "rxjs";
   imports: [CommonModule, RouterModule, SharedModule],
   templateUrl: "./scan.component.html",
 })
-export class ScanComponent implements OnDestroy {
+export class ScanComponent implements OnInit, OnDestroy {
+  readonly gradeLink = MODULES.GRADE.EXAM_GRADE;
+
+  /** Evaluaciones recientes (quedan guardadas para usarlas sin internet). */
+  recent: Assessment[] = [];
+  studentCount = 0;
+  online = true;
+  ready = false;
+  private dataSub?: Subscription;
+
   @ViewChild("videoEl") videoEl?: ElementRef<HTMLVideoElement>;
   @ViewChild("canvasEl") canvasEl?: ElementRef<HTMLCanvasElement>;
 
@@ -54,11 +68,38 @@ export class ScanComponent implements OnDestroy {
     private router: Router,
     private toast: ToastService,
     private zone: NgZone,
-    private tenant: TenantService
+    private tenant: TenantService,
+    private grading: GradingService,
+    private orgService: OrgService,
+    private connectivity: ConnectivityService
   ) {}
+
+  /**
+   * Mantener abiertas estas consultas deja en la caché del dispositivo
+   * las evaluaciones, estudiantes y grupos: así se puede calificar en
+   * un salón sin señal.
+   */
+  ngOnInit(): void {
+    this.dataSub = combineLatest([
+      this.grading.listAssessments(),
+      this.orgService.students$(),
+      this.orgService.groups$(),
+      this.connectivity.online$,
+    ]).subscribe(([assessments, students, , online]) => {
+      this.recent = assessments.slice(0, 6);
+      this.studentCount = students.filter((s) => s.active).length;
+      this.online = online;
+      this.ready = true;
+    });
+  }
 
   ngOnDestroy(): void {
     this.stopScanning();
+    this.dataSub?.unsubscribe();
+  }
+
+  formatDate(ts: number): string {
+    return new Date(ts).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
   }
 
   async startCamera(): Promise<void> {
@@ -89,13 +130,13 @@ export class ScanComponent implements OnDestroy {
       this.status = "error";
       if (err?.name === "NotAllowedError") {
         this.errorMessage =
-          "Necesitamos permiso para usar la cámara. Habilitalo en la configuración del navegador.";
+          "Necesitamos permiso para usar la cámara. Actívalo en la configuración del navegador.";
       } else if (err?.name === "NotFoundError") {
         this.errorMessage =
-          "No encontramos una cámara en este dispositivo. Probá subiendo una foto.";
+          "No encontramos una cámara en este dispositivo. Prueba subiendo una foto.";
       } else {
         this.errorMessage =
-          "No pudimos iniciar la cámara. Probá subiendo una foto del examen.";
+          "No pudimos iniciar la cámara. Prueba subiendo una foto de la hoja.";
       }
     }
   }
@@ -180,7 +221,7 @@ export class ScanComponent implements OnDestroy {
       const result = jsQR(imageData.data, imageData.width, imageData.height);
       if (!result) {
         this.toast.warning(
-          "No detectamos un QR en la foto. Probá con una imagen más nítida.",
+          "No detectamos un QR en la foto. Prueba con una imagen más nítida.",
           "ExamHub",
           3500
         );

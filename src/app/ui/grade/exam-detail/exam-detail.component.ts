@@ -565,7 +565,7 @@ export class ExamDetailComponent implements OnInit, OnDestroy {
       };
 
       const blob = await buildXlsx([results, competencies, answers, items, byGroup]);
-      downloadBlob(blob, `Resultados - ${exam.title}${this.filterLabel ? " - " + this.filterLabel : ""}.xlsx`);
+      await downloadBlob(blob, `Resultados - ${exam.title}${this.filterLabel ? " - " + this.filterLabel : ""}.xlsx`);
     } catch (err) {
       console.error("Error exportando Excel:", err);
       this.toast.danger("No pudimos generar el archivo de Excel.", "ExamHub", 3500);

@@ -6,7 +6,9 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromCache,
   getDocs,
+  getDocsFromCache,
   query,
   setDoc,
   where,
@@ -19,6 +21,7 @@ import { Document } from "../models/folder.model";
 import { toScale } from "../domain/scoring";
 import { documentToItem } from "./ExamService.service";
 import { TenantService } from "./tenant.service";
+import { ConnectivityService } from "./connectivity.service";
 
 const BATCH_LIMIT = 400;
 
@@ -35,7 +38,11 @@ const BATCH_LIMIT = 400;
  */
 @Injectable({ providedIn: "root" })
 export class GradingService {
-  constructor(private firestore: Firestore, private tenant: TenantService) {}
+  constructor(
+    private firestore: Firestore,
+    private tenant: TenantService,
+    private connectivity: ConnectivityService
+  ) {}
 
   private assessmentPath(orgId: string, id: string): string {
     return `orgs/${orgId}/assessments/${id}`;
@@ -81,8 +88,12 @@ export class GradingService {
 
   public async getAssessment(id: string, orgId?: string): Promise<Assessment | null> {
     const org = orgId ?? (await this.tenant.requireOrgId());
-    const snap = await getDoc(doc(this.firestore, this.assessmentPath(org, id)));
-    return snap.exists() ? (snap.data() as Assessment) : null;
+    const ref = doc(this.firestore, this.assessmentPath(org, id));
+    // Sin conexión: la copia guardada en el dispositivo (si se abrió antes).
+    const snap = this.connectivity.online
+      ? await getDoc(ref)
+      : await getDocFromCache(ref).catch(() => null);
+    return snap?.exists() ? (snap.data() as Assessment) : null;
   }
 
   /** Ítems tal como se imprimieron (para reportes y análisis). */
@@ -159,10 +170,12 @@ export class GradingService {
       scannedBy: uid,
       scannedAt: Date.now(),
     };
-    await setDoc(
-      doc(this.firestore, `${this.assessmentPath(orgId, assessmentId)}/responses/${response.id}`),
-      full
+    const write = this.connectivity.track(
+      setDoc(doc(this.firestore, `${this.assessmentPath(orgId, assessmentId)}/responses/${response.id}`), full)
     );
+    // Sin conexión la escritura queda en el dispositivo y se sube sola:
+    // no esperamos la confirmación del servidor.
+    if (this.connectivity.online) await write;
     return full;
   }
 
@@ -191,12 +204,11 @@ export class GradingService {
     studentId: string
   ): Promise<ResponseDoc | null> {
     const orgId = await this.tenant.requireOrgId();
-    const snap = await getDocs(
-      query(
-        collection(this.firestore, `${this.assessmentPath(orgId, assessmentId)}/responses`),
-        where("studentId", "==", studentId)
-      )
+    const q = query(
+      collection(this.firestore, `${this.assessmentPath(orgId, assessmentId)}/responses`),
+      where("studentId", "==", studentId)
     );
+    const snap = this.connectivity.online ? await getDocs(q) : await getDocsFromCache(q);
     return snap.empty ? null : (snap.docs[0].data() as ResponseDoc);
   }
 

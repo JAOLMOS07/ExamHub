@@ -97,6 +97,18 @@
     }
   </nav>
 
+  @if (pwa.showInstall) {
+    <div class="px-3 pb-2">
+      <button type="button" class="w-full flex items-center gap-3 rounded-xl border border-dashed border-brand-200 bg-brand-50/60 px-3 py-2.5 text-left hover:bg-brand-50 transition" (click)="installApp()">
+        <app-icon class="text-brand-700" [icon]="'install_mobile'" />
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-semibold text-brand-800">Instalar la app</span>
+          <span class="block text-xs text-slate-500">Califica desde el celular, incluso sin internet</span>
+        </span>
+      </button>
+    </div>
+  }
+
   <!-- Usuario -->
   <div class="p-3 border-t border-slate-100 relative">
     @if (userMenuOpen) {
@@ -128,5 +140,76 @@
     </button>
   </div>
 </aside>
+
+<!-- ============ Barra inferior (móvil) ============ -->
+<nav class="eh-tabbar lg:hidden" aria-label="Navegación principal">
+  <a routerLink="/home" routerLinkActive="is-active" class="eh-tab">
+    <app-icon [icon]="'folder_open'" /><span>Banco</span>
+  </a>
+  <a routerLink="/grade" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="eh-tab">
+    <app-icon [icon]="'fact_check'" /><span>Evaluaciones</span>
+  </a>
+  <a [routerLink]="scanLink" class="eh-tab eh-tab--scan" aria-label="Escanear hojas">
+    <span class="eh-tab-scan-btn"><app-icon [icon]="'qr_code_scanner'" /></span><span>Escanear</span>
+  </a>
+  <a routerLink="/students" routerLinkActive="is-active" class="eh-tab">
+    <app-icon [icon]="'groups'" /><span>Estudiantes</span>
+  </a>
+  <button type="button" class="eh-tab" (click)="mobileOpen = true">
+    <app-icon [icon]="'menu'" /><span>Más</span>
+  </button>
+</nav>
+
+<!-- ============ Estado: sin conexión, pendientes, versión nueva ============ -->
+@if (!online || pendingUploads > 0 || pwa.updateReady) {
+  <div class="eh-status-pill" role="status" aria-live="polite">
+    @if (pwa.updateReady && online) {
+      <app-icon class="text-brand-200" [icon]="'system_update'" />
+      <span>Hay una versión nueva de ExamHub.</span>
+      <button type="button" class="font-semibold underline underline-offset-2" (click)="pwa.applyUpdate()">Actualizar</button>
+    } @else if (!online) {
+      <app-icon class="text-amber-300" [icon]="'cloud_off'" />
+      <span>
+        Sin conexión.
+        @if (pendingUploads > 0) {
+          {{ pendingUploads }} {{ pendingUploads === 1 ? "calificación" : "calificaciones" }} por subir.
+        } @else {
+          Puedes seguir calificando.
+        }
+      </span>
+    } @else {
+      <span class="loading loading-spinner loading-xs"></span>
+      <span>Subiendo {{ pendingUploads }} {{ pendingUploads === 1 ? "calificación" : "calificaciones" }}…</span>
+    }
+  </div>
+}
+
+<!-- ============ Guía para instalar (iPhone y navegadores sin aviso) ============ -->
+@if (showInstallHelp) {
+  <div class="fixed inset-0 z-[60] bg-slate-900/40 flex items-end sm:items-center justify-center p-4" (click)="showInstallHelp = false">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-elevated" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-3">
+        <img src="assets/icons/icon-192.png" alt="" class="w-11 h-11 rounded-xl" />
+        <div>
+          <p class="font-semibold text-slate-900">Instalar ExamHub</p>
+          <p class="text-xs text-slate-500">Queda en tu pantalla de inicio como una app</p>
+        </div>
+      </div>
+      @if (pwa.isIos) {
+        <ol class="text-sm text-slate-700 space-y-2 list-decimal pl-5">
+          <li>Abre esta página en <strong>Safari</strong>.</li>
+          <li>Toca el botón <strong>Compartir</strong> <app-icon class="!text-base align-middle" [icon]="'ios_share'" />.</li>
+          <li>Elige <strong>Agregar a pantalla de inicio</strong>.</li>
+        </ol>
+      } @else {
+        <ol class="text-sm text-slate-700 space-y-2 list-decimal pl-5">
+          <li>Abre el menú del navegador <app-icon class="!text-base align-middle" [icon]="'more_vert'" />.</li>
+          <li>Elige <strong>Instalar app</strong> o <strong>Agregar a la pantalla principal</strong>.</li>
+        </ol>
+      }
+      <button type="button" class="eh-btn eh-btn--primary w-full mt-4" (click)="showInstallHelp = false">Entendido</button>
+    </div>
+  </div>
+}
 
 <app-change-password *ngIf="showChangePassword" (close)="closeChangePassword()"></app-change-password>

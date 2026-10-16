@@ -447,9 +447,10 @@ export class GradingComponent implements OnInit, OnDestroy {
         ...(Object.keys(cleanManual).length ? { manualScores: cleanManual } : {}),
       });
       this.toast.success(
-        `Guardado: ${student?.fullName ?? this.studentName} — ${this.score} / ${this.maxScore}.`,
+        `Guardado: ${student?.fullName ?? this.studentName} — ${this.score} / ${this.maxScore}.` +
+          (navigator.onLine ? "" : " Sin conexión: se subirá sola cuando vuelva el internet."),
         "ExamHub",
-        3500
+        navigator.onLine ? 3500 : 5000
       );
       this.selectedStudentId = null;
       this.qrStudentId = null;

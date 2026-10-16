@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { saveFile } from "./fileShare.util";
 
 /**
  * Escritor mínimo de .xlsx (Office Open XML) sin dependencias extra:
@@ -147,11 +148,7 @@ export function xlsxZip(sheets: Sheet[]): JSZip {
   return zip;
 }
 
-export function downloadBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName.replace(/[/\\?%*:|"<>]/g, "-");
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+/** Descarga (o comparte, en el celular) el archivo. */
+export function downloadBlob(blob: Blob, fileName: string): Promise<unknown> {
+  return saveFile(blob, fileName);
 }

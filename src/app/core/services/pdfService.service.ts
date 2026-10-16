@@ -3,7 +3,7 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import JSZip from "jszip";
-import saveAs from "file-saver";
+import { pdfToBlob, saveFile } from "../utils/fileShare.util";
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 type PDFMake = typeof import("pdfmake/build/pdfmake");
 
@@ -15,7 +15,7 @@ export class PDFService {
     this.pdfMake.createPdf(def).open();
   }
   async download(def: TDocumentDefinitions, name: string) {
-    this.pdfMake.createPdf(def).download(name);
+    await saveFile(await pdfToBlob(this.pdfMake.createPdf(def)), name.endsWith(".pdf") ? name : `${name}.pdf`);
   }
   async downloadZip(
     pdfDefs: { def: TDocumentDefinitions; name: string }[],
@@ -38,6 +38,6 @@ export class PDFService {
 
     // Generar ZIP y descargar
     const zipBlob = await zip.generateAsync({ type: "blob" });
-    saveAs(zipBlob, `${zipName}.zip`);
+    await saveFile(zipBlob, `${zipName}.zip`);
   }
 }

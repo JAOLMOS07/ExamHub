@@ -5,6 +5,10 @@ import { Subscription } from "rxjs";
 import { filter } from "rxjs/operators";
 import { UserService } from "../../../../core/services/UserService.service";
 import { TenantService } from "../../../../core/services/tenant.service";
+import { PwaService } from "../../../../core/services/pwa.service";
+import { ConnectivityService } from "../../../../core/services/connectivity.service";
+import { ToastService } from "../../../../core/services/toast.service";
+import { MODULES } from "../../../routes.constants";
 import {
   Organization,
   OrgRef,
@@ -51,6 +55,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   orgs: { id: string; ref: OrgRef }[] = [];
   pendingInvites = 0;
 
+  readonly scanLink = MODULES.GRADE.SCAN;
+
+  online = true;
+  pendingUploads = 0;
+  showInstallHelp = false;
+
   showChangePassword = false;
   mobileOpen = false;
   orgMenuOpen = false;
@@ -61,7 +71,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   constructor(
     private userService: UserService,
     private router: Router,
-    private tenant: TenantService
+    private tenant: TenantService,
+    public pwa: PwaService,
+    private connectivity: ConnectivityService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -77,6 +90,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
           .sort((a, b) => a.ref.name.localeCompare(b.ref.name));
       }),
       this.tenant.pendingInvites$.subscribe((inv) => (this.pendingInvites = inv.length)),
+      this.connectivity.online$.subscribe((online) => (this.online = online)),
+      this.connectivity.pending$.subscribe((n) => {
+        if (n === 0 && this.pendingUploads > 0 && this.online) {
+          this.toast.success("Las calificaciones guardadas sin conexión ya se subieron.", "ExamHub", 3500);
+        }
+        this.pendingUploads = n;
+      }),
       this.router.events
         .pipe(filter((e) => e instanceof NavigationEnd))
         .subscribe(() => this.closeMenus())
@@ -109,6 +129,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
   switchOrg(orgId: string): void {
     this.orgMenuOpen = false;
     if (orgId !== this.activeOrgId) this.tenant.switchOrg(orgId);
+  }
+
+  async installApp(): Promise<void> {
+    this.userMenuOpen = false;
+    if (this.pwa.canInstall) {
+      await this.pwa.install();
+    } else {
+      this.showInstallHelp = true;
+    }
   }
 
   closeMenus(): void {
