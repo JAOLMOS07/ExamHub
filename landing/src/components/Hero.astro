@@ -50,6 +50,27 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
       </div>
       <div class="phone">
         <div class="phone__screen">
+          <!-- Lo que ve la cámara: la misma hoja, de cerca -->
+          <div class="cam">
+            <div class="cam__sheet">
+              <div class="cam__head">
+                <span class="cam__lines"><i></i><i></i></span>
+                <span class="cam__qr"></span>
+              </div>
+              <div class="cam__rows">
+                {rows.map((pick) => (
+                  <div class="cam__row">
+                    {[0, 1, 2, 3].map((c) => <i class:list={{ "is-fill": c === pick }}></i>)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div class="cam__target"><i></i><i></i><i></i><i></i></div>
+          <div class="cam__chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg>
+            <span><b>QR detectado</b>Valentina R. · Forma B</span>
+          </div>
           <div class="phone__scan"></div>
           <div class="phone__result">
             <small>Nota</small>
@@ -280,6 +301,198 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
     overflow: hidden;
     background: linear-gradient(160deg, #24307a, var(--tinta));
   }
+  /* Visor de la cámara */
+  .cam {
+    position: absolute;
+    inset: 0;
+    background: #3a3f4e;
+    overflow: hidden;
+  }
+  .cam__sheet {
+    position: absolute;
+    left: 9%;
+    right: 9%;
+    top: 7%;
+    bottom: 22%;
+    background: #fff;
+    border-radius: 6px;
+    padding: 10% 9%;
+    transform: rotate(-4deg);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+    animation: shake var(--loop) infinite ease-in-out;
+  }
+  @keyframes shake {
+    0%,
+    40% {
+      transform: rotate(-6deg) scale(1.08) translate(4%, 3%);
+    }
+    48%,
+    100% {
+      transform: rotate(-4deg);
+    }
+  }
+  .cam__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 8%;
+    border-bottom: 2px solid var(--grafito);
+    margin-bottom: 9%;
+  }
+  .cam__lines {
+    display: grid;
+    gap: 5px;
+    width: 55%;
+    padding-top: 2px;
+  }
+  .cam__lines i {
+    height: 5px;
+    border-radius: 3px;
+    background: #9aa0ad;
+  }
+  .cam__lines i:first-child {
+    background: var(--grafito);
+    width: 80%;
+  }
+  .cam__qr {
+    width: 30%;
+    aspect-ratio: 1;
+    border: 3px solid var(--grafito);
+    background: conic-gradient(var(--grafito) 25%, transparent 0 50%, var(--grafito) 0 75%, transparent 0) 0 0 / 7px 7px;
+  }
+  .cam__rows {
+    display: grid;
+    gap: 7%;
+  }
+  .cam__row {
+    display: flex;
+    justify-content: space-between;
+  }
+  .cam__row i {
+    width: 15%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1.5px solid var(--grafito);
+  }
+  .cam__row i.is-fill {
+    background: var(--grafito);
+    animation: read var(--loop) infinite;
+  }
+  @keyframes read {
+    0%,
+    54% {
+      box-shadow: none;
+    }
+    58%,
+    92% {
+      box-shadow: 0 0 0 3px var(--cn);
+    }
+  }
+  /* Esquinas del visor: buscan y se enganchan al QR */
+  .cam__target {
+    position: absolute;
+    animation: lock var(--loop) infinite var(--ease);
+  }
+  @keyframes lock {
+    0%,
+    40% {
+      left: 14%;
+      top: 10%;
+      width: 72%;
+      height: 60%;
+      --tc: rgb(255 255 255 / 0.85);
+    }
+    49%,
+    92% {
+      left: 61%;
+      top: 9%;
+      width: 28%;
+      height: 15%;
+      --tc: var(--lapiz);
+    }
+    100% {
+      left: 14%;
+      top: 10%;
+      width: 72%;
+      height: 60%;
+    }
+  }
+  .cam__target i {
+    position: absolute;
+    width: 22%;
+    height: 22%;
+    min-width: 12px;
+    min-height: 12px;
+    border: 3px solid var(--tc, #fff);
+    transition: border-color 200ms;
+  }
+  .cam__target i:nth-child(1) {
+    left: 0;
+    top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 6px 0 0 0;
+  }
+  .cam__target i:nth-child(2) {
+    right: 0;
+    top: 0;
+    border-left: 0;
+    border-bottom: 0;
+    border-radius: 0 6px 0 0;
+  }
+  .cam__target i:nth-child(3) {
+    left: 0;
+    bottom: 0;
+    border-right: 0;
+    border-top: 0;
+    border-radius: 0 0 0 6px;
+  }
+  .cam__target i:nth-child(4) {
+    right: 0;
+    bottom: 0;
+    border-left: 0;
+    border-top: 0;
+    border-radius: 0 0 6px 0;
+  }
+  .cam__chip {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 999px;
+    background: var(--lapiz);
+    color: var(--tinta);
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.3);
+    animation: chip var(--loop) infinite var(--ease);
+  }
+  .cam__chip b {
+    display: block;
+    font-family: var(--display);
+    font-size: 11px;
+  }
+  @keyframes chip {
+    0%,
+    49% {
+      opacity: 0;
+      transform: translate(-50%, 8px) scale(0.9);
+    }
+    52%,
+    62% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    66%,
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -6px);
+    }
+  }
   .phone__scan {
     position: absolute;
     left: 8%;
@@ -292,20 +505,20 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
   }
   @keyframes scan {
     0%,
-    40% {
-      top: 10%;
+    51% {
+      top: 30%;
       opacity: 0;
     }
-    42% {
+    53% {
       opacity: 1;
     }
-    58% {
-      top: 88%;
+    62% {
+      top: 76%;
       opacity: 1;
     }
-    60%,
+    64%,
     100% {
-      top: 88%;
+      top: 76%;
       opacity: 0;
     }
   }
@@ -320,15 +533,15 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
   }
   @keyframes result {
     0%,
-    60% {
-      transform: translateY(120%);
+    64% {
+      transform: translateY(130%);
     }
-    66%,
+    70%,
     92% {
       transform: none;
     }
     100% {
-      transform: translateY(120%);
+      transform: translateY(130%);
     }
   }
   .phone__result small {
@@ -368,10 +581,10 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
   }
   @keyframes pop {
     0%,
-    64% {
+    70% {
       transform: scale(0) rotate(-20deg);
     }
-    70%,
+    76%,
     92% {
       transform: none;
     }
@@ -413,8 +626,19 @@ const rows = [1, 3, 0, 2, 1, 3, 2, 0];
   @media (prefers-reduced-motion: reduce) {
     .phone,
     .phone__result,
-    .hero__check {
+    .hero__check,
+    .cam__sheet,
+    .cam__chip,
+    .phone__scan {
       animation: none;
+    }
+    .cam__target {
+      animation: none;
+      left: 61%;
+      top: 9%;
+      width: 28%;
+      height: 15%;
+      --tc: var(--lapiz);
     }
     .bub--fill {
       animation: none;
