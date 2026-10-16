@@ -221,6 +221,35 @@
     </section>
   }
 
+  <!-- ================= Datos de ejemplo ================= -->
+  @if (org && canManageAcademics) {
+    <section class="eh-section">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-lg font-semibold text-slate-900 mb-1">Datos de ejemplo</h2>
+          <p class="text-sm text-slate-500">
+            Llena esta institución con un banco Saber 11, 30 estudiantes y dos simulacros calificados para
+            explorar los reportes o hacer una demostración. Todo queda marcado como ejemplo.
+          </p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button class="eh-btn eh-btn--ghost" [disabled]="demoBusy" (click)="clearDemo()">Borrar</button>
+          <button class="eh-btn eh-btn--primary" [disabled]="demoBusy" (click)="loadDemo()">
+            @if (demoBusy) {
+              <span class="loading loading-spinner loading-xs"></span>
+            } @else {
+              <app-icon [icon]="'auto_fix_high'" />
+            }
+            Cargar ejemplo
+          </button>
+        </div>
+      </div>
+      @if (demoStatus) {
+        <p class="text-xs text-slate-500 mt-2">{{ demoStatus }}</p>
+      }
+    </section>
+  }
+
   <!-- ================= Migración ================= -->
   <section class="eh-section">
     <h2 class="text-lg font-semibold text-slate-900 mb-1">Datos de la versión anterior</h2>

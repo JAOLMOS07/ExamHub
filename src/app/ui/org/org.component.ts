@@ -9,6 +9,7 @@ import { OrgService } from "../../core/services/org.service";
 import { ToastService } from "../../core/services/toast.service";
 import { ConfirmService } from "../../core/services/confirm.service";
 import { MigrationService } from "../../core/services/migration.service";
+import { DemoService } from "../../core/services/demo.service";
 import {
   DEFAULT_ORG_SETTINGS,
   Invite,
@@ -18,6 +19,7 @@ import {
   PLAN_LABEL,
   ROLE_LABEL,
   Role,
+  canManageAcademics,
   canManageOrg,
 } from "../../core/models/org.model";
 
@@ -56,6 +58,8 @@ export class OrgComponent implements OnInit, OnDestroy {
   isSaving = false;
   isMigrating = false;
   migrationStatus = "";
+  demoBusy = false;
+  demoStatus = "";
 
   private subs: Subscription[] = [];
   private adminSubs: Subscription[] = [];
@@ -65,8 +69,13 @@ export class OrgComponent implements OnInit, OnDestroy {
     private orgService: OrgService,
     private toast: ToastService,
     private confirm: ConfirmService,
-    private migration: MigrationService
+    private migration: MigrationService,
+    private demo: DemoService
   ) {}
+
+  get canManageAcademics(): boolean {
+    return canManageAcademics(this.role);
+  }
 
   get isAdmin(): boolean {
     return canManageOrg(this.role);
@@ -282,6 +291,57 @@ export class OrgComponent implements OnInit, OnDestroy {
     } finally {
       this.isMigrating = false;
       this.migrationStatus = "";
+    }
+  }
+
+  // ---------------- Datos de ejemplo ----------------
+
+  async loadDemo(): Promise<void> {
+    if (this.demoBusy) return;
+    this.demoBusy = true;
+    try {
+      if (await this.demo.hasDemo()) {
+        this.toast.warning("Los datos de ejemplo ya están cargados.", "ExamHub", 3500);
+        return;
+      }
+      const ok = await this.confirm.ask({
+        title: "¿Cargar datos de ejemplo?",
+        message:
+          "Se crean un banco Saber 11 de 29 preguntas, los grupos 11-A y 11-B (ejemplo) con 30 estudiantes " +
+          "y dos simulacros ya calificados. Puedes borrarlo todo después con un clic.",
+        confirmText: "Cargar",
+      });
+      if (!ok) return;
+      await this.demo.seed((m) => (this.demoStatus = m));
+      this.toast.success("Datos de ejemplo listos: revisa Evaluaciones.", "ExamHub", 4000);
+    } catch (err) {
+      console.error(err);
+      this.toast.danger("No se pudieron cargar los datos de ejemplo.", "ExamHub", 4000);
+    } finally {
+      this.demoBusy = false;
+      this.demoStatus = "";
+    }
+  }
+
+  async clearDemo(): Promise<void> {
+    if (this.demoBusy) return;
+    const ok = await this.confirm.ask({
+      title: "¿Borrar los datos de ejemplo?",
+      message: "Se borran solo el banco, los grupos, los estudiantes y los simulacros marcados como ejemplo.",
+      confirmText: "Borrar",
+      tone: "danger",
+    });
+    if (!ok) return;
+    this.demoBusy = true;
+    try {
+      await this.demo.clear((m) => (this.demoStatus = m));
+      this.toast.success("Datos de ejemplo borrados.", "ExamHub", 3000);
+    } catch (err) {
+      console.error(err);
+      this.toast.danger("No se pudieron borrar todos los datos de ejemplo.", "ExamHub", 4000);
+    } finally {
+      this.demoBusy = false;
+      this.demoStatus = "";
     }
   }
 

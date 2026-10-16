@@ -258,9 +258,10 @@ export class ExamService {
     path: string[],
     root: ImportFolder,
     source: Document["source"] = "import"
-  ): Promise<TreeCount> {
+  ): Promise<TreeCount & { items: Document[] }> {
     const { uid, orgId } = await this.tenant.requireContext();
     const count: TreeCount = { folders: 0, passages: 0, questions: 0 };
+    const items: Document[] = [];
     let clock = Date.now();
     const audit = () => {
       const t = clock++;
@@ -278,13 +279,23 @@ export class ExamService {
       }
     };
 
-    const writeQuestion = (q: ImportQuestion, folderId: string | null, stimulusId: string | null) => {
+    const writeQuestion = (
+      q: ImportQuestion,
+      folderId: string | null,
+      stimulus: { id: string; text: string } | null
+    ) => {
       const id = crypto.randomUUID();
+      const d = importQuestionToDocument(id, q, source);
+      if (stimulus) {
+        d.passageId = stimulus.id;
+        d.passageContext = stimulus.text;
+      }
+      items.push(d);
       count.questions++;
       return set(doc(this.col(orgId, "items"), id), {
-        ...documentToItem(importQuestionToDocument(id, q, source)),
+        ...documentToItem(d),
         folderId,
-        stimulusId,
+        stimulusId: stimulus?.id ?? null,
         source,
         ...(source === "ai" ? { reviewed: false } : {}),
         ...audit(),
@@ -303,7 +314,7 @@ export class ExamService {
           folderId,
           ...audit(),
         });
-        for (const q of p.questions) await writeQuestion(q, folderId, sid);
+        for (const q of p.questions) await writeQuestion(q, folderId, { id: sid, text: p.text });
       }
       if (f.folders.length === 0) return;
       const existing = await getDocs(
@@ -332,7 +343,7 @@ export class ExamService {
 
     await writeFolder(root, ExamService.parentOf(path));
     if (pending > 0) await batch.commit();
-    return count;
+    return { ...count, items };
   }
 
   /** Marca un ítem generado por IA como revisado por el docente. */
