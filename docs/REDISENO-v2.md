@@ -345,3 +345,20 @@ Script (Cloud Function de un solo uso o script con Admin SDK):
 - ¿Seguir en Firebase? **Recomendado sí** para v2 (ya hay inversión, offline nativo, OMR en cliente). Reconsiderar Postgres solo si los reportes analíticos crecen mucho (alternativa: exportar a BigQuery).
 - ¿Modo online (estudiante responde en dispositivo) en v2 o después? Recomendado: después; el papel es el diferenciador.
 - ¿Banco curado propio desde el inicio o primero solo IA + bancos de cada colegio?
+
+## 11. Funciones sin costo de infraestructura (octubre 2026)
+
+Todo corre en el navegador o con escrituras normales de Firestore; no
+requiere Cloud Functions, plan Blaze ni API de IA.
+
+| Función | Dónde | Código |
+|---|---|---|
+| **Crea tu banco con IA**: ExamHub arma el prompt (tema libre o Saber 11, competencias, cantidad, dificultad, lecturas, carpetas, material base) y el docente lo usa en ChatGPT, Gemini o Claude gratis. La respuesta se pega, se revisa en árbol y se guarda organizada en carpetas (las del mismo nombre se reutilizan). También acepta texto pegado de Word sin IA. | Banco › Nuevo › Crear banco con IA | `core/domain/bankImport.ts`, `ExamService.importTree` |
+| **Datos de ejemplo**: banco Saber 11, grupos 11-A/11-B (ejemplo) con 30 estudiantes y dos simulacros calificados con respuestas simuladas. Se borran con un clic. | Institución › Datos de ejemplo | `core/domain/demoData.ts`, `core/services/demo.service.ts` |
+| **Informe para rectoría** (PDF): indicadores, por grupo, niveles, competencias, plan de mejora por reglas, preguntas con menos aciertos y estudiantes en riesgo. | Evaluación › Exportar | `core/domain/reportStats.ts`, `exam-detail/results-pdf.util.ts` |
+| **Boletín por estudiante** (PDF) con comparación frente al grupo, puesto, fortalezas y por mejorar; individual desde la tabla. | Evaluación › Exportar / ícono en cada fila | `results-pdf.util.ts` |
+| **Libro de Excel** (.xlsx) con 5 hojas: resultados, competencias, respuestas, análisis de preguntas y por grupo. | Evaluación › Exportar | `core/utils/xlsx.util.ts` |
+
+Formato del JSON del importador (ver `FORMAT_SPEC` en `bankImport.ts`):
+`{ "folders": [{ "name", "questions": [...], "passages": [{ "title", "text", "questions" }], "folders": [...] }] }`.
+Se siguen aceptando `questions` y `passages` en la raíz (bancos de demo).
