@@ -1,16 +1,66 @@
 ---
-import "@fontsource/sora/600.css";
-import "@fontsource/sora/700.css";
-import "@fontsource/atkinson-hyperlegible/400.css";
-import "@fontsource/atkinson-hyperlegible/700.css";
+// Solo el subconjunto latino de las fuentes (español): menos bytes.
+import "@fontsource/sora/latin-600.css";
+import "@fontsource/sora/latin-700.css";
+import "@fontsource/atkinson-hyperlegible/latin-400.css";
+import "@fontsource/atkinson-hyperlegible/latin-700.css";
+import soraBold from "@fontsource/sora/files/sora-latin-700-normal.woff2?url";
+import atkRegular from "@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-400-normal.woff2?url";
 import "../styles/global.css";
-import { SITE } from "../config";
+import { PLANS, SITE } from "../config";
 
 interface Props {
   title?: string;
+  description?: string;
+  /** Datos estructurados extra de la página (FAQPage, Article…). */
+  schema?: Record<string, unknown>[];
+  type?: "website" | "article";
 }
-const { title = `${SITE.name} — Simulacros tipo Saber 11 calificados con el celular` } = Astro.props;
+const {
+  title = `Simulacros Saber 11 calificados con el celular | ${SITE.name}`,
+  description = SITE.description,
+  schema = [],
+  type = "website",
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, "") || Astro.site!.href;
 const og = new URL("/og-image.png", Astro.site).href;
+const home = new URL("/", Astro.site).href;
+
+const baseSchema = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE.name,
+    url: home,
+    logo: new URL("/apple-touch-icon.png", Astro.site).href,
+    slogan: SITE.tagline,
+    areaServed: "CO",
+    sameAs: [SITE.instagram, SITE.tiktok],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "sales",
+      telephone: `+${SITE.whatsapp}`,
+      availableLanguage: "es",
+      areaServed: "CO",
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: SITE.name,
+    url: home,
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web, Android, iOS",
+    inLanguage: "es-CO",
+    description: SITE.description,
+    offers: PLANS.map((p) => ({
+      "@type": "Offer",
+      name: p.name,
+      price: p.price === "Gratis" ? "0" : p.price.replace(/[^\d]/g, ""),
+      priceCurrency: "COP",
+    })),
+  },
+];
 ---
 
 <!doctype html>
@@ -19,28 +69,52 @@ const og = new URL("/og-image.png", Astro.site).href;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
-    <meta name="description" content={SITE.description} />
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#16205A" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="canonical" href={Astro.site} />
-    <meta property="og:type" content="website" />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <link rel="preload" href={soraBold} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={atkRegular} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={SITE.name} />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={SITE.description} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
     <meta property="og:image" content={og} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ExamHub: simulacros tipo Saber 11 calificados con el celular" />
     <meta property="og:locale" content="es_CO" />
     <meta name="twitter:card" content="summary_large_image" />
-    <script type="application/ld+json" set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: SITE.name,
-      applicationCategory: "EducationalApplication",
-      operatingSystem: "Web, Android, iOS",
-      description: SITE.description,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "COP" },
-    })} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={og} />
+
+    {[...baseSchema, ...schema].map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
   </head>
   <body>
+    <a class="skip" href="#contenido">Saltar al contenido</a>
     <slot />
   </body>
 </html>
+
+<style is:global>
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -60px;
+    z-index: 100;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--tinta);
+    color: var(--papel);
+    font-weight: 700;
+  }
+  .skip:focus {
+    top: 16px;
+  }
+</style>

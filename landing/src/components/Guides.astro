@@ -1,0 +1,72 @@
+---
+import { GUIDES } from "../data/guides";
+---
+
+<section class="section guides" aria-labelledby="guias-titulo">
+  <div class="wrap">
+    <p class="eyebrow reveal">Guías gratis</p>
+    <h2 class="h2 reveal" id="guias-titulo">Todo sobre el Saber 11, explicado simple.</h2>
+    <div class="guides__grid">
+      {GUIDES.map((g) => (
+        <a class="guide reveal" href={`/guias/${g.slug}`}>
+          <span class="guide__kicker">{g.kicker}</span>
+          <h3>{g.title}</h3>
+          <p>{g.description}</p>
+          <span class="guide__more">Leer guía <span aria-hidden="true">→</span></span>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .guides {
+    padding-top: 0;
+  }
+  .guides__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .guide {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 26px;
+    border-radius: var(--radius);
+    background: #fff;
+    text-decoration: none;
+    color: var(--tinta);
+    border: 2px solid transparent;
+    transition: border-color 200ms, transform 200ms var(--ease);
+  }
+  .guide:hover {
+    border-color: var(--tinta);
+    transform: translateY(-3px);
+  }
+  .guide__kicker {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gris);
+  }
+  .guide h3 {
+    font-size: 24px;
+  }
+  .guide p {
+    color: var(--gris);
+    font-size: 16px;
+    flex-grow: 1;
+  }
+  .guide__more {
+    font-weight: 700;
+  }
+  @media (max-width: 900px) {
+    .guides__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,158 @@
+---
+import Article from "../../layouts/Article.astro";
+import { GUIDES } from "../../data/guides";
+const guide = GUIDES.find((g) => g.slug === "calculadora-puntaje-global-saber-11")!;
+const TESTS = [
+  { id: "lc", name: "Lectura Crítica", w: 3, color: "var(--lc)", v: 60 },
+  { id: "mat", name: "Matemáticas", w: 3, color: "var(--mat)", v: 55 },
+  { id: "sc", name: "Sociales y Ciudadanas", w: 3, color: "var(--sc)", v: 50 },
+  { id: "cn", name: "Ciencias Naturales", w: 3, color: "var(--cn)", v: 58 },
+  { id: "ing", name: "Inglés", w: 1, color: "var(--ing)", v: 70 },
+];
+---
+
+<Article guide={guide}>
+  <form class="gcalc" data-gcalc onsubmit="return false" aria-label="Calculadora del puntaje global">
+    {TESTS.map((t) => (
+      <label class="gcalc__row" style={`--c:${t.color}`}>
+        <span class="gcalc__name"><i></i>{t.name} <small>×{t.w}</small></span>
+        <input type="number" name={t.id} min="0" max="100" step="1" value={t.v} inputmode="numeric" data-w={t.w} aria-describedby="gcalc-help" />
+      </label>
+    ))}
+    <p id="gcalc-help" class="gcalc__help">Escribe el puntaje de cada prueba, de 0 a 100.</p>
+    <div class="gcalc__out" aria-live="polite">
+      <span>Puntaje global</span>
+      <strong data-global>284</strong>
+      <span>de 500</span>
+    </div>
+  </form>
+
+  <h2>Cómo se calcula el puntaje global</h2>
+  <p>
+    El puntaje global del examen Saber 11 va de <strong>0 a 500</strong>. Se obtiene a partir de los puntajes de las cinco
+    pruebas, que van de 0 a 100 cada una:
+  </p>
+  <ol>
+    <li>Se multiplica el puntaje de Lectura Crítica, Matemáticas, Sociales y Ciudadanas y Ciencias Naturales por <strong>3</strong>, y el de Inglés por <strong>1</strong>.</li>
+    <li>Se suman los cinco resultados y se divide entre <strong>13</strong> (la suma de los pesos). Eso da el promedio ponderado, de 0 a 100.</li>
+    <li>Ese promedio se multiplica por <strong>5</strong> y se redondea.</li>
+  </ol>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Prueba</th><th>Peso</th></tr></thead>
+      <tbody>
+        <tr><td>Lectura Crítica</td><td>3</td></tr>
+        <tr><td>Matemáticas</td><td>3</td></tr>
+        <tr><td>Sociales y Ciudadanas</td><td>3</td></tr>
+        <tr><td>Ciencias Naturales</td><td>3</td></tr>
+        <tr><td>Inglés</td><td>1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Ejemplo</h2>
+  <p>
+    Un estudiante con 60 en Lectura Crítica, 55 en Matemáticas, 50 en Sociales, 58 en Ciencias y 70 en Inglés:
+    (60×3 + 55×3 + 50×3 + 58×3 + 70×1) ÷ 13 × 5 = 739 ÷ 13 × 5 ≈ <strong>284 puntos</strong>.
+  </p>
+
+  <h2>Qué conviene mejorar primero</h2>
+  <p>
+    Como cuatro pruebas pesan tres veces más que Inglés, subir 10 puntos en Matemáticas aumenta el global en unos
+    <strong>11,5 puntos</strong>, mientras que subir 10 en Inglés lo aumenta en unos <strong>3,8</strong>. Por eso los
+    colegios suelen reforzar primero las competencias más débiles de las pruebas de peso 3.
+  </p>
+  <p class="note">
+    Esta calculadora sirve para estimar y practicar. Los resultados oficiales los publica el ICFES; ExamHub no está afiliado
+    al ICFES. Consulta la guía de interpretación de resultados vigente en el sitio del ICFES.
+  </p>
+</Article>
+
+<style>
+  .gcalc {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: clamp(20px, 3vw, 32px);
+    display: grid;
+    gap: 12px;
+    box-shadow: 0 30px 60px -36px rgb(22 32 90 / 0.4);
+  }
+  .gcalc__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .gcalc__name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--tinta);
+  }
+  .gcalc__name i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c);
+    flex-shrink: 0;
+  }
+  .gcalc__name small {
+    color: var(--gris);
+    font-weight: 400;
+  }
+  .gcalc input {
+    width: 96px;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 2px solid var(--papel-2);
+    padding: 0 12px;
+    font: 700 20px var(--display);
+    color: var(--tinta);
+    text-align: center;
+  }
+  .gcalc input:focus {
+    border-color: var(--tinta);
+    outline: none;
+  }
+  .gcalc__help {
+    font-size: 15px;
+    color: var(--gris);
+  }
+  .gcalc__out {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: 18px;
+    padding: 18px 22px;
+    margin-top: 6px;
+  }
+  .gcalc__out strong {
+    font-family: var(--display);
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--lapiz);
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-gcalc]")!;
+  const out = form.querySelector<HTMLElement>("[data-global]")!;
+  function update() {
+    let sum = 0;
+    let weights = 0;
+    form.querySelectorAll<HTMLInputElement>("input").forEach((i) => {
+      const v = Math.min(100, Math.max(0, Number(i.value) || 0));
+      const w = Number(i.dataset.w);
+      sum += v * w;
+      weights += w;
+    });
+    out.textContent = String(Math.round((sum / weights) * 5));
+  }
+  form.addEventListener("input", update);
+  update();
+</script>

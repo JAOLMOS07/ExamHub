@@ -1,0 +1,84 @@
+---
+import Base from "../../layouts/Base.astro";
+import Nav from "../../components/Nav.astro";
+import Closing from "../../components/Closing.astro";
+import { GUIDES } from "../../data/guides";
+import { SITE } from "../../config";
+---
+
+<Base
+  title={`Guías Saber 11 para docentes y colegios | ${SITE.name}`}
+  description="Guías gratis sobre el Saber 11: calculadora del puntaje global, cómo leer los resultados y cómo hacer un simulacro en el colegio."
+>
+  <Nav />
+  <main id="contenido" class="gidx">
+    <div class="wrap">
+      <p class="eyebrow">Guías gratis</p>
+      <h1>Guías Saber 11 para docentes y colegios</h1>
+      <p class="gidx__lead">Herramientas y explicaciones claras para preparar a tus estudiantes y leer los resultados.</p>
+      <ul class="gidx__list">
+        {GUIDES.map((g) => (
+          <li>
+            <a href={`/guias/${g.slug}`}>
+              <span>{g.kicker}</span>
+              <h2>{g.title}</h2>
+              <p>{g.description}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </main>
+  <Closing />
+</Base>
+
+<style>
+  .gidx {
+    padding: clamp(32px, 6vw, 64px) 0 0;
+  }
+  .gidx h1 {
+    font-size: clamp(38px, 6vw, 64px);
+    margin-top: 14px;
+    max-width: 16ch;
+  }
+  .gidx__lead {
+    font-size: 20px;
+    color: var(--gris);
+    margin-top: 16px;
+  }
+  .gidx__list {
+    list-style: none;
+    padding: 0;
+    margin: 40px 0 0;
+    display: grid;
+    gap: 16px;
+  }
+  .gidx__list a {
+    display: block;
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    text-decoration: none;
+    border: 2px solid transparent;
+    transition: border-color 200ms;
+  }
+  .gidx__list a:hover {
+    border-color: var(--tinta);
+  }
+  .gidx__list span {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gris);
+  }
+  .gidx__list h2 {
+    font-size: clamp(24px, 3vw, 32px);
+    margin-top: 8px;
+  }
+  .gidx__list p {
+    margin-top: 8px;
+    color: var(--gris);
+  }
+</style>

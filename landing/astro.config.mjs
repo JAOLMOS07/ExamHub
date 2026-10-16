@@ -1,8 +1,20 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 
-// Sitio estático: se publica gratis en Vercel, Netlify o Firebase Hosting.
+/**
+ * Dirección pública del sitio (canonical, sitemap, Open Graph).
+ * 1. SITE_URL si la defines (ej. con tu dominio propio).
+ * 2. En Vercel, el dominio de producción que Vercel entrega al construir.
+ * 3. En local, localhost.
+ */
+const site =
+  process.env.SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:4321");
+
 export default defineConfig({
-  site: "https://examhub.co",
-  build: { inlineStylesheets: "always" },
+  site,
+  trailingSlash: "never",
+  build: { inlineStylesheets: "always", format: "file" },
 });

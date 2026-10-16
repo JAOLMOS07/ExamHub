@@ -9,17 +9,26 @@ import Features from "../components/Features.astro";
 import Pricing from "../components/Pricing.astro";
 import Faq from "../components/Faq.astro";
 import Closing from "../components/Closing.astro";
+import Guides from "../components/Guides.astro";
+import { FAQ } from "../data/faq";
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
 ---
 
-<Base>
+<Base schema={[faqSchema]}>
   <Nav />
-  <main>
+  <main id="contenido">
     <Hero />
     <Demo />
     <Steps />
     <Savings />
     <Features />
     <Pricing />
+    <Guides />
     <Faq />
   </main>
   <Closing />

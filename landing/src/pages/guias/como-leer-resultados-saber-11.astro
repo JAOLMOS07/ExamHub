@@ -1,0 +1,72 @@
+---
+import Article from "../../layouts/Article.astro";
+import { GUIDES } from "../../data/guides";
+const guide = GUIDES.find((g) => g.slug === "como-leer-resultados-saber-11")!;
+---
+
+<Article guide={guide}>
+  <p>
+    Cuando llegan los resultados del Saber 11 es fácil quedarse solo con el puntaje global. Pero los datos más útiles para
+    mejorar están en las pruebas, los niveles y las competencias. Así se leen, de lo general a lo particular.
+  </p>
+
+  <h2>1. Puntaje global (0 a 500)</h2>
+  <p>
+    Es el promedio ponderado de las cinco pruebas multiplicado por 5. Lectura Crítica, Matemáticas, Sociales y Ciudadanas y
+    Ciencias Naturales pesan 3; Inglés pesa 1. Sirve para comparar en el tiempo y con otros colegios, pero no dice
+    <em>qué</em> enseñar distinto. Puedes calcularlo con nuestra <a href="/guias/calculadora-puntaje-global-saber-11">calculadora del puntaje global</a>.
+  </p>
+
+  <h2>2. Puntaje por prueba (0 a 100)</h2>
+  <p>
+    Cada prueba tiene su propio puntaje. Compáralo con el promedio de tu colegio y del país, no solo con el año anterior: un
+    cambio de pocos puntos puede ser normal entre cohortes. El reporte también trae el <strong>percentil</strong>, que indica
+    qué porcentaje de estudiantes del país obtuvo un puntaje menor.
+  </p>
+
+  <h2>3. Niveles de desempeño</h2>
+  <p>
+    Lectura Crítica, Matemáticas, Sociales y Ciudadanas y Ciencias Naturales se reportan en <strong>cuatro niveles</strong>
+    (del 1 al 4). Cada nivel describe lo que el estudiante es capaz de hacer, así que dos estudiantes con puntajes cercanos
+    pueden quedar en niveles distintos. Inglés usa los niveles del <strong>Marco Común Europeo</strong>: A-, A1, A2, B1 y
+    B+ para quienes superan B1.
+  </p>
+  <p>
+    Para el colegio, el dato clave es el <strong>porcentaje de estudiantes en nivel 1</strong> por prueba: ahí está el grupo
+    que más necesita acompañamiento.
+  </p>
+
+  <h2>4. Competencias: la pista de qué enseñar</h2>
+  <p>Cada prueba evalúa competencias. Son la mejor guía para planear clases y refuerzos:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Prueba</th><th>Competencias</th></tr></thead>
+      <tbody>
+        <tr><td>Lectura Crítica</td><td>Identificar y entender los contenidos locales de un texto · Comprender cómo se articulan sus partes · Reflexionar a partir de un texto y evaluar su contenido</td></tr>
+        <tr><td>Matemáticas</td><td>Interpretación y representación · Formulación y ejecución · Argumentación</td></tr>
+        <tr><td>Sociales y Ciudadanas</td><td>Pensamiento social · Interpretación y análisis de perspectivas · Pensamiento reflexivo y sistémico</td></tr>
+        <tr><td>Ciencias Naturales</td><td>Uso comprensivo del conocimiento científico · Explicación de fenómenos · Indagación</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Por ejemplo, si en Matemáticas la competencia más baja es <strong>Argumentación</strong>, más ejercicios de cálculo no
+    van a ayudar tanto como pedir a los estudiantes que justifiquen y validen procedimientos.
+  </p>
+
+  <h2>5. De los resultados al plan de mejora</h2>
+  <ol>
+    <li>Identifica las dos o tres competencias más débiles del colegio.</li>
+    <li>Revisa qué grupos y qué estudiantes están en nivel 1 en al menos dos pruebas.</li>
+    <li>Acuerda con cada área una acción concreta por competencia para el periodo.</li>
+    <li>Mide con un simulacro corto 4 a 6 semanas después para saber si funcionó.</li>
+  </ol>
+  <p>
+    ExamHub hace este análisis en cada simulacro del colegio: informe por grupo y competencia, distribución por nivel, las
+    preguntas con menos aciertos y la lista de estudiantes que requieren acompañamiento.
+  </p>
+  <p class="note">
+    Los criterios oficiales de niveles y la forma de reporte los define el ICFES y pueden cambiar; consulta la guía de
+    interpretación de resultados vigente. ExamHub no está afiliado al ICFES.
+  </p>
+</Article>

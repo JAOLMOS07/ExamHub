@@ -1,0 +1,66 @@
+---
+import Article from "../../layouts/Article.astro";
+import { GUIDES } from "../../data/guides";
+const guide = GUIDES.find((g) => g.slug === "como-hacer-un-simulacro-saber-11")!;
+---
+
+<Article guide={guide}>
+  <p>
+    Un buen simulacro no es solo practicar: es la forma más barata de saber, con meses de anticipación, qué competencias
+    reforzar antes del Saber 11. Este es el paso a paso que recomendamos para un colegio.
+  </p>
+
+  <h2>1. Define el objetivo y el grupo</h2>
+  <p>
+    Para grado 11, un simulacro completo de las cinco pruebas a mitad de año. Para <strong>grado 10</strong>, un diagnóstico
+    al final del año: te da tiempo de ajustar el plan antes de que presenten la prueba real.
+  </p>
+
+  <h2>2. Arma las preguntas</h2>
+  <ul>
+    <li>Usa preguntas con contexto (una situación, un texto, una tabla), como las del ICFES; evita las de pura memoria.</li>
+    <li>Cuatro opciones con una sola respuesta correcta y distractores basados en errores frecuentes.</li>
+    <li>Etiqueta cada pregunta con su prueba y competencia: sin eso, no hay informe útil.</li>
+    <li>Agrupa las preguntas de una misma lectura.</li>
+  </ul>
+  <p>
+    Si no tienes banco, puedes generar preguntas con una IA gratis (ChatGPT, Gemini o Claude) y revisarlas antes de usarlas.
+    ExamHub te da el prompt exacto y las organiza en carpetas.
+  </p>
+
+  <h2>3. Prepara varias formas</h2>
+  <p>
+    Imprime el mismo simulacro en dos o tres <strong>formas</strong> (A, B, C) con las preguntas y opciones en distinto orden,
+    y alterna las formas entre estudiantes que se sientan juntos. Es la manera más simple de evitar la copia.
+  </p>
+
+  <h2>4. Hojas de respuestas</h2>
+  <p>
+    La hoja con el <strong>nombre de cada estudiante</strong> evita que rellenen mal el código y ahorra horas al calificar.
+    Imprime algunas hojas en blanco de reserva para estudiantes nuevos o hojas dañadas.
+  </p>
+
+  <h2>5. Aplicación</h2>
+  <ul>
+    <li>Respeta tiempos parecidos a los de la prueba real y aplica en una o dos sesiones.</li>
+    <li>Entrega a cada docente la lista de su salón con la forma de cada estudiante.</li>
+    <li>Pide lápiz y que rellenen la burbuja completa.</li>
+  </ul>
+
+  <h2>6. Calificación</h2>
+  <p>
+    Calificar a mano 300 hojas puede tomar 20 horas o más. Con ExamHub cada docente toma una foto a cada hoja con el celular:
+    se lee el QR y las burbujas, y la nota queda guardada, incluso sin internet en el salón.
+  </p>
+
+  <h2>7. Informe y plan de mejora</h2>
+  <p>
+    Revisa resultados por grupo y competencia, el porcentaje de estudiantes en nivel 1 y las preguntas con menos aciertos
+    (y qué distractor eligieron). Con eso acuerda con cada área una acción por competencia. La guía
+    <a href="/guias/como-leer-resultados-saber-11">cómo leer los resultados del Saber 11</a> explica cada dato.
+  </p>
+  <p class="note">
+    ¿Quieres hacerlo sin costo? ExamHub ofrece a los colegios fundadores un simulacro diagnóstico gratis para grado 10: lo
+    configuramos contigo y recibes el informe por competencia.
+  </p>
+</Article>

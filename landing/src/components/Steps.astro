@@ -148,8 +148,18 @@ const STEPS = [
       const p = Math.min(1, Math.max(0, (innerHeight * 0.75 - r.top) / r.height));
       fill.style.setProperty("--p", `${Math.round(p * 100)}%`);
     };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    // Un cálculo por cuadro como máximo (evita reflujos forzados).
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        update();
+      });
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
   }
 </script>
