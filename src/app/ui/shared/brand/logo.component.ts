@@ -123,10 +123,10 @@ import { CommonModule } from "@angular/common";
   styles: [
     `
       .text-brand-700 {
-        color: #4338ca;
+        color: rgb(var(--c-brand-700));
       }
       .text-accent-600 {
-        color: #d97706;
+        color: rgb(var(--c-accent-600));
       }
     `,
   ],

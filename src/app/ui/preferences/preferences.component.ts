@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { RouterModule } from "@angular/router";
+import { ActivatedRoute, RouterModule } from "@angular/router";
 import { ToastService } from "../../core/services/toast.service";
 import { SharedModule } from "../shared/shared.module";
 import { PreferencesService } from "../../core/services/preferences.service";
@@ -9,8 +9,10 @@ import {
   ExamTemplate,
   UserPreferences,
 } from "../../core/models/preferences.model";
+import { ThemeMode, ThemeService } from "../../core/theme/theme.service";
+import { BRAND_PRESETS } from "../../core/theme/palettes";
 
-type TabId = "subjects" | "grades" | "templates";
+type TabId = "subjects" | "grades" | "templates" | "appearance";
 
 /**
  * Pantalla de Preferencias — centraliza la parametrización del
@@ -27,6 +29,14 @@ type TabId = "subjects" | "grades" | "templates";
 export class PreferencesComponent implements OnInit {
   activeTab: TabId = "subjects";
 
+  readonly presets = BRAND_PRESETS;
+  readonly modes: { id: ThemeMode; label: string; icon: string }[] = [
+    { id: "light", label: "Claro", icon: "light_mode" },
+    { id: "dark", label: "Oscuro", icon: "dark_mode" },
+    { id: "system", label: "Como el sistema", icon: "contrast" },
+  ];
+  customColor = "#0f766e";
+
   prefs: UserPreferences = {
     subjects: [],
     grades: [],
@@ -42,10 +52,15 @@ export class PreferencesComponent implements OnInit {
 
   constructor(
     private prefsService: PreferencesService,
-    private toast: ToastService
+    private toast: ToastService,
+    public theme: ThemeService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    const tab = this.route.snapshot.queryParamMap.get("tab");
+    if (tab === "appearance") this.activeTab = "appearance";
+    if (this.theme.prefs.custom) this.customColor = this.theme.prefs.custom;
     this.prefsService.preferences$.subscribe((p) => {
       this.prefs = p;
     });
@@ -54,6 +69,30 @@ export class PreferencesComponent implements OnInit {
   // ============== TABS ==============
   setTab(tab: TabId): void {
     this.activeTab = tab;
+  }
+
+  // ============== APARIENCIA ==============
+  swatch(id: string): string {
+    const p = this.presets.find((x) => x.id === id);
+    return p ? `rgb(${p.scale[600]})` : this.customColor;
+  }
+
+  setMode(mode: ThemeMode): void {
+    this.theme.set({ mode });
+  }
+
+  setBrand(id: string): void {
+    this.theme.set({ brand: id });
+  }
+
+  setCustom(hex: string): void {
+    this.customColor = hex;
+    this.theme.set({ brand: "custom", custom: hex });
+  }
+
+  resetTheme(): void {
+    this.theme.set({ mode: "system", brand: "indigo", custom: undefined });
+    this.toast.success("Apariencia restablecida.", "ExamHub", 2000);
   }
 
   // ============== MATERIAS ==============

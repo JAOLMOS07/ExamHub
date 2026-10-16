@@ -385,3 +385,18 @@ Se siguen aceptando `questions` y `passages` en la raíz (bancos de demo).
 
 Para probar el service worker: `npm run build`, servir
 `dist/exam-hub/browser` y abrir en Chrome › DevTools › Application.
+
+## 13. Modo oscuro y colores
+
+- Los colores de Tailwind leen variables CSS (`src/theme-colors.css`,
+  generado con `node scripts/gen-theme.js`). En `html.dark` las escalas
+  se invierten (neutros) o se ajustan (colores y marca), así que los
+  templates no llevan clases `dark:`.
+- `ThemeService` (`core/theme/`): modo claro, oscuro o del sistema y
+  color de marca (9 paletas o un color propio), guardado en el
+  dispositivo. `index.html` aplica el tema antes de pintar.
+- Preferencias › Apariencia, y en el menú de usuario "Modo oscuro".
+- `.eh-fixed-palette` conserva los neutros claros dentro de elementos
+  que ya son oscuros (bandeja del examen).
+- Para estilos nuevos usar `rgb(var(--c-<paleta>-<tono>))` en vez de
+  hex; `node scripts/css-hex-to-vars.js <archivo>` convierte un CSS.

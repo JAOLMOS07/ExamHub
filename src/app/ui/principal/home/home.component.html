@@ -296,24 +296,24 @@
                     (click)="filterDifficulty = filterDifficulty === 1 ? null : 1"
                     class="px-2 py-1 rounded text-xs font-medium border transition"
                     [ngStyle]="filterDifficulty === 1
-                      ? { 'background-color': '#ecfdf5', 'color': '#047857', 'border-color': '#a7f3d0' }
-                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                      ? { 'background-color': 'rgb(var(--c-emerald-50))', 'color': 'rgb(var(--c-emerald-700))', 'border-color': 'rgb(var(--c-emerald-200))' }
+                      : { 'background-color': 'rgb(var(--c-surface))', 'color': 'rgb(var(--c-slate-500))', 'border-color': 'rgb(var(--c-slate-300))' }"
                   >Fácil</button>
                   <button
                     type="button"
                     (click)="filterDifficulty = filterDifficulty === 2 ? null : 2"
                     class="px-2 py-1 rounded text-xs font-medium border transition"
                     [ngStyle]="filterDifficulty === 2
-                      ? { 'background-color': '#fffbeb', 'color': '#92400e', 'border-color': '#fde68a' }
-                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                      ? { 'background-color': 'rgb(var(--c-amber-50))', 'color': 'rgb(var(--c-amber-800))', 'border-color': 'rgb(var(--c-amber-200))' }
+                      : { 'background-color': 'rgb(var(--c-surface))', 'color': 'rgb(var(--c-slate-500))', 'border-color': 'rgb(var(--c-slate-300))' }"
                   >Media</button>
                   <button
                     type="button"
                     (click)="filterDifficulty = filterDifficulty === 3 ? null : 3"
                     class="px-2 py-1 rounded text-xs font-medium border transition"
                     [ngStyle]="filterDifficulty === 3
-                      ? { 'background-color': '#fef2f2', 'color': '#b91c1c', 'border-color': '#fecaca' }
-                      : { 'background-color': '#fff', 'color': '#64748b', 'border-color': '#cbd5e1' }"
+                      ? { 'background-color': 'rgb(var(--c-red-50))', 'color': 'rgb(var(--c-red-700))', 'border-color': 'rgb(var(--c-red-200))' }
+                      : { 'background-color': 'rgb(var(--c-surface))', 'color': 'rgb(var(--c-slate-500))', 'border-color': 'rgb(var(--c-slate-300))' }"
                   >Difícil</button>
                 </div>
               </div>
@@ -651,7 +651,7 @@
   <!-- ====================== BANDEJA DEL EXAMEN ====================== -->
   @if (questionsSelected.length > 0 && !showCurrentExam) {
     <div class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] z-30 flex justify-center pointer-events-none">
-      <div class="pointer-events-auto w-full max-w-3xl flex items-center gap-3 rounded-2xl bg-slate-900 text-white shadow-elevated px-4 py-3">
+      <div class="pointer-events-auto w-full max-w-3xl flex items-center gap-3 rounded-2xl bg-slate-900 text-white shadow-elevated px-4 py-3 eh-fixed-palette ring-1 ring-white/10">
         <span class="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-white/10 items-center justify-center">
           <app-icon [icon]="'assignment'" />
         </span>
@@ -679,7 +679,7 @@
 
   <!-- ====================== PANEL DEL EXAMEN ====================== -->
   @if (showCurrentExam) {
-    <div class="fixed inset-0 z-40 bg-slate-900/30" (click)="showCurrentExam = false"></div>
+    <div class="fixed inset-0 z-40 bg-black/30" (click)="showCurrentExam = false"></div>
     <aside class="fixed inset-y-0 right-0 z-50 w-full sm:w-[440px] bg-slate-50 shadow-elevated flex flex-col">
       <header class="px-5 py-4 bg-white border-b border-slate-200 flex items-start gap-3">
         <div class="flex-1">

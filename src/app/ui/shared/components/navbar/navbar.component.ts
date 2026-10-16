@@ -9,6 +9,7 @@ import { PwaService } from "../../../../core/services/pwa.service";
 import { ConnectivityService } from "../../../../core/services/connectivity.service";
 import { ToastService } from "../../../../core/services/toast.service";
 import { MODULES } from "../../../routes.constants";
+import { ThemeService } from "../../../../core/theme/theme.service";
 import {
   Organization,
   OrgRef,
@@ -74,7 +75,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private tenant: TenantService,
     public pwa: PwaService,
     private connectivity: ConnectivityService,
-    private toast: ToastService
+    private toast: ToastService,
+    public theme: ThemeService
   ) {}
 
   ngOnInit(): void {

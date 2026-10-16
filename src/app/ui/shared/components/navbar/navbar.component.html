@@ -5,11 +5,14 @@
   </button>
   <a routerLink="/home" class="flex items-center"><eh-logo [size]="26" /></a>
   <span class="flex-1 min-w-0 text-right text-xs font-medium text-slate-500 truncate">{{ activeOrgName }}</span>
+  <button type="button" class="eh-icon-btn -mr-2" (click)="theme.toggleDark()" [attr.aria-label]="theme.isDark ? 'Modo claro' : 'Modo oscuro'">
+    <app-icon [icon]="theme.isDark ? 'light_mode' : 'dark_mode'" />
+  </button>
 </header>
 
 <!-- Fondo del cajón en móvil -->
 @if (mobileOpen) {
-  <div class="lg:hidden fixed inset-0 z-40 bg-slate-900/40" (click)="closeMenus()"></div>
+  <div class="lg:hidden fixed inset-0 z-40 bg-black/40" (click)="closeMenus()"></div>
 }
 
 <!-- ============ Barra lateral ============ -->
@@ -113,6 +116,13 @@
   <div class="p-3 border-t border-slate-100 relative">
     @if (userMenuOpen) {
       <div class="absolute left-3 right-3 bottom-full mb-1 z-10 rounded-xl border border-slate-200 bg-white shadow-elevated p-1.5">
+        <button type="button" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50" (click)="theme.toggleDark()">
+          <app-icon [icon]="theme.isDark ? 'light_mode' : 'dark_mode'" />
+          <span class="flex-1 text-left">{{ theme.isDark ? "Modo claro" : "Modo oscuro" }}</span>
+        </button>
+        <a routerLink="/preferences" [queryParams]="{ tab: 'appearance' }" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+          <app-icon [icon]="'palette'" /> Colores y apariencia
+        </a>
         <a routerLink="/preferences" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
           <app-icon [icon]="'tune'" /> Preferencias
         </a>
@@ -186,7 +196,7 @@
 
 <!-- ============ Guía para instalar (iPhone y navegadores sin aviso) ============ -->
 @if (showInstallHelp) {
-  <div class="fixed inset-0 z-[60] bg-slate-900/40 flex items-end sm:items-center justify-center p-4" (click)="showInstallHelp = false">
+  <div class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center p-4" (click)="showInstallHelp = false">
     <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-elevated" (click)="$event.stopPropagation()">
       <div class="flex items-center gap-3 mb-3">
         <img src="assets/icons/icon-192.png" alt="" class="w-11 h-11 rounded-xl" />

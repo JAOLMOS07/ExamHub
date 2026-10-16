@@ -11,20 +11,20 @@
    componentes que no usan clases Tailwind las puedan referenciar.
    ------------------------------------------------------------------ */
 :root {
-  --brand-primary: #4338ca;
-  --brand-primary-hover: #3730a3;
-  --brand-secondary: #d97706;
-  --brand-accent: #10b981;
-  --brand-surface: #ffffff;
-  --brand-surface-muted: #f8fafc;
-  --brand-border: #e2e8f0;
-  --brand-text: #0f172a;
-  --brand-text-muted: #475569;
-  --brand-text-subtle: #94a3b8;
+  --brand-primary: rgb(var(--c-brand-700));
+  --brand-primary-hover: rgb(var(--c-brand-800));
+  --brand-secondary: rgb(var(--c-accent-600));
+  --brand-accent: rgb(var(--c-emerald-500));
+  --brand-surface: rgb(var(--c-surface));
+  --brand-surface-muted: rgb(var(--c-page));
+  --brand-border: rgb(var(--c-slate-200));
+  --brand-text: rgb(var(--c-slate-900));
+  --brand-text-muted: rgb(var(--c-slate-600));
+  --brand-text-subtle: rgb(var(--c-slate-400));
 
   /* Scrollbar */
   --primary: var(--brand-surface-muted);
-  --secondary: #cbd5e1;
+  --secondary: rgb(var(--c-slate-300));
 }
 
 /* ------------------------------------------------------------------
@@ -104,7 +104,7 @@ h3 {
   border: 2px solid var(--primary);
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: rgb(var(--c-slate-400));
 }
 
 /* ------------------------------------------------------------------
@@ -134,8 +134,8 @@ button {
 
 /* Selección de texto con color de marca. */
 ::selection {
-  background: #c7d2fe;
-  color: #1e1b4b;
+  background: rgb(var(--c-brand-200));
+  color: rgb(var(--c-brand-950));
 }
 
 /* Fade-in suave del contenido al navegar entre pantallas.
@@ -169,7 +169,7 @@ router-outlet + * {
 .eh-skeleton {
   position: relative;
   overflow: hidden;
-  background: #e9edf3;
+  background: rgb(var(--c-slate-200));
   border-radius: 0.5rem;
 }
 .eh-skeleton::after {
@@ -180,7 +180,7 @@ router-outlet + * {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.65),
+    rgb(var(--c-surface) / 0.65),
     transparent
   );
   animation: eh-shimmer 1.4s infinite;
@@ -224,7 +224,7 @@ router-outlet + * {
 .eh-card:hover {
   box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08),
     0 2px 4px -2px rgba(15, 23, 42, 0.06);
-  border-color: #cbd5e1;
+  border-color: rgb(var(--c-slate-300));
 }
 
 /* Empty state */
@@ -252,22 +252,22 @@ router-outlet + * {
 /* Campo de formulario estándar (inputs y selects de las pantallas v2) */
 .eh-input {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgb(var(--c-slate-300));
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
+  color: rgb(var(--c-slate-900));
+  background: rgb(var(--c-surface));
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 .eh-input:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px #c7d2fe;
+  border-color: rgb(var(--c-brand-600));
+  box-shadow: 0 0 0 3px rgb(var(--c-brand-200));
 }
 .eh-input:disabled {
-  background: #f8fafc;
-  color: #64748b;
+  background: rgb(var(--c-slate-50));
+  color: rgb(var(--c-slate-500));
 }
 
 /* ------------------------------------------------------------------
@@ -284,18 +284,18 @@ router-outlet + * {
 .eh-field > span {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #334155;
+  color: rgb(var(--c-slate-700));
 }
 .eh-field > span em {
   font-style: normal;
-  color: #dc2626;
+  color: rgb(var(--c-red-600));
 }
 .eh-field small,
 .eh-switch-row small,
 .eh-option small {
   font-size: 0.75rem;
   line-height: 1.35;
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
 }
 
 /* Título de paso numerado dentro de formularios largos */
@@ -306,7 +306,7 @@ router-outlet + * {
   margin-bottom: 0.9rem;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #0f172a;
+  color: rgb(var(--c-slate-900));
 }
 .eh-step > span {
   display: inline-flex;
@@ -316,8 +316,8 @@ router-outlet + * {
   height: 1.5rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  background: #eef2ff;
-  color: #4338ca;
+  background: rgb(var(--c-brand-50));
+  color: rgb(var(--c-brand-700));
 }
 
 /* Control segmentado (2–3 opciones excluyentes) */
@@ -326,8 +326,8 @@ router-outlet + * {
   padding: 3px;
   gap: 2px;
   border-radius: 0.6rem;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: rgb(var(--c-slate-100));
+  border: 1px solid rgb(var(--c-slate-200));
   width: fit-content;
 }
 .eh-segmented > button {
@@ -335,12 +335,12 @@ router-outlet + * {
   border-radius: 0.45rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #475569;
+  color: rgb(var(--c-slate-600));
   transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 .eh-segmented > button.is-active {
-  background: #fff;
-  color: #0f172a;
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-slate-900));
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
@@ -354,13 +354,13 @@ router-outlet + * {
   cursor: pointer;
 }
 .eh-switch-row:hover {
-  background: #f8fafc;
+  background: rgb(var(--c-slate-50));
 }
 .eh-switch-row strong {
   display: block;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #0f172a;
+  color: rgb(var(--c-slate-900));
 }
 
 /* Chip seleccionable */
@@ -370,19 +370,19 @@ router-outlet + * {
   gap: 0.25rem;
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
+  border: 1px solid rgb(var(--c-slate-300));
+  background: rgb(var(--c-surface));
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #334155;
+  color: rgb(var(--c-slate-700));
   transition: all 120ms ease;
 }
 .eh-chip:hover {
-  border-color: #94a3b8;
+  border-color: rgb(var(--c-slate-400));
 }
 .eh-chip.is-active {
-  background: #4338ca;
-  border-color: #4338ca;
+  background: rgb(var(--c-brand-700));
+  border-color: rgb(var(--c-brand-700));
   color: #fff;
 }
 
@@ -395,28 +395,28 @@ router-outlet + * {
   padding: 0.85rem;
   text-align: left;
   border-radius: 0.75rem;
-  border: 1.5px solid #e2e8f0;
-  background: #fff;
+  border: 1.5px solid rgb(var(--c-slate-200));
+  background: rgb(var(--c-surface));
   transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }
 .eh-option:hover:not(:disabled) {
-  border-color: #a5b4fc;
+  border-color: rgb(var(--c-brand-300));
 }
 .eh-option strong {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #0f172a;
+  color: rgb(var(--c-slate-900));
 }
 .eh-option app-icon {
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
 }
 .eh-option.is-active {
-  border-color: #4338ca;
-  background: #f5f7ff;
-  box-shadow: 0 0 0 3px #e0e7ff;
+  border-color: rgb(var(--c-brand-700));
+  background: rgb(var(--c-brand-50));
+  box-shadow: 0 0 0 3px rgb(var(--c-brand-100));
 }
 .eh-option.is-active app-icon {
-  color: #4338ca;
+  color: rgb(var(--c-brand-700));
 }
 .eh-option:disabled {
   opacity: 0.45;
@@ -442,29 +442,29 @@ router-outlet + * {
   cursor: not-allowed;
 }
 .eh-btn--primary {
-  background: #4338ca;
+  background: rgb(var(--c-brand-700));
   color: #fff;
   box-shadow: 0 1px 2px rgba(67, 56, 202, 0.25);
 }
 .eh-btn--primary:hover:not(:disabled) {
-  background: #3730a3;
+  background: rgb(var(--c-brand-800));
 }
 .eh-btn--secondary {
-  background: #fff;
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-slate-800));
+  border: 1px solid rgb(var(--c-slate-300));
 }
 .eh-btn--secondary:hover:not(:disabled) {
-  background: #f8fafc;
+  background: rgb(var(--c-slate-50));
 }
 .eh-btn--ghost {
-  color: #475569;
+  color: rgb(var(--c-slate-600));
 }
 .eh-btn--ghost:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: rgb(var(--c-slate-100));
 }
 .eh-btn--danger {
-  background: #dc2626;
+  background: rgb(var(--c-red-600));
   color: #fff;
 }
 .eh-icon-btn {
@@ -474,11 +474,11 @@ router-outlet + * {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.6rem;
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
 }
 .eh-icon-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgb(var(--c-slate-100));
+  color: rgb(var(--c-slate-900));
 }
 
 /* Avisos */
@@ -490,19 +490,19 @@ router-outlet + * {
   border: 1px solid;
 }
 .eh-note--amber {
-  background: #fffbeb;
-  border-color: #fde68a;
-  color: #92400e;
+  background: rgb(var(--c-amber-50));
+  border-color: rgb(var(--c-amber-200));
+  color: rgb(var(--c-amber-800));
 }
 .eh-note--violet {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
-  color: #5b21b6;
+  background: rgb(var(--c-violet-50));
+  border-color: rgb(var(--c-violet-200));
+  color: rgb(var(--c-violet-800));
 }
 .eh-note--brand {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #3730a3;
+  background: rgb(var(--c-brand-50));
+  border-color: rgb(var(--c-brand-200));
+  color: rgb(var(--c-brand-800));
 }
 
 /* Diálogos: aprovechar el ancho en pantallas chicas y esquinas suaves */
@@ -524,14 +524,14 @@ router-outlet + * {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  background: #f1f5f9;
-  color: #475569;
+  background: rgb(var(--c-slate-100));
+  color: rgb(var(--c-slate-600));
 }
-.eh-test--lectura_critica { background: #f5f3ff; color: #6d28d9; }
-.eh-test--matematicas { background: #eff6ff; color: #1d4ed8; }
-.eh-test--sociales_ciudadanas { background: #fff7ed; color: #c2410c; }
-.eh-test--ciencias_naturales { background: #ecfdf5; color: #047857; }
-.eh-test--ingles { background: #fff1f2; color: #be123c; }
+.eh-test--lectura_critica { background: rgb(var(--c-violet-50)); color: rgb(var(--c-violet-700)); }
+.eh-test--matematicas { background: rgb(var(--c-blue-50)); color: rgb(var(--c-blue-700)); }
+.eh-test--sociales_ciudadanas { background: rgb(var(--c-orange-50)); color: rgb(var(--c-orange-700)); }
+.eh-test--ciencias_naturales { background: rgb(var(--c-emerald-50)); color: rgb(var(--c-emerald-700)); }
+.eh-test--ingles { background: rgb(var(--c-rose-50)); color: rgb(var(--c-rose-700)); }
 
 /* Encabezado estándar de página */
 .eh-page-head {
@@ -552,12 +552,12 @@ router-outlet + * {
   line-height: 2rem;
   font-weight: 650;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: rgb(var(--c-slate-900));
 }
 .eh-page-head p {
   margin-top: 0.25rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
   max-width: 46rem;
 }
 
@@ -588,9 +588,9 @@ router-outlet + * {
   align-items: end;
   height: calc(4rem + env(safe-area-inset-bottom));
   padding: 0 0.25rem env(safe-area-inset-bottom);
-  background: rgba(255, 255, 255, 0.96);
+  background: rgb(var(--c-surface) / 0.96);
   backdrop-filter: blur(8px);
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid rgb(var(--c-slate-200));
 }
 .eh-tab {
   display: flex;
@@ -601,18 +601,18 @@ router-outlet + * {
   height: 4rem;
   font-size: 0.6875rem;
   font-weight: 500;
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
   -webkit-tap-highlight-color: transparent;
 }
 .eh-tab app-icon {
   font-size: 1.4rem;
 }
 .eh-tab.is-active {
-  color: #4338ca;
+  color: rgb(var(--c-brand-700));
   font-weight: 600;
 }
 .eh-tab--scan {
-  color: #312e81;
+  color: rgb(var(--c-brand-900));
   font-weight: 600;
 }
 .eh-tab-scan-btn {
@@ -623,9 +623,9 @@ router-outlet + * {
   height: 3.25rem;
   margin-top: -1.6rem;
   border-radius: 9999px;
-  background: #4338ca;
+  background: rgb(var(--c-brand-700));
   color: #fff;
-  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35), 0 0 0 4px #fff;
+  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35), 0 0 0 4px rgb(var(--c-surface));
 }
 .eh-status-pill {
   position: fixed;
@@ -640,7 +640,8 @@ router-outlet + * {
   gap: 0.5rem;
   padding: 0.5rem 0.9rem;
   border-radius: 9999px;
-  background: #0f172a;
+  background: rgb(15 23 42);
+  border: 1px solid rgb(255 255 255 / 0.08);
   color: #fff;
   font-size: 0.8125rem;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
@@ -659,7 +660,7 @@ router-outlet + * {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: rgb(var(--c-slate-500));
 }
 
 /* Scroll horizontal sin barra visible — para breadcrumbs en móvil */
@@ -703,21 +704,69 @@ router-outlet + * {
   border-radius: 0.6rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #475569;
+  color: rgb(var(--c-slate-600));
   transition: background 120ms ease, color 120ms ease;
 }
 .eh-nav-link:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgb(var(--c-slate-100));
+  color: rgb(var(--c-slate-900));
 }
 .eh-nav-link app-icon {
-  color: #94a3b8;
+  color: rgb(var(--c-slate-400));
 }
 .eh-nav-link.eh-nav-active {
-  background: #eef2ff;
-  color: #3730a3;
+  background: rgb(var(--c-brand-50));
+  color: rgb(var(--c-brand-800));
   font-weight: 600;
 }
 .eh-nav-link.eh-nav-active app-icon {
-  color: #4338ca;
+  color: rgb(var(--c-brand-700));
+}
+
+
+/* ------------------------------------------------------------------
+   Modo oscuro (html.dark). Casi todo lo resuelven las variables de
+   theme-colors.css; aquí van los casos que Tailwind fija en blanco.
+   ------------------------------------------------------------------ */
+html.dark .bg-white,
+html.dark .hover\:bg-white:hover {
+  background-color: rgb(var(--c-surface) / var(--tw-bg-opacity, 1));
+}
+html.dark .bg-white\/70 {
+  background-color: rgb(var(--c-surface) / 0.7);
+}
+html.dark .bg-white\/90 {
+  background-color: rgb(var(--c-surface) / 0.9);
+}
+html.dark .from-white {
+  --tw-gradient-from: rgb(var(--c-surface)) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(var(--c-surface) / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html.dark .shadow-card,
+html.dark .shadow-elevated,
+html.dark .shadow-soft {
+  --tw-shadow-color: rgb(0 0 0 / 0.45);
+}
+html.dark .mat-mdc-dialog-container {
+  --mdc-dialog-container-color: rgb(var(--c-surface));
+  --mdc-dialog-subhead-color: rgb(var(--c-slate-900));
+  --mdc-dialog-supporting-text-color: rgb(var(--c-slate-700));
+}
+html.dark .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-slate-900));
+}
+html.dark img.eh-invert-dark {
+  filter: invert(1) hue-rotate(180deg);
+}
+html.dark ::selection {
+  background: rgb(var(--c-brand-700) / 0.5);
+}
+html.dark :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) {
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-slate-900));
+}
+html.dark :is(input, textarea)::placeholder {
+  color: rgb(var(--c-slate-400));
 }
