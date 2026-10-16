@@ -8,7 +8,7 @@ export const SITE = {
     "Simulacros tipo Saber 11 en papel, calificados con el celular. Hojas con el nombre de cada estudiante, funciona sin internet e informes por competencia para colegios de Colombia.",
   appUrl: "https://exam-hub-woad.vercel.app",
   /** Número de WhatsApp Business con indicativo, sin + ni espacios. [ ] */
-  whatsapp: "57XXXXXXXXXX",
+  whatsapp: "573137931748",
   /** Correo de contacto. [ ] */
   email: "[correo]",
   instagram: "https://instagram.com/examhub.co",
