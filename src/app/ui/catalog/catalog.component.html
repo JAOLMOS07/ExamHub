@@ -1,0 +1,341 @@
+<app-navbar />
+
+<main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 pb-32">
+  <header class="eh-page-head">
+    <div>
+      <h1>Banco ExamHub</h1>
+      <p>Preguntas tipo Saber 11 listas para usar. Cópialas a tu banco, ajústalas o arma un simulacro completo en segundos.</p>
+    </div>
+  </header>
+
+  <div class="eh-segmented mb-6 max-w-full overflow-x-auto">
+    <button type="button" [class.is-active]="tab === 'explore'" (click)="tab = 'explore'">Explorar</button>
+    <button type="button" [class.is-active]="tab === 'auto'" (click)="tab = 'auto'">Simulacro automático</button>
+    <button type="button" [class.is-active]="tab === 'mine'" (click)="tab = 'mine'">
+      Mis aportes @if (mine.length) {<span class="text-slate-400">({{ mine.length }})</span>}
+    </button>
+    @if (isAdmin) {
+      <button type="button" [class.is-active]="tab === 'review'" (click)="tab = 'review'">
+        Revisión @if (pending.length) {<span class="ml-1 rounded-full bg-red-500 text-white text-[10px] px-1.5">{{ pending.length }}</span>}
+      </button>
+    }
+  </div>
+
+  <!-- ============================ EXPLORAR ============================ -->
+  @if (tab === "explore") {
+    <section class="space-y-4">
+      <div class="flex flex-wrap gap-2" role="tablist" aria-label="Prueba">
+        @for (t of tests; track t.id) {
+          <button
+            type="button"
+            role="tab"
+            class="eh-chip"
+            [attr.aria-selected]="test === t.id"
+            [class.is-active]="test === t.id"
+            (click)="loadTest(t.id)"
+          >{{ t.label }}</button>
+        }
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1.4fr_1fr_1fr] gap-3">
+        <label class="eh-field">
+          <span>Buscar</span>
+          <input class="eh-input" [(ngModel)]="search" placeholder="Tema, texto de la pregunta…" />
+        </label>
+        <label class="eh-field">
+          <span>Competencia</span>
+          <select class="eh-input" [(ngModel)]="competency">
+            <option value="">Todas</option>
+            @for (c of competencies; track c.id) {
+              <option [value]="c.id">{{ c.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="eh-field">
+          <span>Dificultad</span>
+          <select class="eh-input" [(ngModel)]="difficulty">
+            <option [ngValue]="0">Todas</option>
+            <option [ngValue]="1">Fácil</option>
+            <option [ngValue]="2">Media</option>
+            <option [ngValue]="3">Difícil</option>
+          </select>
+        </label>
+        <label class="eh-field">
+          <span>Tipo</span>
+          <select class="eh-input" [(ngModel)]="kind">
+            <option value="">Todo</option>
+            <option value="question">Preguntas sueltas</option>
+            <option value="passage">Lecturas</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+        <span>{{ visible.length }} unidades · {{ visibleQuestions }} preguntas</span>
+        @if (visible.length) {
+          <button type="button" class="font-semibold text-brand-700 hover:underline" (click)="selectAllVisible()">Seleccionar todo</button>
+        }
+      </div>
+
+      @if (loading) {
+        <div class="space-y-3">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="eh-section h-28 eh-skeleton"></div>
+          }
+        </div>
+      } @else if (visible.length === 0) {
+        <div class="eh-section text-center py-12">
+          <app-icon class="!text-4xl text-slate-300" [icon]="'library_books'" />
+          <p class="font-medium text-slate-700 mt-2">Todavía no hay preguntas con esos filtros</p>
+          <p class="text-sm text-slate-500 mt-1">El banco crece cada semana. También puedes aportar preguntas desde tu banco.</p>
+        </div>
+      } @else {
+        <ul class="space-y-3">
+          @for (u of visible; track u.id) {
+            <li class="eh-section !p-0 overflow-hidden" [class.ring-2]="selected.has(u.id)" [class.ring-brand-600]="selected.has(u.id)">
+              <div class="flex items-start gap-3 p-4">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm mt-1"
+                  [checked]="selected.has(u.id)"
+                  (change)="toggleSelect(u)"
+                  [attr.aria-label]="'Seleccionar ' + (u.title || u.questions[0].text)"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                    <span class="eh-test" [ngClass]="'eh-test--' + u.test">{{ getTest(u.test)?.shortLabel }}</span>
+                    @for (c of u.competencies; track c) {
+                      <span class="eh-tag">{{ compLabel(u.test, c) }}</span>
+                    }
+                    @if (u.difficulty) {
+                      <span class="eh-tag">{{ u.difficulty === 1 ? "Fácil" : u.difficulty === 2 ? "Media" : "Difícil" }}</span>
+                    }
+                    @if (u.kind === "passage") {
+                      <span class="eh-tag bg-amber-50 text-amber-800 border-amber-200">Lectura · {{ u.questionCount }} preguntas</span>
+                    }
+                    @if (u.topic) {
+                      <span class="text-xs text-slate-500">{{ u.topic }}</span>
+                    }
+                  </div>
+                  @if (u.kind === "passage") {
+                    <p class="font-semibold text-slate-900">{{ u.title }}</p>
+                    <p class="text-sm text-slate-600 whitespace-pre-line" [class.line-clamp-2]="!expanded.has(u.id)">{{ u.text }}</p>
+                  } @else {
+                    <p class="text-sm text-slate-800 whitespace-pre-line" [class.line-clamp-2]="!expanded.has(u.id)">{{ u.questions[0].text }}</p>
+                  }
+                  @if (expanded.has(u.id)) {
+                    <div class="mt-3 space-y-3">
+                      @for (q of u.questions; track qi; let qi = $index) {
+                        <div class="rounded-lg bg-slate-50 p-3">
+                          @if (u.kind === "passage") {
+                            <p class="text-sm text-slate-800 whitespace-pre-line"><b>{{ qi + 1 }}.</b> {{ q.text }}</p>
+                          }
+                          <ul class="mt-2 grid sm:grid-cols-2 gap-1 text-sm">
+                            @for (o of q.options; track $index) {
+                              <li class="flex gap-2" [ngClass]="o.correct ? 'text-emerald-700 font-semibold' : 'text-slate-600'">
+                                <span>{{ letters[$index] }})</span><span>{{ o.text }}</span>
+                              </li>
+                            }
+                          </ul>
+                          @if (q.rationale) {
+                            <p class="mt-2 text-xs text-slate-500">{{ q.rationale }}</p>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+                @if (isAdmin) {
+                  <button type="button" class="eh-icon-btn shrink-0 hover:!text-red-600" (click)="removeUnit(u)" aria-label="Quitar del Banco ExamHub">
+                    <app-icon [icon]="'delete'" />
+                  </button>
+                }
+                <button type="button" class="eh-icon-btn shrink-0" (click)="toggleExpand(u.id)" [attr.aria-label]="expanded.has(u.id) ? 'Ocultar opciones' : 'Ver opciones y respuesta'">
+                  <app-icon [icon]="expanded.has(u.id) ? 'expand_less' : 'expand_more'" />
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (selected.size > 0) {
+      <div class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-4 lg:left-[calc(16rem+2rem)] z-30 flex justify-center pointer-events-none">
+        <div class="pointer-events-auto w-full max-w-3xl flex flex-wrap items-center gap-3 rounded-2xl bg-slate-900 text-white shadow-elevated px-4 py-3 eh-fixed-palette ring-1 ring-white/10">
+          <p class="flex-1 min-w-[140px] text-sm font-semibold">{{ selectedQuestions }} preguntas seleccionadas</p>
+          <button type="button" class="eh-btn !h-9 bg-white/10 hover:bg-white/20 text-white" (click)="clearSelection()">Quitar</button>
+          <button type="button" class="eh-btn !h-9 bg-white/10 hover:bg-white/20 text-white" [disabled]="busy" (click)="copySelected(false)">
+            <app-icon [icon]="'drive_file_move'" /> Copiar a mi banco
+          </button>
+          <button type="button" class="eh-btn !h-9 bg-white text-slate-900 hover:bg-slate-100" [disabled]="busy" (click)="copySelected(true)">
+            <app-icon [icon]="'assignment'" /> Armar examen
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ======================== SIMULACRO AUTOMÁTICO ======================== -->
+  @if (tab === "auto") {
+    <section class="grid lg:grid-cols-[1fr_1fr] gap-6 items-start">
+      <div class="eh-section space-y-5">
+        <div>
+          <div class="eh-step"><span>1</span> ¿Cuántas preguntas?</div>
+          <div class="flex flex-wrap items-center gap-2">
+            @for (n of [20, 40, 80, 120]; track n) {
+              <button type="button" class="eh-chip" [class.is-active]="autoTotal === n" (click)="autoTotal = n; autoResult = null">{{ n }}</button>
+            }
+            <input class="eh-input !w-24" type="number" min="5" max="250" [(ngModel)]="autoTotal" (ngModelChange)="autoResult = null" aria-label="Número de preguntas" />
+          </div>
+        </div>
+        <div>
+          <div class="eh-step"><span>2</span> Pruebas</div>
+          <div class="flex flex-wrap gap-2">
+            @for (t of tests; track t.id) {
+              <button type="button" class="eh-chip" [class.is-active]="autoTests.has(t.id)" (click)="toggleAutoTest(t.id)">{{ t.label }}</button>
+            }
+          </div>
+          @if (autoTests.size) {
+            <p class="text-xs text-slate-500 mt-2">
+              Reparto con las proporciones del Saber 11:
+              @for (t of tests; track t.id) {
+                @if (autoCounts[t.id]) { {{ t.shortLabel }} {{ autoCounts[t.id] }} · }
+              }
+            </p>
+          }
+        </div>
+        <div>
+          <div class="eh-step"><span>3</span> Dificultad</div>
+          <div class="eh-segmented">
+            @for (d of [{ v: 0, l: "Mezcla" }, { v: 1, l: "Fácil" }, { v: 2, l: "Media" }, { v: 3, l: "Difícil" }]; track d.v) {
+              <button type="button" [class.is-active]="autoDifficulty === d.v" (click)="autoDifficulty = d.v; autoResult = null">{{ d.l }}</button>
+            }
+          </div>
+        </div>
+        <button type="button" class="eh-btn eh-btn--primary w-full" [disabled]="busy || !autoTests.size" (click)="buildAuto()">
+          @if (busy) { <span class="loading loading-spinner loading-xs"></span> } @else { <app-icon [icon]="'auto_awesome'" /> }
+          Armar simulacro
+        </button>
+      </div>
+
+      <div class="eh-section">
+        @if (!autoResult) {
+          <div class="text-center py-10 text-slate-500">
+            <app-icon class="!text-4xl text-slate-300" [icon]="'fact_check'" />
+            <p class="mt-2 text-sm">Elige el tamaño y las pruebas. ExamHub arma el simulacro con preguntas del banco, equilibrando competencias y sin partir lecturas.</p>
+          </div>
+        } @else {
+          <h2 class="text-lg font-semibold text-slate-900">Tu simulacro: {{ autoQuestions }} preguntas</h2>
+          <ul class="mt-3 divide-y divide-slate-100">
+            @for (t of tests; track t.id) {
+              @if (autoResult.counts[t.id]) {
+                <li class="flex items-center gap-3 py-2 text-sm">
+                  <span class="eh-test" [ngClass]="'eh-test--' + t.id">{{ t.shortLabel }}</span>
+                  <span class="flex-1 text-slate-700">{{ t.label }}</span>
+                  <span class="font-semibold" [class.text-red-600]="autoResult.short.includes(t.id)">{{ autoResult.got[t.id] || 0 }} / {{ autoResult.counts[t.id] }}</span>
+                </li>
+              }
+            }
+          </ul>
+          @if (autoResult.short.length) {
+            <p class="eh-note eh-note--amber mt-3">El banco todavía no tiene suficientes preguntas para algunas pruebas; se usó todo lo disponible.</p>
+          }
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button type="button" class="eh-btn eh-btn--ghost" [disabled]="busy" (click)="buildAuto()"><app-icon [icon]="'refresh'" /> Otra combinación</button>
+            <button type="button" class="eh-btn eh-btn--primary flex-1" [disabled]="busy || !autoQuestions" (click)="useAuto()">
+              <app-icon [icon]="'assignment'" /> Copiar y armar examen
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">Las preguntas se copian a una carpeta nueva de tu banco y quedan en el examen en curso: desde ahí generas el PDF con varias formas.</p>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ============================ MIS APORTES ============================ -->
+  @if (tab === "mine") {
+    <section class="space-y-4">
+      <div class="eh-note eh-note--brand">
+        <strong>¿Cómo aportar?</strong> En tu banco, agrega preguntas al examen en curso y en el panel del examen usa
+        <strong>"Compartir con el Banco ExamHub"</strong>. Deben tener prueba y competencia del Saber 11 y una sola respuesta correcta.
+        El equipo de ExamHub las revisa antes de publicarlas.
+      </div>
+      @if (mine.length === 0) {
+        <div class="eh-section text-center py-10 text-slate-500 text-sm">Aún no has compartido preguntas.</div>
+      } @else {
+        <ul class="space-y-2">
+          @for (u of mine; track u.id) {
+            <li class="eh-section !py-3 flex flex-wrap items-center gap-3">
+              <span class="eh-test" [ngClass]="'eh-test--' + u.test">{{ getTest(u.test)?.shortLabel }}</span>
+              <p class="flex-1 min-w-0 text-sm text-slate-800 truncate">{{ u.title || u.questions[0].text }}</p>
+              <span
+                class="eh-tag"
+                [ngClass]="u.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : u.status === 'pending' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-red-50 text-red-700 border-red-200'"
+              >{{ statusLabel(u.status) }}</span>
+              @if (u.status === "rejected" && u.rejectReason) {
+                <p class="w-full text-xs text-red-700">{{ u.rejectReason }}</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ============================ REVISIÓN ============================ -->
+  @if (tab === "review" && isAdmin) {
+    <section class="space-y-6">
+      <div class="eh-section space-y-3">
+        <h2 class="text-lg font-semibold text-slate-900">Publicar preguntas del equipo ExamHub</h2>
+        <p class="text-sm text-slate-500">
+          Pega un banco en JSON (el formato de "Crear banco con IA") o texto de Word. Solo se publican las preguntas con prueba,
+          competencia y una respuesta correcta; las carpetas quedan como tema.
+        </p>
+        <textarea class="eh-input font-mono text-xs min-h-[180px]" [(ngModel)]="publishText" placeholder='{ "folders": [ … ] }'></textarea>
+        <div class="flex justify-end">
+          <button type="button" class="eh-btn eh-btn--primary" [disabled]="busy || !publishText.trim()" (click)="publishFromText()">
+            <app-icon [icon]="'publish'" /> Publicar en el Banco ExamHub
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900 mb-3">Aportes por revisar ({{ pending.length }})</h2>
+        @if (pending.length === 0) {
+          <div class="eh-section text-center py-8 text-slate-500 text-sm">No hay aportes pendientes.</div>
+        }
+        <ul class="space-y-3">
+          @for (u of pending; track u.id) {
+            <li class="eh-section space-y-3">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="eh-test" [ngClass]="'eh-test--' + u.test">{{ getTest(u.test)?.shortLabel }}</span>
+                @for (c of u.competencies; track c) {
+                  <span class="eh-tag">{{ compLabel(u.test, c) }}</span>
+                }
+                <span class="text-xs text-slate-500 ml-auto">{{ u.contributedBy?.name }}{{ u.contributedBy?.orgName ? " · " + u.contributedBy?.orgName : "" }}</span>
+              </div>
+              @if (u.kind === "passage") {
+                <p class="text-sm text-slate-600 whitespace-pre-line line-clamp-4">{{ u.text }}</p>
+              }
+              @for (q of u.questions; track $index) {
+                <div class="rounded-lg bg-slate-50 p-3">
+                  <p class="text-sm text-slate-800 whitespace-pre-line">{{ q.text }}</p>
+                  <ul class="mt-2 grid sm:grid-cols-2 gap-1 text-sm">
+                    @for (o of q.options; track $index) {
+                      <li [ngClass]="o.correct ? 'text-emerald-700 font-semibold' : 'text-slate-600'">{{ letters[$index] }}) {{ o.text }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+              <div class="flex justify-end gap-2">
+                <button type="button" class="eh-btn eh-btn--ghost" (click)="review(u, false)">Rechazar</button>
+                <button type="button" class="eh-btn eh-btn--primary" (click)="review(u, true)"><app-icon [icon]="'check'" /> Aprobar y publicar</button>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+</main>

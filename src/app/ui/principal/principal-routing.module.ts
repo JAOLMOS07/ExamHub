@@ -48,6 +48,12 @@ const routes: Routes = [
         ...canActivate(() => redirectUnauthorizedTo(["/login"])),
       },
       {
+        path: "catalog",
+        loadComponent: () =>
+          import("../catalog/catalog.component").then((m) => m.CatalogComponent),
+        ...canActivate(() => redirectUnauthorizedTo(["/login"])),
+      },
+      {
         path: "students",
         loadComponent: () =>
           import("../students/students.component").then(

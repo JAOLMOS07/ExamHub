@@ -9,6 +9,7 @@ import { CommonModule } from "@angular/common";
 import { CreateQuestionDialogComponent } from "../../exam/create-question-dialog/create-question.component";
 import { CreatePassageDialogComponent } from "./components/create-passage/create-passage.component";
 import { ImportBankDialogComponent } from "./components/import-bank/import-bank-dialog.component";
+import { CatalogService } from "../../../core/services/catalog.service";
 import { QuestionService } from "../../../core/services/questionService.service";
 import { PrincipalModule } from "../principal.module";
 import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/generate-exam-dialog.component";
@@ -210,6 +211,42 @@ export class HomeComponent implements OnDestroy {
   aiEnabled = false;
 
   /** Preguntas (sin lecturas) del examen en curso. */
+  sharing = false;
+
+  /** Propone las preguntas del examen en curso al Banco ExamHub. */
+  async shareWithCatalog(): Promise<void> {
+    if (this.sharing) return;
+    const ok = await this.confirm.ask({
+      title: "¿Compartir con el Banco ExamHub?",
+      message:
+        "Las preguntas con prueba y competencia del Saber 11 se envían a revisión. Si se aprueban, cualquier colegio podrá usarlas, con tu nombre como autor.",
+      confirmText: "Compartir",
+    });
+    if (!ok) return;
+    this.sharing = true;
+    try {
+      const r = await this.catalog.contribute(this.questionsSelected);
+      if (r.sent === 0) {
+        this.toast.warning(
+          "Ninguna pregunta cumple los requisitos: deben tener prueba y competencia del Saber 11, opciones y una sola respuesta correcta.",
+          "ExamHub",
+          6000
+        );
+      } else {
+        this.toast.success(
+          `¡Gracias! ${r.sent} pregunta(s) enviadas a revisión.` + (r.skipped.length ? ` ${r.skipped.length} no cumplían los requisitos.` : ""),
+          "ExamHub",
+          5000
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      this.toast.danger("No se pudieron compartir las preguntas.", "ExamHub", 4000);
+    } finally {
+      this.sharing = false;
+    }
+  }
+
   get selectedQuestionCount(): number {
     return this.questionsSelected.filter((d) => d.type === objectType.QUESTION).length;
   }
@@ -287,7 +324,8 @@ export class HomeComponent implements OnDestroy {
     private confirm: ConfirmService,
     private tenant: TenantService,
     private migration: MigrationService,
-    private ai: AiService
+    private ai: AiService,
+    private catalog: CatalogService
   ) {
     this.aiEnabled = this.ai.enabled;
     this.questionService.getQuestions().subscribe((questions) => {

@@ -698,6 +698,20 @@
       <div class="flex-1 overflow-y-auto p-4">
         <question-list />
       </div>
+      <div class="px-4 pb-1">
+        <button
+          type="button"
+          class="w-full flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2 text-left text-sm text-brand-800 hover:bg-brand-50 disabled:opacity-50"
+          [disabled]="questionsSelected.length < 1 || sharing"
+          (click)="shareWithCatalog()"
+        >
+          <app-icon [icon]="'volunteer_activism'" />
+          <span class="flex-1">
+            <strong class="block">Compartir con el Banco ExamHub</strong>
+            <span class="text-xs text-slate-500">Otros colegios podrán usarlas después de nuestra revisión</span>
+          </span>
+        </button>
+      </div>
       <footer class="p-4 bg-white border-t border-slate-200 flex gap-2">
         <button
           type="button"

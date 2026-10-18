@@ -44,6 +44,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly PLAN_LABEL = PLAN_LABEL;
   readonly nav: NavItem[] = [
     { label: "Banco de preguntas", icon: "folder_open", link: "/home" },
+    { label: "Banco ExamHub", icon: "local_library", link: "/catalog" },
     { label: "Evaluaciones", icon: "fact_check", link: "/grade" },
     { label: "Estudiantes", icon: "groups", link: "/students" },
     { label: "Institución", icon: "apartment", link: "/org" },

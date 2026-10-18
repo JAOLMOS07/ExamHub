@@ -400,3 +400,30 @@ Para probar el service worker: `npm run build`, servir
   que ya son oscuros (bandeja del examen).
 - Para estilos nuevos usar `rgb(var(--c-<paleta>-<tono>))` en vez de
   hex; `node scripts/css-hex-to-vars.js <archivo>` convierte un CSS.
+
+## 14. Banco ExamHub (catálogo compartido)
+
+Preguntas tipo Saber 11 listas para todas las instituciones (`/catalog`).
+
+- **Modelo:** `/catalog/{unitId}`. Cada unidad es una pregunta suelta o una
+  lectura con sus preguntas (nunca se parte). Campos: prueba, competencias,
+  dificultad, tema, `status` (published | pending | rejected), `source`
+  (examhub | docente) y `contributedBy`. Lógica pura en `core/domain/catalog.ts`.
+- **Permisos** (`firestore.rules`): todos leen lo publicado; cualquier docente
+  propone (queda pendiente); solo los administradores de la plataforma
+  (`/platformAdmins/{uid}`, creados a mano en la consola) publican, aprueban,
+  rechazan y retiran.
+- **Usar:** Explorar (filtros por prueba, competencia, dificultad, tipo y texto)
+  → copiar a una carpeta del banco o "Armar examen" (copia y deja las preguntas
+  en el examen en curso). **Simulacro automático:** reparte N preguntas con las
+  proporciones del Saber 11, equilibra competencias y no parte lecturas.
+- **Aportar:** desde el panel del examen en curso, "Compartir con el Banco
+  ExamHub". Requisitos: prueba y competencia, selección múltiple, mínimo 3
+  opciones y una sola correcta.
+- **Publicar contenido propio:** pestaña Revisión › pegar JSON o texto de Word.
+  Semillas en `docs/catalogo/semilla-01.json` (50) y
+  `docs/demo/banco-saber11-29.json` (29). Las preguntas deben ser originales
+  "tipo ICFES" (no copiar cuadernillos liberados del ICFES).
+- **Lecturas:** se cargan por prueba para no leer todo el catálogo en cada visita.
+- **Siguiente paso:** calibración con datos reales (porcentaje de acierto y
+  discriminación de cada pregunta agregados entre colegios), con Cloud Functions.

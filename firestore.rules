@@ -249,6 +249,43 @@ service cloud.firestore {
       }
     }
 
+    // ========================================================================
+    //  Banco ExamHub: catálogo global de preguntas tipo Saber 11
+    //  Todos leen lo publicado; los docentes proponen (pendiente); solo los
+    //  administradores de la plataforma (/platformAdmins/{uid}, creados a
+    //  mano en la consola) publican, aprueban, rechazan y borran.
+    // ========================================================================
+    function isPlatformAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+    }
+
+    match /platformAdmins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /catalog/{unitId} {
+      allow read: if signedIn() && (
+        resource.data.status == 'published'
+        || resource.data.contributedBy.uid == request.auth.uid
+        || isPlatformAdmin()
+      );
+
+      allow create: if signedIn()
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() >= 1
+        && request.resource.data.questions.size() <= 20
+        && request.resource.data.test is string
+        && (
+          isPlatformAdmin()
+          || (request.resource.data.status == 'pending'
+              && request.resource.data.source == 'docente'
+              && request.resource.data.contributedBy.uid == request.auth.uid)
+        );
+
+      allow update, delete: if isPlatformAdmin();
+    }
+
     // Invitaciones pendientes del usuario (consulta collectionGroup).
     // Mis membresías en cualquier organización (consulta collectionGroup
     // con la que la app reconstruye su lista de organizaciones).
