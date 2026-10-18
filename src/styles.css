@@ -11,8 +11,8 @@
    componentes que no usan clases Tailwind las puedan referenciar.
    ------------------------------------------------------------------ */
 :root {
-  --brand-primary: rgb(var(--c-brand-700));
-  --brand-primary-hover: rgb(var(--c-brand-800));
+  --brand-primary: rgb(var(--c-brand-btn));
+  --brand-primary-hover: rgb(var(--c-brand-btn-hover));
   --brand-secondary: rgb(var(--c-accent-600));
   --brand-accent: rgb(var(--c-emerald-500));
   --brand-surface: rgb(var(--c-surface));
@@ -381,8 +381,8 @@ router-outlet + * {
   border-color: rgb(var(--c-slate-400));
 }
 .eh-chip.is-active {
-  background: rgb(var(--c-brand-700));
-  border-color: rgb(var(--c-brand-700));
+  background: rgb(var(--c-brand-btn));
+  border-color: rgb(var(--c-brand-btn));
   color: #fff;
 }
 
@@ -442,12 +442,12 @@ router-outlet + * {
   cursor: not-allowed;
 }
 .eh-btn--primary {
-  background: rgb(var(--c-brand-700));
+  background: rgb(var(--c-brand-btn));
   color: #fff;
   box-shadow: 0 1px 2px rgba(67, 56, 202, 0.25);
 }
 .eh-btn--primary:hover:not(:disabled) {
-  background: rgb(var(--c-brand-800));
+  background: rgb(var(--c-brand-btn-hover));
 }
 .eh-btn--secondary {
   background: rgb(var(--c-surface));
@@ -623,7 +623,7 @@ router-outlet + * {
   height: 3.25rem;
   margin-top: -1.6rem;
   border-radius: 9999px;
-  background: rgb(var(--c-brand-700));
+  background: rgb(var(--c-brand-btn));
   color: #fff;
   box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35), 0 0 0 4px rgb(var(--c-surface));
 }
@@ -789,4 +789,19 @@ h2,
 .mat-typography p,
 .mat-mdc-dialog-container .mat-mdc-dialog-content {
   font-family: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Modo oscuro: los fondos de marca de Tailwind usan el tono de botón
+   (texto blanco legible) en vez de la escala aclarada para textos. */
+html.dark .bg-brand-600,
+html.dark .bg-brand-700,
+html.dark .bg-brand-800 {
+  background-color: rgb(var(--c-brand-btn) / var(--tw-bg-opacity, 1));
+}
+html.dark .hover\:bg-brand-700:hover,
+html.dark .hover\:bg-brand-800:hover {
+  background-color: rgb(var(--c-brand-btn-hover) / var(--tw-bg-opacity, 1));
+}
+html.dark .eh-tab-scan-btn {
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.45), 0 0 0 4px rgb(var(--c-surface));
 }

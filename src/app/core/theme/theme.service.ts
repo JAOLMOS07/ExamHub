@@ -72,6 +72,9 @@ export class ThemeService {
     const scale = this.scaleFor(prefs);
     const vars: Record<string, string> = {};
     for (const s of SHADES) vars[`--c-brand-${s}`] = scale[dark ? DARK_BRAND[s] : s];
+    const btn = dark ? darkButton(scale) : { btn: scale[700], hover: scale[800] };
+    vars["--c-brand-btn"] = btn.btn;
+    vars["--c-brand-btn-hover"] = btn.hover;
 
     const root = document.documentElement;
     root.classList.toggle("dark", dark);
@@ -96,6 +99,26 @@ export class ThemeService {
       return DEFAULT;
     }
   }
+}
+
+/** Contraste del blanco sobre un color "r g b" (WCAG). */
+function contrastWithWhite(rgb: string): number {
+  const l = rgb
+    .split(" ")
+    .map((v) => Number(v) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 1.05 / (0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] + 0.05);
+}
+
+/**
+ * Fondo de botón en modo oscuro: el tono más claro de la escala que deja
+ * el texto blanco con contraste ≥ 4,5 (vale también para colores propios).
+ */
+export function darkButton(scale: Scale): { btn: string; hover: string } {
+  for (const s of [500, 600, 700, 800]) {
+    if (contrastWithWhite(scale[s]) >= 4.5) return { btn: scale[s], hover: scale[Math.max(400, s - 100)] };
+  }
+  return { btn: scale[800], hover: scale[700] };
 }
 
 /**
