@@ -18,7 +18,6 @@ import { createRng, randomSeed } from "../../core/domain/rng";
 import { SABER11_TESTS, getCompetency, getTest } from "../../core/domain/taxonomy/saber11";
 import { MODULES } from "../routes.constants";
 import { TipComponent, TourButtonComponent } from "../shared/help/help.components";
-import { HelpService } from "../../core/services/help.service";
 
 type Tab = "explore" | "auto" | "mine" | "review";
 
@@ -75,12 +74,10 @@ export class CatalogComponent implements OnInit, OnDestroy {
     private catalog: CatalogService,
     private toast: ToastService,
     private confirm: ConfirmService,
-    private router: Router,
-    private help: HelpService
+    private router: Router
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.help.autoStart("catalog", 1500);
     this.loadTest(this.test);
     this.subs.push(this.catalog.myContributions$().subscribe((m) => (this.mine = m)));
     this.isAdmin = await this.catalog.isPlatformAdmin();

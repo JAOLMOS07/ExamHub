@@ -915,3 +915,10 @@ html.dark .eh-tab-scan-btn {
 .eh-tip app-icon {
   font-size: 17px;
 }
+
+.driver-overlay {
+  z-index: 2147483000 !important;
+}
+.driver-popover {
+  z-index: 2147483600 !important;
+}

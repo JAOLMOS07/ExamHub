@@ -1,5 +1,8 @@
 import { Injectable } from "@angular/core";
-import { DriveStep, driver } from "driver.js";
+import { NavigationStart, Router } from "@angular/router";
+import { Subject } from "rxjs";
+import { filter } from "rxjs/operators";
+import { DriveStep, Driver, driver } from "driver.js";
 import { DriverHint, Hints, hints } from "driver.js/hints";
 
 /**
@@ -71,6 +74,39 @@ const TOUR_VERSION = 1;
 @Injectable({ providedIn: "root" })
 export class HelpService {
   private hintsApi: Hints | null = null;
+  /** Driver.js comparte una sola ventana: nunca dos recorridos a la vez. */
+  private active: Driver | null = null;
+  private pending: ReturnType<typeof setTimeout>[] = [];
+  /** Avisa al menú para que cierre lo que tenga abierto. */
+  readonly starting$ = new Subject<void>();
+
+  constructor(router: Router) {
+    // Al cambiar de pantalla: se cancela lo programado y se cierra lo abierto.
+    router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => {
+      this.cancelPending();
+      this.stopActive();
+      this.hideNews();
+    });
+  }
+
+  private later(fn: () => void, ms: number): void {
+    this.pending.push(setTimeout(fn, ms));
+  }
+
+  private cancelPending(): void {
+    this.pending.forEach(clearTimeout);
+    this.pending = [];
+  }
+
+  private stopActive(): void {
+    const d = this.active;
+    this.active = null;
+    if (d?.isActive()) d.destroy();
+  }
+
+  get isRunning(): boolean {
+    return !!this.active?.isActive();
+  }
 
   /** Primer elemento visible con esa clave. */
   private find(key: string): HTMLElement | null {
@@ -100,7 +136,10 @@ export class HelpService {
 
   /** Recorrido de una pantalla. */
   start(id: TourId): void {
+    this.cancelPending();
+    this.stopActive();
     this.hideNews();
+    this.starting$.next();
     const steps: DriveStep[] = [];
     for (const s of TOURS[id]) {
       const el = s.at ? this.find(s.at) : undefined;
@@ -123,27 +162,38 @@ export class HelpService {
       overlayOpacity: 0.55,
       stagePadding: 6,
       stageRadius: 12,
-      smoothScroll: true,
+      // Sin animación de desplazamiento: la ventana se ubica con la
+      // posición final del elemento.
+      smoothScroll: false,
       allowKeyboardControl: true,
       onDestroyed: () => {
+        if (this.active === tour) this.active = null;
         this.markSeen(id);
-        if (id === "welcome") setTimeout(() => this.showNews(), 600);
+        if (id === "welcome") this.later(() => this.showNews(), 600);
       },
     });
+    this.active = tour;
     tour.drive();
   }
 
-  /** La primera vez en una pantalla, su recorrido sale solo. */
+  /**
+   * La primera vez, el recorrido sale solo (si no hay otro abierto y
+   * la persona no cambió de pantalla mientras tanto).
+   */
   autoStart(id: TourId, delayMs = 900): void {
     if (this.hasSeen(id)) {
-      if (id === "welcome") setTimeout(() => this.showNews(), delayMs);
+      if (id === "welcome") this.later(() => this.showNews(), delayMs);
       return;
     }
-    setTimeout(() => this.start(id), delayMs);
+    this.later(() => {
+      if (!this.isRunning) this.start(id);
+    }, delayMs);
   }
 
   /** Tip puntual junto a un elemento. */
   tip(element: HTMLElement, title: string, text: string): void {
+    this.cancelPending();
+    this.stopActive();
     const d = driver({
       popoverClass: "eh-tour eh-tour--tip",
       overlayOpacity: 0.25,
@@ -151,12 +201,18 @@ export class HelpService {
       stageRadius: 10,
       showButtons: ["close"],
       allowKeyboardControl: true,
+      smoothScroll: false,
+      onDestroyed: () => {
+        if (this.active === d) this.active = null;
+      },
     });
+    this.active = d;
     d.highlight({ element, popover: { title, description: text, side: "bottom", align: "start" } });
   }
 
   /** Puntos de novedad que el usuario aún no descartó. */
   showNews(): void {
+    if (this.isRunning) return;
     const pending: DriverHint[] = NEWS.filter((n) => !this.hasSeen(n.id))
       .map((n) => ({ n, el: this.find(n.at) }))
       .filter(({ el }) => !!el)

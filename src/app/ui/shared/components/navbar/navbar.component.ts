@@ -102,6 +102,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
           .sort((a, b) => a.ref.name.localeCompare(b.ref.name));
       }),
       this.tenant.pendingInvites$.subscribe((inv) => (this.pendingInvites = inv.length)),
+      this.help.starting$.subscribe(() => this.closeMenus()),
       this.connectivity.online$.subscribe((online) => (this.online = online)),
       this.connectivity.pending$.subscribe((n) => {
         if (n === 0 && this.pendingUploads > 0 && this.online) {
