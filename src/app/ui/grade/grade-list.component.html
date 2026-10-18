@@ -6,11 +6,12 @@
       <h1>Evaluaciones</h1>
       <p>Simulacros y exámenes de la institución. Califica las hojas con el celular y consulta los resultados por prueba y competencia.</p>
     </div>
-    <div class="flex gap-2">
-      <a routerLink="/home" class="eh-btn eh-btn--secondary">
+    <div class="flex gap-2 items-center">
+      <eh-tour-button tour="grades" />
+      <a routerLink="/home" class="eh-btn eh-btn--secondary" data-tour="grade-new">
         <app-icon [icon]="'add'" /> Nuevo examen
       </a>
-      <a [routerLink]="scanRoute" class="eh-btn eh-btn--primary">
+      <a [routerLink]="scanRoute" class="eh-btn eh-btn--primary" data-tour="grade-scan">
         <app-icon [icon]="'qr_code_scanner'" /> Escanear hoja
       </a>
     </div>
@@ -30,7 +31,7 @@
         </div>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-tour="grade-list">
         @for (exam of filter(exams); track exam.id) {
           <article
             class="eh-card p-4 cursor-pointer flex flex-col gap-3"

@@ -10,6 +10,7 @@ import { ConnectivityService } from "../../../../core/services/connectivity.serv
 import { ToastService } from "../../../../core/services/toast.service";
 import { MODULES } from "../../../routes.constants";
 import { ThemeService } from "../../../../core/theme/theme.service";
+import { HelpService } from "../../../../core/services/help.service";
 import {
   Organization,
   OrgRef,
@@ -22,6 +23,8 @@ interface NavItem {
   label: string;
   icon: string;
   link: string;
+  /** Ancla para los recorridos de ayuda (data-tour). */
+  tour: string;
   exact?: boolean;
 }
 
@@ -43,11 +46,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly ROLE_LABEL = ROLE_LABEL;
   readonly PLAN_LABEL = PLAN_LABEL;
   readonly nav: NavItem[] = [
-    { label: "Banco de preguntas", icon: "folder_open", link: "/home" },
-    { label: "Banco ExamHub", icon: "local_library", link: "/catalog" },
-    { label: "Evaluaciones", icon: "fact_check", link: "/grade" },
-    { label: "Estudiantes", icon: "groups", link: "/students" },
-    { label: "Institución", icon: "apartment", link: "/org" },
+    { label: "Banco de preguntas", icon: "folder_open", link: "/home", tour: "nav-home" },
+    { label: "Banco ExamHub", icon: "local_library", link: "/catalog", tour: "nav-catalog" },
+    { label: "Evaluaciones", icon: "fact_check", link: "/grade", tour: "nav-grade" },
+    { label: "Estudiantes", icon: "groups", link: "/students", tour: "nav-students" },
+    { label: "Institución", icon: "apartment", link: "/org", tour: "nav-org" },
   ];
 
   user: User | null = null;
@@ -77,8 +80,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
     public pwa: PwaService,
     private connectivity: ConnectivityService,
     private toast: ToastService,
-    public theme: ThemeService
+    public theme: ThemeService,
+    private help: HelpService
   ) {}
+
+  startWelcomeTour(): void {
+    this.closeMenus();
+    setTimeout(() => this.help.start("welcome"), 250);
+  }
 
   ngOnInit(): void {
     document.body.classList.add("eh-has-sidebar");

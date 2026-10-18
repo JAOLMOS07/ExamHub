@@ -18,6 +18,7 @@ import { ALPHABET } from "../../../core/utils/alphabet.const";
 import { MODULES } from "../../routes.constants";
 import { testBarColor } from "../../shared/test-colors";
 import { SharedModule } from "../../shared/shared.module";
+import { TourButtonComponent } from "../../shared/help/help.components";
 import { exportInstitutionalReport, exportResultsPdf, exportStudentReports } from "./results-pdf.util";
 import { buildXlsx, downloadBlob, Sheet } from "../../../core/utils/xlsx.util";
 import { RosterEntry, pendingFromRoster } from "../../../core/domain/roster";
@@ -41,7 +42,7 @@ const FLAG_LABEL: Record<string, string> = {
 @Component({
   selector: "app-exam-detail",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SharedModule],
+  imports: [CommonModule, FormsModule, RouterModule, SharedModule, TourButtonComponent],
   templateUrl: "./exam-detail.component.html",
 })
 export class ExamDetailComponent implements OnInit, OnDestroy {

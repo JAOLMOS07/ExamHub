@@ -1,3 +1,4 @@
+import { TourButtonComponent } from "../shared/help/help.components";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Component, OnInit } from "@angular/core";
@@ -19,7 +20,7 @@ import { SharedModule } from "../shared/shared.module";
 @Component({
   selector: "app-grade-list",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SharedModule],
+  imports: [CommonModule, FormsModule, RouterModule, SharedModule, TourButtonComponent],
   templateUrl: "./grade-list.component.html",
 })
 export class GradeListComponent implements OnInit {

@@ -13,6 +13,7 @@ import { ToastService } from "../../../core/services/toast.service";
 import { decodeQrPayload, QrPayload } from "../../../core/utils/qrPayload.util";
 import { MODULES } from "../../routes.constants";
 import { SharedModule } from "../../shared/shared.module";
+import { TourButtonComponent } from "../../shared/help/help.components";
 import { TenantService } from "../../../core/services/tenant.service";
 import { Subscription, combineLatest, firstValueFrom } from "rxjs";
 import { GradingService } from "../../../core/services/grading.service";
@@ -38,7 +39,7 @@ import { Assessment } from "../../../core/models/assessment.model";
 @Component({
   selector: "app-scan",
   standalone: true,
-  imports: [CommonModule, RouterModule, SharedModule],
+  imports: [CommonModule, RouterModule, SharedModule, TourButtonComponent],
   templateUrl: "./scan.component.html",
 })
 export class ScanComponent implements OnInit, OnDestroy {

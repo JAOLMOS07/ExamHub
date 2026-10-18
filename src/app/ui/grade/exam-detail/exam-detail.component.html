@@ -25,11 +25,12 @@
           @if (exam.subject) { · {{ exam.subject }} }
         </p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button (click)="goToGrade()" class="eh-btn eh-btn--primary">
+      <div class="flex flex-wrap gap-2 items-center">
+        <eh-tour-button tour="exam" />
+        <button (click)="goToGrade()" class="eh-btn eh-btn--primary" data-tour="ed-grade">
           <app-icon [icon]="'photo_camera'" /> Calificar hojas
         </button>
-        <div class="dropdown dropdown-end">
+        <div class="dropdown dropdown-end" data-tour="ed-export">
           <div tabindex="0" role="button" class="eh-btn eh-btn--secondary cursor-pointer" [class.opacity-50]="isExporting">
             <app-icon [icon]="'download'" /> Exportar
           </div>
@@ -44,7 +45,7 @@
     </header>
 
     <!-- Filtro de grupo + métricas -->
-    <div class="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-3 mb-4" data-tour="ed-metrics">
       @if (groupsWithResults.length > 0) {
         <select class="eh-input md:w-56" [(ngModel)]="groupFilter">
           <option value="all">Todos los grupos</option>
@@ -66,7 +67,7 @@
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-slate-200 mb-4">
+    <div class="border-b border-slate-200 mb-4" data-tour="ed-tabs">
       <nav class="flex gap-1 overflow-x-auto">
         @for (t of [
           { id: 'results', label: 'Resultados' },

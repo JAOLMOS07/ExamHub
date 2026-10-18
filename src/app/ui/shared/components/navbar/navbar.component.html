@@ -93,6 +93,7 @@
         [routerLink]="item.link"
         routerLinkActive="eh-nav-active"
         class="eh-nav-link"
+        [attr.data-tour]="item.tour"
       >
         <app-icon [icon]="item.icon" />
         <span>{{ item.label }}</span>
@@ -101,7 +102,7 @@
   </nav>
 
   @if (pwa.showInstall) {
-    <div class="px-3 pb-2">
+    <div class="px-3 pb-2" data-tour="install-app">
       <button type="button" class="w-full flex items-center gap-3 rounded-xl border border-dashed border-brand-200 bg-brand-50/60 px-3 py-2.5 text-left hover:bg-brand-50 transition" (click)="installApp()">
         <app-icon class="text-brand-700" [icon]="'install_mobile'" />
         <span class="flex-1 min-w-0">
@@ -126,6 +127,9 @@
         <a routerLink="/preferences" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
           <app-icon [icon]="'tune'" /> Preferencias
         </a>
+        <button type="button" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50" (click)="startWelcomeTour()">
+          <app-icon [icon]="'tour'" /> Recorrido de bienvenida
+        </button>
         <button type="button" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50" (click)="openChangePassword()">
           <app-icon [icon]="'lock'" /> Cambiar contraseña
         </button>
@@ -136,6 +140,7 @@
     }
     <button
       type="button"
+      data-tour="user-menu"
       class="w-full flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-slate-50 transition text-left"
       (click)="userMenuOpen = !userMenuOpen; orgMenuOpen = false"
     >
@@ -153,16 +158,16 @@
 
 <!-- ============ Barra inferior (móvil) ============ -->
 <nav class="eh-tabbar lg:hidden" aria-label="Navegación principal">
-  <a routerLink="/home" routerLinkActive="is-active" class="eh-tab">
+  <a routerLink="/home" routerLinkActive="is-active" class="eh-tab" data-tour="nav-home">
     <app-icon [icon]="'folder_open'" /><span>Banco</span>
   </a>
-  <a routerLink="/grade" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="eh-tab">
+  <a routerLink="/grade" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="eh-tab" data-tour="nav-grade">
     <app-icon [icon]="'fact_check'" /><span>Evaluaciones</span>
   </a>
-  <a [routerLink]="scanLink" class="eh-tab eh-tab--scan" aria-label="Escanear hojas">
+  <a [routerLink]="scanLink" class="eh-tab eh-tab--scan" aria-label="Escanear hojas" data-tour="nav-scan">
     <span class="eh-tab-scan-btn"><app-icon [icon]="'qr_code_scanner'" /></span><span>Escanear</span>
   </a>
-  <a routerLink="/students" routerLinkActive="is-active" class="eh-tab">
+  <a routerLink="/students" routerLinkActive="is-active" class="eh-tab" data-tour="nav-students">
     <app-icon [icon]="'groups'" /><span>Estudiantes</span>
   </a>
   <button type="button" class="eh-tab" (click)="mobileOpen = true">

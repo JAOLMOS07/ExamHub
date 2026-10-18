@@ -6,11 +6,12 @@
       <h1>Escanear hojas</h1>
       <p>Apunta la cámara al QR de la hoja: ExamHub abre la evaluación, la forma y el estudiante automáticamente.</p>
     </div>
+    <eh-tour-button tour="scan" />
   </header>
 
   <!-- Estado: cámara apagada -->
   @if (status === "idle") {
-    <div class="eh-section text-center !py-8">
+    <div class="eh-section text-center !py-8" data-tour="scan-camera">
       <span class="mx-auto mb-3 w-14 h-14 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center">
         <app-icon class="!text-3xl" [icon]="'qr_code_scanner'" />
       </span>
@@ -46,7 +47,7 @@
   }
 
   <!-- Foto desde la galería -->
-  <label class="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer hover:bg-slate-50">
+  <label class="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer hover:bg-slate-50" data-tour="scan-photo">
     <app-icon class="text-slate-500" [icon]="'image'" />
     <span class="flex-1 text-sm text-slate-700">Leer el QR desde una foto</span>
     <app-icon class="text-slate-400" [icon]="'chevron_right'" />
@@ -56,7 +57,7 @@
   <!-- Sin conexión -->
   <section class="mt-6">
     @if (ready) {
-      <div class="rounded-xl border px-4 py-3 flex items-start gap-3"
+      <div data-tour="scan-offline" class="rounded-xl border px-4 py-3 flex items-start gap-3"
         [ngClass]="online ? 'border-emerald-200 bg-emerald-50/60' : 'border-amber-200 bg-amber-50'">
         <app-icon class="mt-0.5" [ngClass]="online ? 'text-emerald-600' : 'text-amber-600'" [icon]="online ? 'offline_pin' : 'cloud_off'" />
         <div class="text-sm">

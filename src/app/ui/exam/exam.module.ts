@@ -7,6 +7,7 @@ import { ExamComponent } from "./exam.component";
 import { ExamsRoutingModule } from "./exam-routing.module";
 import { PDFService } from "../../core/services/pdfService.service";
 import { GenerateExamDialogComponent } from "./generate-exam-dialog/generate-exam-dialog.component";
+import { TipComponent } from "../shared/help/help.components";
 import { CreateQuestionComponent } from "./create-question/create-question.component";
 import { QuestionsListSelectedComponent } from "./questions-list-selected/questions-list-selected.component";
 
@@ -17,7 +18,7 @@ import { QuestionsListSelectedComponent } from "./questions-list-selected/questi
     CreateQuestionComponent,
     QuestionsListSelectedComponent,
   ],
-  imports: [
+  imports: [TipComponent, 
     CommonModule,
     RouterModule,
     ExamsRoutingModule,

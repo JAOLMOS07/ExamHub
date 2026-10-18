@@ -10,6 +10,8 @@ import { CreateQuestionDialogComponent } from "../../exam/create-question-dialog
 import { CreatePassageDialogComponent } from "./components/create-passage/create-passage.component";
 import { ImportBankDialogComponent } from "./components/import-bank/import-bank-dialog.component";
 import { CatalogService } from "../../../core/services/catalog.service";
+import { HelpService } from "../../../core/services/help.service";
+import { TourButtonComponent } from "../../shared/help/help.components";
 import { QuestionService } from "../../../core/services/questionService.service";
 import { PrincipalModule } from "../principal.module";
 import { GenerateExamDialogComponent } from "../../exam/generate-exam-dialog/generate-exam-dialog.component";
@@ -29,6 +31,7 @@ import { AiGenerateDialogComponent } from "../../exam/ai-generate-dialog/ai-gene
   selector: "app-home",
   standalone: true,
   imports: [
+    TourButtonComponent,
     FormsModule,
     SharedModule,
     CommonModule,
@@ -325,8 +328,11 @@ export class HomeComponent implements OnDestroy {
     private tenant: TenantService,
     private migration: MigrationService,
     private ai: AiService,
-    private catalog: CatalogService
+    private catalog: CatalogService,
+    private help: HelpService
   ) {
+    // Primera visita: recorrido de bienvenida (luego, solo con el botón "?").
+    this.help.autoStart("welcome", 1200);
     this.aiEnabled = this.ai.enabled;
     this.questionService.getQuestions().subscribe((questions) => {
       this.questionsSelected = questions;

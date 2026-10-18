@@ -17,6 +17,8 @@ import { parseBankInput } from "../../core/domain/bankImport";
 import { createRng, randomSeed } from "../../core/domain/rng";
 import { SABER11_TESTS, getCompetency, getTest } from "../../core/domain/taxonomy/saber11";
 import { MODULES } from "../routes.constants";
+import { TipComponent, TourButtonComponent } from "../shared/help/help.components";
+import { HelpService } from "../../core/services/help.service";
 
 type Tab = "explore" | "auto" | "mine" | "review";
 
@@ -32,7 +34,7 @@ type Tab = "explore" | "auto" | "mine" | "review";
 @Component({
   selector: "app-catalog",
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SharedModule],
+  imports: [CommonModule, FormsModule, RouterModule, SharedModule, TourButtonComponent, TipComponent],
   templateUrl: "./catalog.component.html",
 })
 export class CatalogComponent implements OnInit, OnDestroy {
@@ -73,10 +75,12 @@ export class CatalogComponent implements OnInit, OnDestroy {
     private catalog: CatalogService,
     private toast: ToastService,
     private confirm: ConfirmService,
-    private router: Router
+    private router: Router,
+    private help: HelpService
   ) {}
 
   async ngOnInit(): Promise<void> {
+    this.help.autoStart("catalog", 1500);
     this.loadTest(this.test);
     this.subs.push(this.catalog.myContributions$().subscribe((m) => (this.mine = m)));
     this.isAdmin = await this.catalog.isPlatformAdmin();

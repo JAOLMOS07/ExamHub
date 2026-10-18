@@ -111,7 +111,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <label class="eh-field">
-            <span>Formas distintas</span>
+            <span class="flex items-center gap-1">Formas distintas <eh-tip title="¿Qué son las formas?">Cada forma tiene las mismas preguntas en otro orden y con las opciones barajadas. Reparte formas distintas a estudiantes que se sientan juntos para evitar la copia: ExamHub sabe la forma de cada hoja por su QR.</eh-tip></span>
             <input class="eh-input" type="number" min="1" max="30" [(ngModel)]="amount" [ngModelOptions]="{ standalone: true }" />
             <small>A, B, C… barajadas.</small>
           </label>
@@ -147,7 +147,7 @@
 
     <!-- ===================== 3. Aplicación ===================== -->
     <section>
-      <div class="eh-step"><span>3</span> Aplicación y calificación</div>
+      <div class="eh-step"><span>3</span> Aplicación y calificación <eh-tip title="¿Cómo se identifica al estudiante?">Personalizada (recomendada): cada hoja sale impresa con el nombre del estudiante y un QR, y nadie se equivoca. Genérica: hojas en blanco; eliges al estudiante al calificar. Con código: el estudiante rellena su código en burbujas.</eh-tip></div>
 
       <div class="eh-field mb-4">
         <span>Grupos que presentan el examen</span>
