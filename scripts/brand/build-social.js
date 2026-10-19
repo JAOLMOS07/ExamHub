@@ -514,4 +514,6 @@ function build() {
   console.log("Piezas de redes generadas en docs/marketing/redes/");
 }
 
-build();
+module.exports = { OUT, TEST, W, H, SW, SH, wrap, P, pill, label, logoAt, footer, swipe, icon, slide, stickerBox, stickerless, out };
+
+if (require.main === module) build();
