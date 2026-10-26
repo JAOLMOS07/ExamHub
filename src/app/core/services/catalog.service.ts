@@ -45,6 +45,8 @@ export class CatalogService {
   }
 
   async isPlatformAdmin(): Promise<boolean> {
+    // Al recargar la página la sesión aún no está restaurada: esperarla.
+    await this.auth.authStateReady();
     const uid = this.auth.currentUser?.uid;
     if (!uid) return false;
     try {
