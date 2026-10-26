@@ -232,9 +232,15 @@
             explorar los reportes o hacer una demostración. Todo queda marcado como ejemplo.
           </p>
         </div>
-        <div class="flex gap-2 shrink-0">
+        <div class="flex flex-wrap gap-2 shrink-0">
+          @if (isPlatformAdmin) {
+            <button class="eh-btn eh-btn--ghost" [disabled]="demoBusy" (click)="loadDemo('showcase')">
+              <app-icon [icon]="'storefront'" />
+              Demo de ventas
+            </button>
+          }
           <button class="eh-btn eh-btn--ghost" [disabled]="demoBusy" (click)="clearDemo()">Borrar</button>
-          <button class="eh-btn eh-btn--primary" [disabled]="demoBusy" (click)="loadDemo()">
+          <button class="eh-btn eh-btn--primary" [disabled]="demoBusy" (click)="loadDemo('example')">
             @if (demoBusy) {
               <span class="loading loading-spinner loading-xs"></span>
             } @else {

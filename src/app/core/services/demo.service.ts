@@ -35,6 +35,50 @@ import { ALPHABET } from "../utils/alphabet.const";
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
+ * "example": todo marcado como ejemplo, se borra con un clic.
+ * "showcase": colegio de presentación para ventas y videos, sin marcas
+ * (solo administradores de la plataforma, en una cuenta dedicada).
+ */
+export type DemoMode = "example" | "showcase";
+
+interface DemoSim {
+  title: string;
+  shift: number;
+  daysAgo: number;
+  seed: number;
+  /** Índices de los grupos que lo presentan. */
+  groups: number[];
+  grade: string;
+  type?: "quiz" | "simulacro";
+  /** Solo preguntas de esta prueba (quices). */
+  test?: string;
+}
+
+const PLAN: Record<DemoMode, { folder: string; groups: string[]; perGroup: number; sims: DemoSim[] }> = {
+  example: {
+    folder: DEMO_FOLDER,
+    groups: [`11-A ${DEMO_TAG}`, `11-B ${DEMO_TAG}`],
+    perGroup: 15,
+    sims: [
+      { title: `${DEMO_ASSESSMENT_PREFIX} Simulacro diagnóstico`, shift: -0.35, daysAgo: 42, seed: 11, groups: [0, 1], grade: "11" },
+      { title: `${DEMO_ASSESSMENT_PREFIX} Simulacro 2`, shift: 0, daysAgo: 7, seed: 29, groups: [0, 1], grade: "11" },
+    ],
+  },
+  showcase: {
+    folder: "Banco Saber 11",
+    groups: ["11-A", "11-B", "10-A"],
+    perGroup: 20,
+    sims: [
+      { title: "Simulacro diagnóstico", shift: -0.35, daysAgo: 70, seed: 11, groups: [0, 1], grade: "11" },
+      { title: "Simulacro 2", shift: 0, daysAgo: 35, seed: 29, groups: [0, 1], grade: "11" },
+      { title: "Simulacro 3", shift: 0.3, daysAgo: 6, seed: 47, groups: [0, 1], grade: "11" },
+      { title: "Simulacro diagnóstico grado 10", shift: -0.5, daysAgo: 14, seed: 61, groups: [2], grade: "10" },
+      { title: "Quiz de Matemáticas", shift: -0.1, daysAgo: 3, seed: 73, groups: [2], grade: "10", type: "quiz", test: "matematicas" },
+    ],
+  },
+};
+
+/**
  * Carga (y borra) un colegio de ejemplo para demos: banco Saber 11,
  * dos grupos con 15 estudiantes cada uno y dos simulacros calificados
  * con respuestas simuladas. Todo queda marcado con "(ejemplo)" /
@@ -50,18 +94,19 @@ export class DemoService {
     private org: OrgService
   ) {}
 
-  async seed(progress: (msg: string) => void = () => {}): Promise<void> {
+  async seed(progress: (msg: string) => void = () => {}, mode: DemoMode = "example"): Promise<void> {
+    const plan = PLAN[mode];
     const year = new Date().getFullYear();
-    const groupNames = [`11-A ${DEMO_TAG}`, `11-B ${DEMO_TAG}`];
+    const groupNames = plan.groups;
 
     progress("Cargando el banco de preguntas…");
     const raw = await fetch("assets/demo/banco-saber11.json").then((r) => r.text());
     const parsed = parseBankJson(raw);
-    const root = { name: "", questions: [], passages: [], folders: [{ ...parsed.root, name: DEMO_FOLDER }] };
+    const root = { name: "", questions: [], passages: [], folders: [{ ...parsed.root, name: plan.folder }] };
     const { items } = await this.exams.importTree(["1"], root, "import");
 
     progress("Creando grupos y estudiantes…");
-    const fake = demoStudents(groupNames, 15);
+    const fake = demoStudents(groupNames, plan.perGroup);
     const groups = await firstValueFrom(this.org.groups$());
     await this.org.importStudents(
       fake.map((s) => ({ code: s.code, fullName: s.fullName, group: s.group })),
@@ -72,22 +117,19 @@ export class DemoService {
       firstValueFrom(this.org.students$().pipe(filter((s) => fake.every((f) => s.some((x) => x.code === f.code))), take(1))),
     ]);
     const demoGroups = groupNames.map((n) => allGroups.find((g) => g.name === n && g.year === year)!);
-    const groupIds = demoGroups.map((g) => g.id);
-    const students = allStudents.filter((s) => s.groupId && groupIds.includes(s.groupId));
     const abilityByCode = new Map(fake.map((f) => [f.code, f.ability]));
 
-    const simulacros = [
-      { title: `${DEMO_ASSESSMENT_PREFIX} Simulacro diagnóstico`, shift: -0.35, daysAgo: 42, seed: 11 },
-      { title: `${DEMO_ASSESSMENT_PREFIX} Simulacro 2`, shift: 0, daysAgo: 7, seed: 29 },
-    ];
-    for (const sim of simulacros) {
+    for (const sim of plan.sims) {
       progress(`Calificando "${sim.title.replace(DEMO_ASSESSMENT_PREFIX, "").trim()}"…`);
-      await this.createGradedAssessment(sim, items, students, groupIds, abilityByCode);
+      const groupIds = sim.groups.map((i) => demoGroups[i].id);
+      const students = allStudents.filter((s) => s.groupId && groupIds.includes(s.groupId));
+      const simItems = sim.test ? items.filter((it) => it.test === sim.test) : items;
+      await this.createGradedAssessment(sim, simItems, students, groupIds, abilityByCode);
     }
   }
 
   private async createGradedAssessment(
-    sim: { title: string; shift: number; daysAgo: number; seed: number },
+    sim: DemoSim,
     items: Document[],
     students: { id: string; fullName: string; groupId: string | null; code: string }[],
     groupIds: string[],
@@ -117,7 +159,7 @@ export class DemoService {
       {
         id: crypto.randomUUID(),
         title: sim.title,
-        type: "simulacro",
+        type: sim.type ?? "simulacro",
         taxonomyId: "saber11",
         groupIds,
         totalQuestions: Math.max(...forms.map((f) => f.key.length)),
@@ -127,7 +169,7 @@ export class DemoService {
         maxScore: DEFAULT_ORG_SETTINGS.maxScore,
         identification: "personalized",
         roster,
-        grade: "11",
+        grade: sim.grade,
       },
       items
     );
@@ -174,11 +216,11 @@ export class DemoService {
     await batch.commit();
   }
 
-  /** ¿Ya hay datos de ejemplo en la organización activa? */
-  async hasDemo(): Promise<boolean> {
+  /** ¿Ya hay datos de ejemplo (o de presentación) en la organización activa? */
+  async hasDemo(mode: DemoMode = "example"): Promise<boolean> {
     const orgId = await this.tenant.requireOrgId();
     const snap = await getDocs(
-      query(collection(this.firestore, `orgs/${orgId}/folders`), where("name", "==", DEMO_FOLDER))
+      query(collection(this.firestore, `orgs/${orgId}/folders`), where("name", "==", PLAN[mode].folder))
     );
     return !snap.empty;
   }

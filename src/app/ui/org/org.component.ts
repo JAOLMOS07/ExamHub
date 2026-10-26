@@ -9,7 +9,8 @@ import { OrgService } from "../../core/services/org.service";
 import { ToastService } from "../../core/services/toast.service";
 import { ConfirmService } from "../../core/services/confirm.service";
 import { MigrationService } from "../../core/services/migration.service";
-import { DemoService } from "../../core/services/demo.service";
+import { DemoMode, DemoService } from "../../core/services/demo.service";
+import { CatalogService } from "../../core/services/catalog.service";
 import {
   DEFAULT_ORG_SETTINGS,
   Invite,
@@ -60,6 +61,8 @@ export class OrgComponent implements OnInit, OnDestroy {
   migrationStatus = "";
   demoBusy = false;
   demoStatus = "";
+  /** Administradores de la plataforma: pueden cargar la demo de ventas. */
+  isPlatformAdmin = false;
 
   private subs: Subscription[] = [];
   private adminSubs: Subscription[] = [];
@@ -70,7 +73,8 @@ export class OrgComponent implements OnInit, OnDestroy {
     private toast: ToastService,
     private confirm: ConfirmService,
     private migration: MigrationService,
-    private demo: DemoService
+    private demo: DemoService,
+    private catalog: CatalogService
   ) {}
 
   get canManageAcademics(): boolean {
@@ -90,6 +94,7 @@ export class OrgComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.catalog.isPlatformAdmin().then((v) => (this.isPlatformAdmin = v));
     this.subs.push(
       combineLatest([this.tenant.org$, this.tenant.role$, this.tenant.user$]).subscribe(
         ([org, role, user]) => {
@@ -296,23 +301,34 @@ export class OrgComponent implements OnInit, OnDestroy {
 
   // ---------------- Datos de ejemplo ----------------
 
-  async loadDemo(): Promise<void> {
+  async loadDemo(mode: DemoMode = "example"): Promise<void> {
     if (this.demoBusy) return;
     this.demoBusy = true;
     try {
-      if (await this.demo.hasDemo()) {
+      if (await this.demo.hasDemo(mode)) {
         this.toast.warning("Los datos de ejemplo ya están cargados.", "ExamHub", 3500);
         return;
       }
-      const ok = await this.confirm.ask({
-        title: "¿Cargar datos de ejemplo?",
-        message:
-          "Se crean un banco Saber 11 de 29 preguntas, los grupos 11-A y 11-B (ejemplo) con 30 estudiantes " +
-          "y dos simulacros ya calificados. Puedes borrarlo todo después con un clic.",
-        confirmText: "Cargar",
-      });
+      const ok = await this.confirm.ask(
+        mode === "showcase"
+          ? {
+              title: "¿Cargar la demo de ventas?",
+              message:
+                "Se crean un banco Saber 11, los grupos 11-A, 11-B y 10-A con 60 estudiantes, tres simulacros " +
+                "de grado 11 que muestran avance, un diagnóstico de grado 10 y un quiz de Matemáticas. " +
+                "No lleva marcas de ejemplo ni se borra con el botón Borrar: úsala en una cuenta solo para demos.",
+              confirmText: "Cargar demo",
+            }
+          : {
+              title: "¿Cargar datos de ejemplo?",
+              message:
+                "Se crean un banco Saber 11 de 29 preguntas, los grupos 11-A y 11-B (ejemplo) con 30 estudiantes " +
+                "y dos simulacros ya calificados. Puedes borrarlo todo después con un clic.",
+              confirmText: "Cargar",
+            }
+      );
       if (!ok) return;
-      await this.demo.seed((m) => (this.demoStatus = m));
+      await this.demo.seed((m) => (this.demoStatus = m), mode);
       this.toast.success("Datos de ejemplo listos: revisa Evaluaciones.", "ExamHub", 4000);
     } catch (err) {
       console.error(err);
